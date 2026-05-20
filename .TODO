@@ -1,7 +1,7 @@
-actividades de mejora
+eres un experto desarrollador de software que te encargaron lo siguiente en tu empresa:
 
-->  Este la opcion de escanear directamente al precionar un boton segun el trmite que seleccionen
-->  al guardar el documento se guarde en una capeta estructurado como (../.private/folio/documentos/tipodocumento/archivo.pdf)
-->  en ventana de dashVer se puedan ver los documentos con la nueva estructura de guardado de documentos
-->  Si un ciudadano ya realizo un tramite se puedan extraer sus documentos desde la ruta
-->  
+revisa el codigo de sashventanilla, donde se quiere agregar la opcion de añadir mas tramites en el proseso para que el usuario pueda agregar mas tramites a su solicitud, se puso la opcion de un textlist pero se busca que se seleccione que mas tramites donde pueden ser hasta 3 tramitesadicionales.
+se debera hacer una actualizacion en la base de datos por ello se te fcilito la estructura de la base llamada sistema.sql, analizala y añade lo que se nesecite.
+despues se debera añadir al formato de solicitud de ficha.php los tramites adicionales que se seleccionaron.
+
+si tienes dudas o preguntas sobre el proceso, no dudes en preguntar para resolver la complicacion de la forma mas optima posible.

@@ -10462,7 +10462,7 @@
                 "UBICACION": "MANUEL DE VELAZCO MARTINES          #311,                   SOLIDARIDAD",
                 "FECH_INGRE": "2026-04-29",
                 "FECH_ENTRE": "2026-05-13",
-                "ESTATUS": "Nuevo",
+                "ESTATUS": "Aprobado por Verificador",
                 "CONTACTO": "4651091099",
                 "NUMERO": null
             },
@@ -10555,6 +10555,258 @@
                 "coordinates": [
                     2461144.06,
                     775258.27
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "379\/2026",
+                "NOM_SOLI": "ARELY BETANIA IBARRA GALINDO",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "AV. UNIVERSIDAD NO. 11 EL BAJIO",
+                "FECH_INGRE": "2026-05-07",
+                "FECH_ENTRE": "2026-05-21",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4112682792",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2462293.03,
+                    777563.14
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "380\/2026",
+                "NOM_SOLI": "JULIO CESAR MORENO RAMIREZ",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "PLUTARCO ELIAS CALLES S\/N RINCON DE ROMOS",
+                "FECH_INGRE": "2026-05-07",
+                "FECH_ENTRE": "2026-05-21",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4772022465",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2459769.75,
+                    776121.31
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "390\/2026",
+                "NOM_SOLI": "MARIA MERCEDES VARGAS RUELAS",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "MORELOS",
+                "FECH_INGRE": "2026-05-08",
+                "FECH_ENTRE": "2026-05-22",
+                "ESTATUS": "Aprobado por Verificador",
+                "CONTACTO": "4651027120",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2461037.6,
+                    776256.72
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "391\/2026",
+                "NOM_SOLI": "FRANCISCO DIAZ",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "HIDALGO 20",
+                "FECH_INGRE": "2026-05-08",
+                "FECH_ENTRE": "2026-05-22",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4494719606",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2459866.46,
+                    775386.05
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "396\/2026",
+                "NOM_SOLI": "OBED ARECHIGA ARECHIGA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "LUIS PASTEUR #103 CENTRO",
+                "FECH_INGRE": "2026-05-12",
+                "FECH_ENTRE": "2026-05-26",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4495163270",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460679.91,
+                    776269.24
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "397\/2026",
+                "NOM_SOLI": "OBED ARECHIGA ARECHIGA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "DR. ALBERTO SABIN",
+                "FECH_INGRE": "2026-05-12",
+                "FECH_ENTRE": "2026-05-26",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4495163270",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460679.91,
+                    776269.24
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "401\/2026",
+                "NOM_SOLI": "MARIA ARCELIA GONZALEZ GUERRERO",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "INGENIERO MIGUEL ANGEL BARBERENA VEGA #240 FRACC. SOLIDARIDAD",
+                "FECH_INGRE": "2026-05-12",
+                "FECH_ENTRE": "2026-05-26",
+                "ESTATUS": "Aprobado por Verificador",
+                "CONTACTO": "4491871542",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2459841.6,
+                    775547.43
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "404\/2026",
+                "NOM_SOLI": "OMAR ANDRES ROMO PADILLA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "DOLORES HIDALGO S\/N",
+                "FECH_INGRE": "2026-05-12",
+                "FECH_ENTRE": "2026-05-26",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4652071937",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460702.54,
+                    776295.66
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "407\/2026",
+                "NOM_SOLI": "ISMAEL SANTILLAN RODRIGUEZ",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "CHIAPAS #239 M-6 L-26",
+                "FECH_INGRE": "2026-05-13",
+                "FECH_ENTRE": "2026-05-27",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "9994467279",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460270.63,
+                    775432.56
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "424\/2026",
+                "NOM_SOLI": "ALICIA DE LARA MARQUEZ",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "MATIAS MARIN VARGAS",
+                "FECH_INGRE": "2026-05-18",
+                "FECH_ENTRE": "2026-06-01",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4651229213",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460032.14,
+                    775607
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "426\/2026",
+                "NOM_SOLI": "MARIA GARCIA HERRERA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "CTO. GAETAN LAVERTU",
+                "FECH_INGRE": "2026-05-19",
+                "FECH_ENTRE": "2026-06-02",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4651058206",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2461273.36,
+                    777116.02
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "433\/2026",
+                "NOM_SOLI": "ROSA MARTHA MARIN SANTANA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "ALDAMA Y MOTOLINIA",
+                "FECH_INGRE": "2026-05-20",
+                "FECH_ENTRE": "2026-06-03",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4651050828",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460915.31,
+                    775795.67
                 ]
             }
         }

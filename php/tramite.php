@@ -137,105 +137,78 @@ try {
     $usuario_id     = (int) $_SESSION['id'];                    // i 24
 
     /* ══════════════════════════════════════════════════════
-       INSERT — 27 columnas, 27 tipos, 27 variables
-       Tipos: i i i  s s s s s s s s  d d  s s  s s s  s s  s s s s  s s  i
-       Pos:   1 2 3  4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+       INSERT tramites — 28 columnas, 28 valores
+       Mapeo columna → tipo:
+       1-3  folio_numero, folio_anio, tipo_tramite_id        => i i i
+       4-11 propietario, direccion, localidad, colonia, cp,
+            calle, entre_calle1, entre_calle2                  => s s s s s s s s
+       12-13 lat, lng                                         => d d
+       14-15 fecha_ingreso, fecha_entrega                     => s s
+       16-18 solicitante, telefono, correo                    => s s s
+       19-20 cuenta_catastral, superficie                     => s s
+       21-24 ine_archivo, escrituras_archivo, predial_archivo, formato_constancia  => s s s s
+       25-26 datos_especificos, comentario_sin_doc            => s s
+       27 cantidad_princial                                   => i
+       28 usuario_creador_id                                  => i
+       Total: 3i + 8s + 2d + 2s + 3s + 2s + 4s + 2s + 2i = 28
     ══════════════════════════════════════════════════════ */
     $sql = "
         INSERT INTO tramites (
-            folio_numero,
-            folio_anio,
-            tipo_tramite_id,
-            propietario,
-            direccion,
-            localidad,
-            colonia,
-            cp,
-            calle,
-            entre_calle1,
-            entre_calle2,
-            lat,
-            lng,
-            fecha_ingreso,
-            fecha_entrega,
-            solicitante,
-            telefono,
-            correo,
-            cuenta_catastral,
-            superficie,
-            ine_archivo,
-            escrituras_archivo,
-            predial_archivo,
-            formato_constancia,
-            datos_especificos,
-            comentario_sin_doc,
+            folio_numero, folio_anio, tipo_tramite_id,
+            propietario, direccion, localidad, colonia, cp,
+            calle, entre_calle1, entre_calle2,
+            lat, lng,
+            fecha_ingreso, fecha_entrega,
+            solicitante, telefono, correo,
+            cuenta_catastral, superficie,
+            ine_archivo, escrituras_archivo, predial_archivo, formato_constancia,
+            datos_especificos, comentario_sin_doc,
+            cantidad,
             usuario_creador_id
         ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?
+            ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
         )";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) throw new Exception("Error al preparar INSERT: " . $conn->error);
 
-    /*  27 tipos exactos:
-        i  i  i  s  s  s  s  s  s  s  s  s  d  d  s   s   s   s   s   s   s   s   s   s   s   s   s   i
-        1  2  3  4  5  6  7  8  9  10 11 12 13 14  15  16  17  18  19  20  21  22  23  24  25  26  27  */
-    $stmt->bind_param(
+    $cantidad_principal = isset($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
+    if ($cantidad_principal < 1)  $cantidad_principal = 1;
+    if ($cantidad_principal > 50) $cantidad_principal = 50;
 
-        "iiissssssssddsssssssssssssi",
-        $folio_numero,      // 1  i
-        $folio_anio,        // 2  i
-        $tipo_tramite_id,   // 3  i
-        $propietario,       // 4  s
-        $direccion,         // 5  s
-        $localidad,         // 6  s
-        $colonia,           // 7  s
-        $cp,                // 8  s
-        $calle,             // 9  s
-        $entre_calle1,      // 10 s
-        $entre_calle2,      // 11 s
-        $lat,               // 12 d
-        $lng,               // 13 d
-        $fecha_ingreso,     // 14 s
-        $fecha_entrega,     // 15 s
-        $solicitante,       // 16 s
-        $telefono,          // 17 s
-        $correo,            // 18 s
-        $cuenta_catastral,  // 19 s
-        $superficie,        // 20 s
-        $ine_archivo,       // 21 s
-        $esc_archivo,       // 22 s
-        $pre_archivo,       // 23 s
-        $fmt_constancia,    // 24 s
-        $datos_json,        // 25 s
-        $comentario_sin_doc,// 26 s
-        $usuario_id         // 26 i
+    /* 28 columnas: 3i + 8s + 2d + 5s + 8s + 2i = 28 chars */
+    $tipos_bind = "iiissssssssddssssssssssssssi";
+
+    $stmt->bind_param(
+        $tipos_bind,
+        $folio_numero,        //  1 i
+        $folio_anio,          //  2 i
+        $tipo_tramite_id,     //  3 i
+        $propietario,         //  4 s
+        $direccion,           //  5 s
+        $localidad,           //  6 s
+        $colonia,             //  7 s
+        $cp,                  //  8 s
+        $calle,               //  9 s
+        $entre_calle1,        // 10 s
+        $entre_calle2,        // 11 s
+        $lat,                 // 12 d
+        $lng,                 // 13 d
+        $fecha_ingreso,       // 14 s
+        $fecha_entrega,       // 15 s
+        $solicitante,         // 16 s
+        $telefono,            // 17 s
+        $correo,              // 18 s
+        $cuenta_catastral,    // 19 s
+        $superficie,          // 20 s
+        $ine_archivo,         // 21 s
+        $esc_archivo,         // 22 s
+        $pre_archivo,         // 23 s
+        $fmt_constancia,      // 24 s
+        $datos_json,          // 25 s
+        $comentario_sin_doc,  // 26 s
+        $cantidad_principal,  // 27 i NUEVO
+        $usuario_id           // 28 i
     );
 
     if (!$stmt->execute()) {
@@ -269,6 +242,52 @@ try {
         $acc->bind_param("iisss", $usuario_id, $tramite_id, $det, $ip, $ua);
         $acc->execute();
         $acc->close();
+    }
+
+    /* ── Trámites adicionales (hasta 3, cada uno con cantidad) ── */
+    for ($i = 1; $i <= 3; $i++) {
+        $ta_tipo_id = isset($_POST["ta{$i}_tipo_tramite_id"]) ? (int)$_POST["ta{$i}_tipo_tramite_id"] : 0;
+        if (!$ta_tipo_id) continue;
+
+        $ta_cantidad = isset($_POST["ta{$i}_cantidad"]) ? (int)$_POST["ta{$i}_cantidad"] : 1;
+        if ($ta_cantidad < 1)  $ta_cantidad = 1;
+        if ($ta_cantidad > 50) $ta_cantidad = 50;
+
+        $ta_prop   = !empty($_POST["ta{$i}_propietario"]) ? limpiarMayusculas($_POST["ta{$i}_propietario"]) : $propietario;
+        $ta_soli   = !empty($_POST["ta{$i}_solicitante"]) ? limpiarMayusculas($_POST["ta{$i}_solicitante"]) : $solicitante;
+        $ta_tel    = !empty($_POST["ta{$i}_telefono"])    ? preg_replace('/\D/','',$_POST["ta{$i}_telefono"]) : $telefono;
+        $ta_correo = !empty($_POST["ta{$i}_correo"])      ? trim($_POST["ta{$i}_correo"]) : $correo;
+        if (strlen($ta_tel) < 10) { $ta_tel = $telefono; }
+
+        // Obtener el último folio_adicional para este trámite principal
+        $ta_max = 0;
+        $taStmtMax = $conn->prepare(
+            "SELECT COALESCE(MAX(CAST(folio_numero_adicional AS UNSIGNED)),0)
+               FROM tramites_adicionales WHERE tramite_principal_id = ?"
+        );
+        if ($taStmtMax) {
+            $taStmtMax->bind_param("i", $tramite_id);
+            $taStmtMax->execute();
+            $taStmtMax->bind_result($ta_max_fn);
+            $taStmtMax->fetch();
+            $taStmtMax->close();
+            $ta_max = (int)$ta_max_fn;
+        }
+
+        // Insertar UN solo registro con cantidad = N
+        $stmtTA = $conn->prepare("
+            INSERT INTO tramites_adicionales
+                (tramite_principal_id, tipo_tramite_id, propietario, solicitante,
+                 telefono, correo, folio_numero_adicional, cantidad, estatus)
+            VALUES (?,?,?,?,?,?,?,?, 'En revisión')
+        ");
+        if ($stmtTA) {
+            $ta_fn = $ta_max + 1; // primer folio adicional para este lote
+            $stmtTA->bind_param("iissssii", $tramite_id, $ta_tipo_id,
+                $ta_prop, $ta_soli, $ta_tel, $ta_correo, $ta_fn, $ta_cantidad);
+            $stmtTA->execute();
+            $stmtTA->close();
+        }
     }
 
     $conn->commit();

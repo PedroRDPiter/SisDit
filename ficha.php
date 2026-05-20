@@ -55,6 +55,37 @@ if (!$tramite) {
     exit;
 }
 
+// Obtener trámites adicionales asociados a este folio
+$tas = [];
+$resTA = $conn->prepare("
+    SELECT ta.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
+    FROM tramites_adicionales ta
+    LEFT JOIN tipos_tramite tt ON ta.tipo_tramite_id = tt.id
+    WHERE ta.tramite_principal_id = ?
+    ORDER BY ta.folio_numero_adicional ASC
+");
+if ($resTA) {
+    $resTA->bind_param("i", $tramite['id']);
+    $resTA->execute();
+    $resultTA = $resTA->get_result();
+    while ($rowTA = $resultTA->fetch_assoc()) $tas[] = $rowTA;
+    $resTA->close();
+}
+
+// Agrupar TAs por tipo_tramite_id y sumar cantidades
+$tas_agrupados = [];
+foreach ($tas as $ta) {
+    $tid = (int)$ta['tipo_tramite_id'];
+    if (!isset($tas_agrupados[$tid])) {
+        $tas_agrupados[$tid] = [
+            'tipo_tramite_nombre' => $ta['tipo_tramite_nombre'] ?? 'Sin tipo',
+            'tipo_tramite_codigo' => $ta['tipo_tramite_codigo'] ?? '',
+            'cantidad_total'      => 0,
+        ];
+    }
+    $tas_agrupados[$tid]['cantidad_total'] += (int)($ta['cantidad'] ?? 1);
+}
+
 // Obtener config del municipio
 $config = [];
 $config_result = $conn->query("SELECT clave, valor FROM configuracion_sistema");
@@ -355,6 +386,16 @@ $conn->close();
         text-transform: uppercase;
     }
 
+    /* --- adicionales "dentro" de tipo-tramite-value --- */
+    .ta-separador {
+        font-weight: 500;
+        margin-left: 4px;
+    }
+    .ta-count {
+        font-weight: 600;
+        font-size: 0.85em;
+    }
+
     /* --- FECHAS --- */
     .fechas-row {
         display: flex;
@@ -503,6 +544,11 @@ $conn->close();
             padding: 3px 8px;
         }
 
+        .ta-value {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+
         .fechas-row {
             margin: 3px 0;
         }
@@ -626,12 +672,24 @@ $conn->close();
                 <span style="flex:2;">Coordenadas</span>
             </div>
 
-            <!-- TIPO DE TRAMITE -->
+            <!-- TIPO DE TRAMITE (con adicionales en la misma linea) -->
             <div class="tipo-tramite-section">
                 <div class="tipo-tramite-label">Tipo de Tramite:</div>
                 <div class="tipo-tramite-value">
-                    <?= htmlspecialchars($tramite['tipo_tramite_nombre'] ?? 'Sin tipo') ?>
-                    <!-- <?= htmlspecialchars($tramite['folio_numero']) ?>-->
+                    <strong><?= htmlspecialchars($tramite['tipo_tramite_nombre'] ?? 'Sin tipo') ?></strong>
+                    <?php if (!empty($tramite['cantidad']) && (int)$tramite['cantidad'] > 1): ?>
+                        <span class="ta-count">(<?= (int)$tramite['cantidad'] ?>)</span>
+                    <?php endif; ?>
+                    <?php if (!empty($tas_agrupados)): ?>
+                        <?php foreach ($tas_agrupados as $g): ?>
+                            <span class="ta-separador">
+                                + <strong><?= htmlspecialchars($g['tipo_tramite_nombre']) ?></strong>
+                                <?php if ($g['cantidad_total'] > 1): ?>
+                                    <span class="ta-count">(<?= $g['cantidad_total'] ?>)</span>
+                                <?php endif; ?>
+                            </span>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
