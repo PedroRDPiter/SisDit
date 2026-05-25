@@ -72,18 +72,29 @@ if ($resTA) {
     $resTA->close();
 }
 
-// Agrupar TAs por tipo_tramite_id y sumar cantidades
-$tas_agrupados = [];
+// Agrupar TODOS los trámites del grupo (principal + hijos) por tipo_tramite_id
+// Esto evita mostrar "MismoTipo (9) + MismoTipo (10)" cuando son del mismo tipo
+$tipos_agrupados = [];
+
+// Principal
+$principal_tid = (int)($tramite['tipo_tramite_id'] ?? 0);
+if ($principal_tid) {
+    $tipos_agrupados[$principal_tid] = [
+        'tipo_tramite_nombre' => $tramite['tipo_tramite_nombre'] ?? 'Sin tipo',
+        'cantidad_total'      => (int)($tramite['cantidad'] ?? 1),
+    ];
+}
+
+// Hijos (subtramites)
 foreach ($tas as $ta) {
     $tid = (int)$ta['tipo_tramite_id'];
-    if (!isset($tas_agrupados[$tid])) {
-        $tas_agrupados[$tid] = [
+    if (!isset($tipos_agrupados[$tid])) {
+        $tipos_agrupados[$tid] = [
             'tipo_tramite_nombre' => $ta['tipo_tramite_nombre'] ?? 'Sin tipo',
-            'tipo_tramite_codigo' => $ta['tipo_tramite_codigo'] ?? '',
             'cantidad_total'      => 0,
         ];
     }
-    $tas_agrupados[$tid]['cantidad_total'] += (int)($ta['cantidad'] ?? 1);
+    $tipos_agrupados[$tid]['cantidad_total'] += (int)($ta['cantidad'] ?? 1);
 }
 
 // Obtener config del municipio
@@ -672,24 +683,33 @@ $conn->close();
                 <span style="flex:2;">Coordenadas</span>
             </div>
 
-            <!-- TIPO DE TRAMITE (con adicionales en la misma linea) -->
+            <!-- TIPO DE TRAMITE (agrupado correctamente, mismo tipo se suma) -->
             <div class="tipo-tramite-section">
                 <div class="tipo-tramite-label">Tipo de Tramite:</div>
                 <div class="tipo-tramite-value">
-                    <strong><?= htmlspecialchars($tramite['tipo_tramite_nombre'] ?? 'Sin tipo') ?></strong>
-                    <?php if (!empty($tramite['cantidad']) && (int)$tramite['cantidad'] > 1): ?>
-                        <span class="ta-count">(<?= (int)$tramite['cantidad'] ?>)</span>
-                    <?php endif; ?>
-                    <?php if (!empty($tas_agrupados)): ?>
-                        <?php foreach ($tas_agrupados as $g): ?>
-                            <span class="ta-separador">
-                                + <strong><?= htmlspecialchars($g['tipo_tramite_nombre']) ?></strong>
-                                <?php if ($g['cantidad_total'] > 1): ?>
-                                    <span class="ta-count">(<?= $g['cantidad_total'] ?>)</span>
-                                <?php endif; ?>
-                            </span>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <?php
+                    $first = true;
+                    foreach ($tipos_agrupados as $tid => $g):
+                        if ($first):
+                    ?>
+                        <strong><?= htmlspecialchars($g['tipo_tramite_nombre']) ?></strong>
+                        <?php if ($g['cantidad_total'] > 1): ?>
+                            <span class="ta-count">(<?= $g['cantidad_total'] ?>)</span>
+                        <?php endif; ?>
+                    <?php
+                            $first = false;
+                        else:
+                    ?>
+                        <span class="ta-separador">
+                            + <strong><?= htmlspecialchars($g['tipo_tramite_nombre']) ?></strong>
+                            <?php if ($g['cantidad_total'] > 1): ?>
+                                <span class="ta-count">(<?= $g['cantidad_total'] ?>)</span>
+                            <?php endif; ?>
+                        </span>
+                    <?php
+                        endif;
+                    endforeach;
+                    ?>
                 </div>
             </div>
 
