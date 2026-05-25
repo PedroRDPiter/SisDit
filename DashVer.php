@@ -20,7 +20,8 @@ $cfg = [];
 $resCfgV = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 while ($rowCfgV = $resCfgV->fetch_assoc()) $cfg[$rowCfgV['clave']] = $rowCfgV['valor'];
 
-$sql = "SELECT t.*, tt.nombre as tipo_tramite_nombre 
+$sql = "SELECT t.*, tt.nombre as tipo_tramite_nombre,
+        (SELECT COUNT(*) FROM tramites t2 WHERE t2.folio_numero = t.folio_numero AND t2.folio_anio = t.folio_anio) as grupo_count
         FROM tramites t
         LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
         WHERE 1=1";
@@ -481,7 +482,14 @@ window.onpopstate = function () {
 <?php if ($resultado && $resultado->num_rows > 0): ?>
     <?php while ($t = $resultado->fetch_assoc()): ?>
     <tr>
-        <td><?= $t['folio_numero'] ?>/<?= $t['folio_anio'] ?></td>
+        <td>
+            <?= $t['folio_numero'] ?>/<?= $t['folio_anio'] ?>
+            <?php if (($t['grupo_count'] ?? 1) > 1): ?>
+                <span class="badge bg-info text-dark ms-1" title="Grupo de <?= $t['grupo_count'] ?> subtrámites con el mismo folio">
+                    Grupo <?= $t['grupo_count'] ?>
+                </span>
+            <?php endif; ?>
+        </td>
         <td><?= htmlspecialchars($t['propietario']) ?></td>
         <td><?= htmlspecialchars($t['tipo_tramite_nombre'] ?? 'Sin tipo') ?></td>
         <td><?= date('d/m/Y', strtotime($t['fecha_ingreso'])) ?></td>
@@ -533,6 +541,10 @@ window.onpopstate = function () {
                     data-fecha-constancia="<?= $t['fecha_constancia'] ?? date('Y-m-d') ?>"
                     data-cuenta-catastral="<?= htmlspecialchars($t['cuenta_catastral'] ?? '') ?>"
                     data-tipo-tramite-id="<?= $t['tipo_tramite_id'] ?? '' ?>"
+                    data-tipo-tramite-nombre="<?= htmlspecialchars($t['tipo_tramite_nombre'] ?? '') ?>"
+                    data-croquis="<?= htmlspecialchars(isset($t['croquis_archivo']) && !empty($t['croquis_archivo']) ? (strpos($t['croquis_archivo'], '.') === 0 ? $t['croquis_archivo'] : 'uploads/' . $t['croquis_archivo']) : '') ?>"
+                    title="Ver detalles del trámite"
+                    data-bs-toggle="tooltip"
                 >
                     Ver detalles
                 </button>
@@ -657,8 +669,19 @@ window.onpopstate = function () {
         <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <!-- BODY -->
-      <div class="modal-body">
+       <!-- BODY -->
+       <div class="modal-body">
+
+<!-- GRUPO DE SUBTRÁMITES (cuando comparten folio) -->
+<div id="grupo-subtramites" class="mb-3" style="display:none;">
+  <div class="alert alert-info py-2 mb-2">
+    <strong><i class="bi bi-collection me-1"></i>Este folio tiene varios subtrámites</strong>
+    <span id="grupo-count-badge" class="badge bg-primary ms-2"></span>
+  </div>
+  <div id="lista-subtramites" class="list-group list-group-flush" style="max-height:180px; overflow:auto;"></div>
+  <small class="text-muted">Haz clic en un subtrámite para cargarlo en el formulario de abajo.</small>
+</div>
+
 <form id="formActualizarTramite" enctype="multipart/form-data">
   <?php $csrf = generarCSRF(); ?>
   <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
@@ -1474,7 +1497,9 @@ function cargarDatosAnterioresVer() {
       }
 
       msg.style.color = '#198754';
-      msg.textContent = '✅ Datos cargados del folio ' + (data.tramite.folio_salida || data.tramite.folio) + ' — ' + data.tramite.propietario;
+      const tramites = data.tramites || (data.tramite ? [data.tramite] : []);
+      const countText = tramites.length > 1 ? ` (${tramites.length} subtrámites)` : '';
+      msg.textContent = '✅ Datos cargados del folio ' + (tramites[0]?.folio_salida || tramites[0]?.folio) + ' — ' + (tramites[0]?.propietario || '') + countText;
     })
     .catch(() => {
       msg.style.color = '#dc3545';
@@ -1492,6 +1517,8 @@ document.getElementById('modalConstancia').addEventListener('show.bs.modal', fun
 });
 
 // Cuando se abre el modal de detalle, cargar los datos
+let grupoSubtramitesActual = [];
+
 document.getElementById('detalleTramite').addEventListener('show.bs.modal', function (event) {
     const button = event.relatedTarget;
     const folio = button.getAttribute('data-folio');
@@ -1505,7 +1532,89 @@ document.getElementById('detalleTramite').addEventListener('show.bs.modal', func
     if (btnImprimirFicha && folio) {
         btnImprimirFicha.href = 'ficha.php?folio=' + encodeURIComponent(folio);
     }
+
+    // Cargar grupo completo de subtrámites (nuevo comportamiento)
+    fetch('php/obtener_datos_tramite.php?folio=' + encodeURIComponent(folio))
+        .then(r => r.json())
+        .then(data => {
+            const contenedor = document.getElementById('grupo-subtramites');
+            const lista = document.getElementById('lista-subtramites');
+            const badge = document.getElementById('grupo-count-badge');
+
+            lista.innerHTML = '';
+            grupoSubtramitesActual = [];
+
+            if (data.success && data.tramites && data.tramites.length > 0) {
+                grupoSubtramitesActual = data.tramites;
+
+                if (data.tramites.length > 1) {
+                    contenedor.style.display = 'block';
+                    badge.textContent = data.tramites.length + ' subtrámites';
+                } else {
+                    contenedor.style.display = 'none';
+                }
+
+                data.tramites.forEach((tram, index) => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    item.innerHTML = `
+                        <div>
+                            <strong>${tram.tipo_tramite_nombre || 'Sin tipo'}</strong>
+                            <small class="text-muted d-block">${tram.propietario}</small>
+                        </div>
+                        <span class="badge bg-secondary">${tram.estatus}</span>
+                    `;
+                    item.onclick = (e) => {
+                        e.preventDefault();
+                        cargarSubtramiteEnFormulario(tram, folio);
+                    };
+                    lista.appendChild(item);
+                });
+
+                // Cargar el primero por defecto
+                cargarSubtramiteEnFormulario(data.tramites[0], folio);
+            } else {
+                contenedor.style.display = 'none';
+                // Fallback: usar los data-* del botón (comportamiento anterior)
+                cargarSubtramiteEnFormulario(null, folio, button);
+            }
+        })
+        .catch(() => {
+            document.getElementById('grupo-subtramites').style.display = 'none';
+        });
 });
+
+function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
+    // Actualizar campos visibles del modal
+    document.getElementById('m_folio').textContent = folio;
+    document.getElementById('m_folio_hidden').value = folio;
+
+    const getVal = (key) => tramite ? tramite[key] : (buttonFallback ? buttonFallback.getAttribute('data-' + key.replace(/_/g, '-')) : '');
+
+    document.getElementById('m_propietario').textContent = getVal('propietario') || '';
+    // ... (puedes expandir aquí para poblar más campos del formulario según IDs m_*)
+
+    // Ejemplo: poblar estatus si existe
+    const estatusSelect = document.getElementById('m_estatus');
+    if (estatusSelect && tramite && tramite.estatus) {
+        estatusSelect.value = tramite.estatus;
+    }
+
+    // Guardar el id del subtrámite actual para el submit (útil para actualizaciones individuales)
+    const form = document.getElementById('formActualizarTramite');
+    if (form && tramite && tramite.id) {
+        let hiddenId = document.getElementById('m_tramite_id');
+        if (!hiddenId) {
+            hiddenId = document.createElement('input');
+            hiddenId.type = 'hidden';
+            hiddenId.id = 'm_tramite_id';
+            hiddenId.name = 'tramite_id';
+            form.appendChild(hiddenId);
+        }
+        hiddenId.value = tramite.id;
+    }
+}
 
 // Interceptar el envío del formulario de actualización de trámite
 document.addEventListener('DOMContentLoaded', function() {

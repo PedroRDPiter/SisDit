@@ -55,14 +55,14 @@ if (!$tramite) {
     exit;
 }
 
-// Obtener trámites adicionales asociados a este folio
+// Obtener trámites adicionales (hijos) en la misma tabla via tramite_principal_id
 $tas = [];
 $resTA = $conn->prepare("
-    SELECT ta.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
-    FROM tramites_adicionales ta
-    LEFT JOIN tipos_tramite tt ON ta.tipo_tramite_id = tt.id
-    WHERE ta.tramite_principal_id = ?
-    ORDER BY ta.folio_numero_adicional ASC
+    SELECT t.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
+    FROM tramites t
+    LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
+    WHERE t.tramite_principal_id = ?
+    ORDER BY t.id ASC
 ");
 if ($resTA) {
     $resTA->bind_param("i", $tramite['id']);

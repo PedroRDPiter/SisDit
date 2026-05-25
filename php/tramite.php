@@ -152,143 +152,55 @@ try {
        28 usuario_creador_id                                  => i
        Total: 3i + 8s + 2d + 2s + 3s + 2s + 4s + 2s + 2i = 28
     ══════════════════════════════════════════════════════ */
-    $sql = "
-        INSERT INTO tramites (
-            folio_numero, folio_anio, tipo_tramite_id,
-            propietario, direccion, localidad, colonia, cp,
-            calle, entre_calle1, entre_calle2,
-            lat, lng,
-            fecha_ingreso, fecha_entrega,
-            solicitante, telefono, correo,
-            cuenta_catastral, superficie,
-            ine_archivo, escrituras_archivo, predial_archivo, formato_constancia,
-            datos_especificos, comentario_sin_doc,
-            cantidad,
-            usuario_creador_id
-        ) VALUES (
-            ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-        )";
-
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) throw new Exception("Error al preparar INSERT: " . $conn->error);
-
     $cantidad_principal = isset($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
-    if ($cantidad_principal < 1)  $cantidad_principal = 1;
+    if ($cantidad_principal < 1) $cantidad_principal = 1;
     if ($cantidad_principal > 50) $cantidad_principal = 50;
 
-    /* 28 columnas: 3i + 8s + 2d + 5s + 8s + 2i = 28 chars */
-    $tipos_bind = "iiissssssssddssssssssssssssi";
-
-    $stmt->bind_param(
-        $tipos_bind,
-        $folio_numero,        //  1 i
-        $folio_anio,          //  2 i
-        $tipo_tramite_id,     //  3 i
-        $propietario,         //  4 s
-        $direccion,           //  5 s
-        $localidad,           //  6 s
-        $colonia,             //  7 s
-        $cp,                  //  8 s
-        $calle,               //  9 s
-        $entre_calle1,        // 10 s
-        $entre_calle2,        // 11 s
-        $lat,                 // 12 d
-        $lng,                 // 13 d
-        $fecha_ingreso,       // 14 s
-        $fecha_entrega,       // 15 s
-        $solicitante,         // 16 s
-        $telefono,            // 17 s
-        $correo,              // 18 s
-        $cuenta_catastral,    // 19 s
-        $superficie,          // 20 s
-        $ine_archivo,         // 21 s
-        $esc_archivo,         // 22 s
-        $pre_archivo,         // 23 s
-        $fmt_constancia,      // 24 s
-        $datos_json,          // 25 s
-        $comentario_sin_doc,  // 26 s
-        $cantidad_principal,  // 27 i NUEVO
-        $usuario_id           // 28 i
-    );
-
-    if (!$stmt->execute()) {
-        throw new Exception("Error al ejecutar INSERT: " . $stmt->error);
+    $all_units = [];
+    for ($i = 0; $i < $cantidad_principal; $i++) {
+        $all_units[] = ['tipo_tramite_id' => $tipo_tramite_id, 'propietario' => $propietario, 'solicitante' => $solicitante, 'telefono' => $telefono, 'correo' => $correo];
     }
-
-    $tramite_id = $stmt->insert_id;
-    $stmt->close();
-
-    /* ── Historial ── */
-    $hist = $conn->prepare("
-        INSERT INTO historial_tramites (tramite_id, usuario_id, accion, estatus_nuevo, comentario)
-        VALUES (?, ?, 'Creado', 'En revisión', 'Trámite creado')
-    ");
-    if ($hist) {
-        $hist->bind_param("ii", $tramite_id, $usuario_id);
-        $hist->execute();
-        $hist->close();
-    }
-
-    /* ── Log ── */
-    $folioStr = str_pad($folio_numero, 3, "0", STR_PAD_LEFT) . "/" . $folio_anio;
-    $ip  = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
-    $ua  = $_SERVER['HTTP_USER_AGENT'] ?? 'desconocido';
-    $acc = $conn->prepare("
-        INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, registro_id, detalles, ip_address, user_agent)
-        VALUES (?, 'Creó trámite', 'tramites', ?, ?, ?, ?)
-    ");
-    if ($acc) {
-        $det = "Folio: $folioStr";
-        $acc->bind_param("iisss", $usuario_id, $tramite_id, $det, $ip, $ua);
-        $acc->execute();
-        $acc->close();
-    }
-
-    /* ── Trámites adicionales (hasta 3, cada uno con cantidad) ── */
     for ($i = 1; $i <= 3; $i++) {
         $ta_tipo_id = isset($_POST["ta{$i}_tipo_tramite_id"]) ? (int)$_POST["ta{$i}_tipo_tramite_id"] : 0;
         if (!$ta_tipo_id) continue;
-
         $ta_cantidad = isset($_POST["ta{$i}_cantidad"]) ? (int)$_POST["ta{$i}_cantidad"] : 1;
-        if ($ta_cantidad < 1)  $ta_cantidad = 1;
+        if ($ta_cantidad < 1) $ta_cantidad = 1;
         if ($ta_cantidad > 50) $ta_cantidad = 50;
-
-        $ta_prop   = !empty($_POST["ta{$i}_propietario"]) ? limpiarMayusculas($_POST["ta{$i}_propietario"]) : $propietario;
-        $ta_soli   = !empty($_POST["ta{$i}_solicitante"]) ? limpiarMayusculas($_POST["ta{$i}_solicitante"]) : $solicitante;
-        $ta_tel    = !empty($_POST["ta{$i}_telefono"])    ? preg_replace('/\D/','',$_POST["ta{$i}_telefono"]) : $telefono;
-        $ta_correo = !empty($_POST["ta{$i}_correo"])      ? trim($_POST["ta{$i}_correo"]) : $correo;
+        $ta_prop = !empty($_POST["ta{$i}_propietario"]) ? limpiarMayusculas($_POST["ta{$i}_propietario"]) : $propietario;
+        $ta_soli = !empty($_POST["ta{$i}_solicitante"]) ? limpiarMayusculas($_POST["ta{$i}_solicitante"]) : $solicitante;
+        $ta_tel = !empty($_POST["ta{$i}_telefono"]) ? preg_replace('/\D/','',$_POST["ta{$i}_telefono"]) : $telefono;
+        $ta_correo = !empty($_POST["ta{$i}_correo"]) ? trim($_POST["ta{$i}_correo"]) : $correo;
         if (strlen($ta_tel) < 10) { $ta_tel = $telefono; }
-
-        // Obtener el último folio_adicional para este trámite principal
-        $ta_max = 0;
-        $taStmtMax = $conn->prepare(
-            "SELECT COALESCE(MAX(CAST(folio_numero_adicional AS UNSIGNED)),0)
-               FROM tramites_adicionales WHERE tramite_principal_id = ?"
-        );
-        if ($taStmtMax) {
-            $taStmtMax->bind_param("i", $tramite_id);
-            $taStmtMax->execute();
-            $taStmtMax->bind_result($ta_max_fn);
-            $taStmtMax->fetch();
-            $taStmtMax->close();
-            $ta_max = (int)$ta_max_fn;
-        }
-
-        // Insertar UN solo registro con cantidad = N
-        $stmtTA = $conn->prepare("
-            INSERT INTO tramites_adicionales
-                (tramite_principal_id, tipo_tramite_id, propietario, solicitante,
-                 telefono, correo, folio_numero_adicional, cantidad, estatus)
-            VALUES (?,?,?,?,?,?,?,?, 'En revisión')
-        ");
-        if ($stmtTA) {
-            $ta_fn = $ta_max + 1; // primer folio adicional para este lote
-            $stmtTA->bind_param("iissssii", $tramite_id, $ta_tipo_id,
-                $ta_prop, $ta_soli, $ta_tel, $ta_correo, $ta_fn, $ta_cantidad);
-            $stmtTA->execute();
-            $stmtTA->close();
+        for ($k = 0; $k < $ta_cantidad; $k++) {
+            $all_units[] = ['tipo_tramite_id' => $ta_tipo_id, 'propietario' => $ta_prop, 'solicitante' => $ta_soli, 'telefono' => $ta_tel, 'correo' => $ta_correo];
         }
     }
+
+    $first_tramite_id = null;
+    foreach ($all_units as $idx => $unit) {
+        $is_first = ($idx === 0);
+        $sql = "INSERT INTO tramites (folio_numero, folio_anio, tipo_tramite_id, propietario, direccion, localidad, colonia, cp, calle, entre_calle1, entre_calle2, lat, lng, fecha_ingreso, fecha_entrega, solicitante, telefono, correo, cuenta_catastral, superficie, ine_archivo, escrituras_archivo, predial_archivo, formato_constancia, datos_especificos, comentario_sin_doc, cantidad, usuario_creador_id, tramite_principal_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) throw new Exception("Error preparar INSERT unit: " . $conn->error);
+        $this_cantidad = $is_first ? $cantidad_principal : 1;
+        $this_principal = $is_first ? null : $first_tramite_id;
+        $bind_types = "iiissssssssddssssssssssssssii";
+        $stmt->bind_param($bind_types, $folio_numero, $folio_anio, $unit['tipo_tramite_id'], $unit['propietario'], $direccion, $localidad, $colonia, $cp, $calle, $entre_calle1, $entre_calle2, $lat, $lng, $fecha_ingreso, $fecha_entrega, $unit['solicitante'], $unit['telefono'], $unit['correo'], $cuenta_catastral, $superficie, $ine_archivo, $esc_archivo, $pre_archivo, $fmt_constancia, $datos_json, $comentario_sin_doc, $this_cantidad, $usuario_id, $this_principal);
+        if (!$stmt->execute()) throw new Exception("Error insert unit #".($idx+1).": ".$stmt->error);
+        $new_id = $stmt->insert_id;
+        $stmt->close();
+        if ($is_first) $first_tramite_id = $new_id;
+        if ($is_first) {
+            $hist = $conn->prepare("INSERT INTO historial_tramites (tramite_id, usuario_id, accion, estatus_nuevo, comentario) VALUES (?,?, 'Creado', 'En revisión', 'Trámite creado')");
+            if ($hist) { $hist->bind_param("ii", $new_id, $usuario_id); $hist->execute(); $hist->close(); }
+            $folioStr = str_pad($folio_numero, 3, "0", STR_PAD_LEFT) . "/" . $folio_anio;
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'desconocido';
+            $acc = $conn->prepare("INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, registro_id, detalles, ip_address, user_agent) VALUES (?, 'Creó trámite', 'tramites', ?, ?, ?, ?)");
+            if ($acc) { $det = "Folio: $folioStr (" . count($all_units) . " unidades)"; $acc->bind_param("iisss", $usuario_id, $new_id, $det, $ip, $ua); $acc->execute(); $acc->close(); }
+        }
+    }
+    $tramite_id = $first_tramite_id;
 
     $conn->commit();
 

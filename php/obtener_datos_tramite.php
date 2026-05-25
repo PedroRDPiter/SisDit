@@ -35,7 +35,8 @@ if (!preg_match('/^(\d+)\/(\d{4})$/', $folio, $matches)) {
 $folio_numero = (int) $matches[1];
 $folio_anio = (int) $matches[2];
 
-// Obtener datos actualizados del trámite
+// Obtener TODOS los trámites (principal + subtramites) que comparten el mismo folio
+// (después del refactor, los adicionales comparten el folio_numero/folio_anio exacto)
 $sql = "SELECT 
             t.id, t.folio_numero, t.folio_anio, t.estatus,
             t.propietario, t.direccion, t.localidad, t.telefono, t.correo,
@@ -45,10 +46,14 @@ $sql = "SELECT
             t.comentario_sin_doc, t.numero_asignado, t.tipo_asignacion,
             t.referencia_anterior, t.entre_calle1, t.entre_calle2, t.cuenta_catastral,
             t.manzana, t.lote, t.fecha_constancia,
-            t.tipo_tramite_id, tt.nombre AS tipo_tramite_nombre
+            t.tipo_tramite_id, tt.nombre AS tipo_tramite_nombre,
+            t.tramite_principal_id
         FROM tramites t
         LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-        WHERE t.folio_numero = ? AND t.folio_anio = ?";
+        WHERE t.folio_numero = ? AND t.folio_anio = ?
+        ORDER BY 
+            CASE WHEN t.tramite_principal_id IS NULL THEN 0 ELSE 1 END,
+            t.id ASC";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("ii", $folio_numero, $folio_anio);
@@ -60,9 +65,13 @@ if ($result->num_rows === 0) {
     exit;
 }
 
-$tramite = $result->fetch_assoc();
+$tramites = [];
+while ($row = $result->fetch_assoc()) {
+    $tramites[] = $row;
+}
 
 echo json_encode([
     'success' => true,
-    'tramite' => $tramite
+    'tramites' => $tramites,
+    'count' => count($tramites)
 ]);

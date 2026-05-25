@@ -718,9 +718,16 @@ window.onpopstate = function () {
                 <div class="mb-3">
                     <label class="form-label fw-bold">Tipo de Trámite</label>
                     <input type="hidden" name="tipo_tramite_id" id="tipo_tramite_id">
-                    <div class="form-control bg-light fw-semibold" style="color:#198754;">
-                        <i class="bi bi-check-circle-fill me-2 text-success"></i>
-                        <span id="label-tipo-tramite-form">—</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-control bg-light fw-semibold flex-grow-1" style="color:#198754; border:1px solid #82c9a0;">
+                            <i class="bi bi-check-circle-fill me-2 text-success"></i>
+                            <span id="label-tipo-tramite-form">—</span>
+                        </div>
+                        <div style="max-width:120px; flex-shrink:0;">
+                            <label class="form-label small fw-bold mb-0">Cantidad</label>
+                            <input type="number" class="form-control form-control-sm" name="cantidad" id="cantidad_input" value="1" min="1" max="50">
+                            <small class="text-muted" style="font-size:.7rem;">Cuántos trámites iguales</small>
+                        </div>
                     </div>
                 </div>
 
@@ -819,6 +826,131 @@ window.onpopstate = function () {
                         <small class="text-muted">Escriba aquí el motivo por el cual no se adjuntan todos los documentos requeridos.</small>
                     </div>
                 </section>
+
+                <div class="card border-primary mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-list-plus me-2"></i>Trámites Adicionales
+                        <span class="badge bg-light text-dark ms-2">Opcional — hasta 3</span>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small"><i class="bi bi-1-circle me-1"></i>Trámite adicional 1</label>
+                                <select id="ta1_select" class="form-select form-select-sm" onchange="mostrarCamposTA('ta1', this.value)">
+                                    <option value="">— Sin trámite adicional —</option>
+                                    <?php foreach($tiposPrev as $tp): ?>
+                                    <option value="<?= $tp['id'] ?>"><?= htmlspecialchars($tp['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small"><i class="bi bi-2-circle me-1"></i>Trámite adicional 2</label>
+                                <select id="ta2_select" class="form-select form-select-sm" onchange="mostrarCamposTA('ta2', this.value)">
+                                    <option value="">— Sin trámite adicional —</option>
+                                    <?php foreach($tiposPrev as $tp): ?>
+                                    <option value="<?= $tp['id'] ?>"><?= htmlspecialchars($tp['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small"><i class="bi bi-3-circle me-1"></i>Trámite adicional 3</label>
+                                <select id="ta3_select" class="form-select form-select-sm" onchange="mostrarCamposTA('ta3', this.value)">
+                                    <option value="">— Sin trámite adicional —</option>
+                                    <?php foreach($tiposPrev as $tp): ?>
+                                    <option value="<?= $tp['id'] ?>"><?= htmlspecialchars($tp['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="ta1_campos" class="ta-campos border rounded p-3 mb-2" style="display:none;">
+                            <h6 class="text-primary mb-2"><i class="bi bi-pencil-square me-1"></i>Datos — Trámite adicional 1</h6>
+                            <input type="hidden" name="ta1_tipo_tramite_id" id="ta1_tipo_tramite_id">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Cantidad</label>
+                                    <input type="number" class="form-control form-control-sm" name="ta1_cantidad" id="ta1_cantidad" value="1" min="1" max="50">
+                                    <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small">Nombre del Propietario</label>
+                                    <input type="text" class="form-control form-control-sm mayusculas" name="ta1_propietario" placeholder="Igual al principal o modificar">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Nombre del Solicitante</label>
+                                    <input type="text" class="form-control form-control-sm mayusculas" name="ta1_solicitante" placeholder="Igual al principal o modificar">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Teléfono</label>
+                                    <input type="text" class="form-control form-control-sm" name="ta1_telefono" maxlength="10" placeholder="4491234567" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Correo Electrónico (opcional)</label>
+                                    <input type="email" class="form-control form-control-sm" name="ta1_correo" placeholder="ejemplo@correo.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="ta2_campos" class="ta-campos border rounded p-3 mb-2" style="display:none;">
+                            <h6 class="text-primary mb-2"><i class="bi bi-pencil-square me-1"></i>Datos — Trámite adicional 2</h6>
+                            <input type="hidden" name="ta2_tipo_tramite_id" id="ta2_tipo_tramite_id">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Cantidad</label>
+                                    <input type="number" class="form-control form-control-sm" name="ta2_cantidad" id="ta2_cantidad" value="1" min="1" max="50">
+                                    <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small">Nombre del Propietario</label>
+                                    <input type="text" class="form-control form-control-sm mayusculas" name="ta2_propietario" placeholder="Igual al principal o modificar">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Nombre del Solicitante</label>
+                                    <input type="text" class="form-control form-control-sm mayusculas" name="ta2_solicitante" placeholder="Igual al principal o modificar">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Teléfono</label>
+                                    <input type="text" class="form-control form-control-sm" name="ta2_telefono" maxlength="10" placeholder="4491234567" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Correo Electrónico (opcional)</label>
+                                    <input type="email" class="form-control form-control-sm" name="ta2_correo" placeholder="ejemplo@correo.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="ta3_campos" class="ta-campos border rounded p-3 mb-2" style="display:none;">
+                            <h6 class="text-primary mb-2"><i class="bi bi-pencil-square me-1"></i>Datos — Trámite adicional 3</h6>
+                            <input type="hidden" name="ta3_tipo_tramite_id" id="ta3_tipo_tramite_id">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Cantidad</label>
+                                    <input type="number" class="form-control form-control-sm" name="ta3_cantidad" id="ta3_cantidad" value="1" min="1" max="50">
+                                    <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small">Nombre del Propietario</label>
+                                    <input type="text" class="form-control form-control-sm mayusculas" name="ta3_propietario" placeholder="Igual al principal o modificar">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Nombre del Solicitante</label>
+                                    <input type="text" class="form-control form-control-sm mayusculas" name="ta3_solicitante" placeholder="Igual al principal o modificar">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Teléfono</label>
+                                    <input type="text" class="form-control form-control-sm" name="ta3_telefono" maxlength="10" placeholder="4491234567" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Correo Electrónico (opcional)</label>
+                                    <input type="email" class="form-control form-control-sm" name="ta3_correo" placeholder="ejemplo@correo.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Si un trámite adicional tiene los mismos datos que el trámite principal, puede dejarlos vacíos y se heredarán automáticamente.</small>
+                    </div>
+                </div>
 
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -1302,6 +1434,18 @@ function volverSeleccion() {
     document.getElementById('paso2-formulario').style.display = 'none';
     document.getElementById('paso1-seleccion').style.display = 'block';
     document.getElementById('tramite').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function mostrarCamposTA(indice, tipoId) {
+    var panel = document.getElementById(indice + '_campos');
+    var hidden = document.getElementById(indice + '_tipo_tramite_id');
+    if (tipoId) {
+        panel.style.display = 'block';
+        hidden.value = tipoId;
+    } else {
+        panel.style.display = 'none';
+        hidden.value = '';
+    }
 }
 
 function actualizarRequisitos(tramiteId) {
