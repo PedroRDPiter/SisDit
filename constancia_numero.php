@@ -63,9 +63,9 @@ if (empty($t['folio_salida_numero'])) {
     $stmtSal = $conn->prepare(
         "SELECT COALESCE(MAX(folio_salida_numero), 0) + 1 AS siguiente
          FROM tramites
-         WHERE folio_salida_anio = ? AND folio_salida_numero IS NOT NULL"
+         WHERE folio_salida_anio = ? AND tipo_tramite_id = ? AND folio_salida_numero IS NOT NULL"
     );
-    $stmtSal->bind_param("i", $anio_salida);
+    $stmtSal->bind_param("ii", $anio_salida, $t['tipo_tramite_id']);
     $stmtSal->execute();
     $rowSal = $stmtSal->get_result()->fetch_assoc();
     $stmtSal->close();
@@ -73,7 +73,7 @@ if (empty($t['folio_salida_numero'])) {
 
     // Guardar en la base de datos
     $stmtUpd = $conn->prepare(
-        "UPDATE tramites SET folio_salida_numero = ?, folio_salida_anio = ? WHERE id = ?"
+        "UPDATE tramites SET folio_salida_numero = ?, folio_salida_anio = ?, tiempo_salida = COALESCE(tiempo_salida, NOW()) WHERE id = ?"
     );
     $stmtUpd->bind_param("iii", $nuevo_salida, $anio_salida, $t['id']);
     $stmtUpd->execute();

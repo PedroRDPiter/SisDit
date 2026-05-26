@@ -55,6 +55,48 @@ if (!$tramite) {
     exit;
 }
 
+// Obtener trámites adicionales (hijos) en la misma tabla via tramite_principal_id
+$tas = [];
+$resTA = $conn->prepare("
+    SELECT t.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
+    FROM tramites t
+    LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
+    WHERE t.tramite_principal_id = ?
+    ORDER BY t.id ASC
+");
+if ($resTA) {
+    $resTA->bind_param("i", $tramite['id']);
+    $resTA->execute();
+    $resultTA = $resTA->get_result();
+    while ($rowTA = $resultTA->fetch_assoc()) $tas[] = $rowTA;
+    $resTA->close();
+}
+
+// Agrupar TODOS los trámites del grupo (principal + hijos) por tipo_tramite_id
+// Esto evita mostrar "MismoTipo (9) + MismoTipo (10)" cuando son del mismo tipo
+$tipos_agrupados = [];
+
+// Principal
+$principal_tid = (int)($tramite['tipo_tramite_id'] ?? 0);
+if ($principal_tid) {
+    $tipos_agrupados[$principal_tid] = [
+        'tipo_tramite_nombre' => $tramite['tipo_tramite_nombre'] ?? 'Sin tipo',
+        'cantidad_total'      => (int)($tramite['cantidad'] ?? 1),
+    ];
+}
+
+// Hijos (subtramites)
+foreach ($tas as $ta) {
+    $tid = (int)$ta['tipo_tramite_id'];
+    if (!isset($tipos_agrupados[$tid])) {
+        $tipos_agrupados[$tid] = [
+            'tipo_tramite_nombre' => $ta['tipo_tramite_nombre'] ?? 'Sin tipo',
+            'cantidad_total'      => 0,
+        ];
+    }
+    $tipos_agrupados[$tid]['cantidad_total'] += (int)($ta['cantidad'] ?? 1);
+}
+
 // Obtener config del municipio
 $config = [];
 $config_result = $conn->query("SELECT clave, valor FROM configuracion_sistema");
@@ -355,6 +397,16 @@ $conn->close();
         text-transform: uppercase;
     }
 
+    /* --- adicionales "dentro" de tipo-tramite-value --- */
+    .ta-separador {
+        font-weight: 500;
+        margin-left: 4px;
+    }
+    .ta-count {
+        font-weight: 600;
+        font-size: 0.85em;
+    }
+
     /* --- FECHAS --- */
     .fechas-row {
         display: flex;
@@ -503,6 +555,11 @@ $conn->close();
             padding: 3px 8px;
         }
 
+        .ta-value {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+
         .fechas-row {
             margin: 3px 0;
         }
@@ -626,12 +683,33 @@ $conn->close();
                 <span style="flex:2;">Coordenadas</span>
             </div>
 
-            <!-- TIPO DE TRAMITE -->
+            <!-- TIPO DE TRAMITE (agrupado correctamente, mismo tipo se suma) -->
             <div class="tipo-tramite-section">
                 <div class="tipo-tramite-label">Tipo de Tramite:</div>
                 <div class="tipo-tramite-value">
-                    <?= htmlspecialchars($tramite['tipo_tramite_nombre'] ?? 'Sin tipo') ?>
-                    <!-- <?= htmlspecialchars($tramite['folio_numero']) ?>-->
+                    <?php
+                    $first = true;
+                    foreach ($tipos_agrupados as $tid => $g):
+                        if ($first):
+                    ?>
+                        <strong><?= htmlspecialchars($g['tipo_tramite_nombre']) ?></strong>
+                        <?php if ($g['cantidad_total'] > 1): ?>
+                            <span class="ta-count">(<?= $g['cantidad_total'] ?>)</span>
+                        <?php endif; ?>
+                    <?php
+                            $first = false;
+                        else:
+                    ?>
+                        <span class="ta-separador">
+                            + <strong><?= htmlspecialchars($g['tipo_tramite_nombre']) ?></strong>
+                            <?php if ($g['cantidad_total'] > 1): ?>
+                                <span class="ta-count">(<?= $g['cantidad_total'] ?>)</span>
+                            <?php endif; ?>
+                        </span>
+                    <?php
+                        endif;
+                    endforeach;
+                    ?>
                 </div>
             </div>
 

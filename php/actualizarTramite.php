@@ -271,6 +271,10 @@ try {
             aprobado_por       = ?,
             verificador_nombre = ?,
             fecha_aprobacion   = NOW()";
+    if (in_array($estatus, ['Aprobado', 'Rechazado'])) {
+        $sql .= ",
+            tiempo_salida      = NOW()";
+    }
 
     $params = [
         $estatus, $observaciones, $foto1_archivo, $foto2_archivo,
