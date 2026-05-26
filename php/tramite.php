@@ -232,7 +232,11 @@ try {
                 $calle, $entre_calle1, $entre_calle2, $lat, $lng, $fecha_ingreso, $fecha_entrega,
                 $ta_soli, $ta_tel, $ta_correo, $cuenta_catastral, $superficie,
                 $ine_archivo, $esc_archivo, $pre_archivo, $fmt_constancia,
+<<<<<<< HEAD
                 $datos_json, $comentario_sin_doc, $ta_cantidad, $usuario_id, $first_tramite_id
+=======
+                $datos_json, $comentario_sin_doc, 1, $usuario_id, $first_tramite_id
+>>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
             );
 
             if (!$stmt2->execute()) throw new Exception("Error insert adicional: " . $stmt2->error);

@@ -10798,7 +10798,11 @@
                 "UBICACION": "ALDAMA Y MOTOLINIA",
                 "FECH_INGRE": "2026-05-20",
                 "FECH_ENTRE": "2026-06-03",
+<<<<<<< HEAD
                 "ESTATUS": "Aprobado por Verificador",
+=======
+                "ESTATUS": "Nuevo",
+>>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
                 "CONTACTO": "4651050828",
                 "NUMERO": null
             },
@@ -10809,6 +10813,7 @@
                     775795.67
                 ]
             }
+<<<<<<< HEAD
         },
         {
             "type": "Feature",
@@ -10872,6 +10877,8 @@
                     776367.75
                 ]
             }
+=======
+>>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
         }
     ]
 }
