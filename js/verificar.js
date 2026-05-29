@@ -142,16 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('c_direccion').textContent  = btn.dataset.direccion;
       document.getElementById('c_localidad').textContent  = btn.dataset.localidad;
 
-      // Datos de la constancia (si ya tiene info guardada, se pre-llena)
-      document.getElementById('c_numero_asignado').value     = (btn.dataset.numeroAsignado || '').toUpperCase();
-      document.getElementById('c_tipo_asignacion').value     = (btn.dataset.tipoAsignacion || 'ASIGNACION').toUpperCase();
-      document.getElementById('c_referencia_anterior').value = (btn.dataset.referenciaAnterior || '').toUpperCase();
-      document.getElementById('c_entre_calle1').value        = (btn.dataset.entreCalle1 || '').toUpperCase();
-      document.getElementById('c_entre_calle2').value        = (btn.dataset.entreCalle2 || '').toUpperCase();
-      document.getElementById('c_cuenta_catastral').value    = btn.dataset.cuentaCatastral || '';
-      document.getElementById('c_manzana').value             = (btn.dataset.manzana || '').toUpperCase();
-      document.getElementById('c_lote').value                = (btn.dataset.lote || '').toUpperCase();
-      document.getElementById('c_fecha_constancia').value    = btn.dataset.fechaConstancia || new Date().toISOString().split('T')[0];
+       // Datos de la constancia (si ya tiene info guardada, se pre-llena)
+       document.getElementById('c_numero_asignado').value     = (btn.dataset.numeroAsignado || '').toUpperCase();
+       document.getElementById('c_tipo_asignacion').value     = (btn.dataset.tipoAsignacion || 'ASIGNACION').toUpperCase();
+       document.getElementById('c_referencia_anterior').value = (btn.dataset.referenciaAnterior || '').toUpperCase();
+       document.getElementById('c_entre_calle1').value        = (btn.dataset.entreCalle1 || '').toUpperCase();
+       document.getElementById('c_entre_calle2').value        = (btn.dataset.entreCalle2 || '').toUpperCase();
+       document.getElementById('c_cuenta_catastral').value    = btn.dataset.cuentaCatastral || '';
+       document.getElementById('c_manzana').value             = (btn.dataset.manzana || '').toUpperCase();
+       document.getElementById('c_lote').value                = (btn.dataset.lote || '').toUpperCase();
+       document.getElementById('c_fecha_constancia').value    = btn.dataset.fechaConstancia || new Date().toISOString().split('T')[0];
+       document.getElementById('c_cantidad').value            = btn.dataset.cantidad || 1;
 
       // Estado del croquis
       const croquis = btn.dataset.croquis || '';

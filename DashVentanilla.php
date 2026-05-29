@@ -160,6 +160,25 @@ function mostrarCamposTA(indice, tipoId) {
   if (tipoId) {
     panel.style.display = 'block';
     hidden.value = tipoId;
+    
+    // Si el tipo adicional es el mismo que el principal, auto-rellenar con sus datos
+    const tipoTramiteId = document.getElementById('tipo_tramite_id_hidden')?.value;
+    if (tipoId === tipoTramiteId) {
+      const propietario = document.querySelector('input[name="propietario"]')?.value || '';
+      const solicitante = document.querySelector('input[name="solicitante"]')?.value || '';
+      const telefono = document.querySelector('input[name="telefono"]')?.value || '';
+      const correo = document.querySelector('input[name="correo"]')?.value || '';
+      
+      const taPropInput = document.querySelector('input[name="' + indice + '_propietario"]');
+      const taSoliInput = document.querySelector('input[name="' + indice + '_solicitante"]');
+      const taTelInput = document.querySelector('input[name="' + indice + '_telefono"]');
+      const taCorreoInput = document.querySelector('input[name="' + indice + '_correo"]');
+      
+      if (taPropInput && !taPropInput.value) taPropInput.value = propietario;
+      if (taSoliInput && !taSoliInput.value) taSoliInput.value = solicitante;
+      if (taTelInput && !taTelInput.value) taTelInput.value = telefono;
+      if (taCorreoInput && !taCorreoInput.value) taCorreoInput.value = correo;
+    }
   } else {
     panel.style.display = 'none';
     hidden.value = '';
@@ -1038,20 +1057,12 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                 <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
               </div>
               <div class="col-md-5">
-                <label class="form-label small">Nombre del Propietario</label>
-<<<<<<< HEAD
+<label class="form-label small">Nombre del Propietario</label>
                 <input type="text" class="form-control form-control-sm mayusculas" name="ta1_propietario" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
               </div>
               <div class="col-md-4">
                 <label class="form-label small">Nombre del Solicitante</label>
                 <input type="text" class="form-control form-control-sm mayusculas" name="ta1_solicitante" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-=======
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta1_propietario" placeholder="Igual al principal o modificar">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Nombre del Solicitante</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta1_solicitante" placeholder="Igual al principal o modificar">
->>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
               </div>
               <div class="col-md-4">
                 <label class="form-label small">Teléfono</label>
@@ -1074,20 +1085,12 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                 <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
               </div>
               <div class="col-md-5">
-                <label class="form-label small">Nombre del Propietario</label>
-<<<<<<< HEAD
+<label class="form-label small">Nombre del Propietario</label>
                 <input type="text" class="form-control form-control-sm mayusculas" name="ta2_propietario" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
               </div>
               <div class="col-md-4">
                 <label class="form-label small">Nombre del Solicitante</label>
                 <input type="text" class="form-control form-control-sm mayusculas" name="ta2_solicitante" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-=======
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta2_propietario" placeholder="Igual al principal o modificar">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Nombre del Solicitante</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta2_solicitante" placeholder="Igual al principal o modificar">
->>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
               </div>
               <div class="col-md-4">
                 <label class="form-label small">Teléfono</label>
@@ -1110,20 +1113,12 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                 <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
               </div>
               <div class="col-md-5">
-                <label class="form-label small">Nombre del Propietario</label>
-<<<<<<< HEAD
+<label class="form-label small">Nombre del Propietario</label>
                 <input type="text" class="form-control form-control-sm mayusculas" name="ta3_propietario" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
               </div>
               <div class="col-md-4">
                 <label class="form-label small">Nombre del Solicitante</label>
                 <input type="text" class="form-control form-control-sm mayusculas" name="ta3_solicitante" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-=======
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta3_propietario" placeholder="Igual al principal o modificar">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Nombre del Solicitante</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta3_solicitante" placeholder="Igual al principal o modificar">
->>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
               </div>
               <div class="col-md-4">
                 <label class="form-label small">Teléfono</label>
@@ -1962,5 +1957,5 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 <script src="js/dashVentanilla.js"></script>
 
-
-</script>
+</body>
+</html>

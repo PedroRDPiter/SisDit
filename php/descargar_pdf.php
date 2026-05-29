@@ -1,13 +1,5 @@
 <?php
-// =====================================================
-// DESCARGAR PDF DE DOCUMENTO
-// Sirve el archivo PDF como descarga forzada (Content-Disposition: attachment)
-// =====================================================
-/**
- * DESCARGA DE PDFs
- * Archivo: php/descargar_pdf.php
- * Descripción: Endpoint para descargar PDFs de trámites
- */
+
 
 require_once "funciones_pdf.php";
 require_once "funciones_seguridad.php";

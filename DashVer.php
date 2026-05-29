@@ -567,9 +567,10 @@ window.onpopstate = function () {
                     data-fecha-constancia="<?= $t['fecha_constancia'] ?? date('Y-m-d') ?>"
                     data-cuenta-catastral="<?= htmlspecialchars($t['cuenta_catastral'] ?? '') ?>"
                     data-superficie="<?= htmlspecialchars($t['superficie'] ?? '') ?>"
-                    data-croquis="<?= htmlspecialchars(isset($t['croquis_archivo']) && !empty($t['croquis_archivo']) ? (strpos($t['croquis_archivo'], '.') === 0 ? $t['croquis_archivo'] : 'uploads/' . $t['croquis_archivo']) : '') ?>"
-                    title="Generar Constancia de Numero Oficial"
-                >
+                     data-croquis="<?= htmlspecialchars(isset($t['croquis_archivo']) && !empty($t['croquis_archivo']) ? (strpos($t['croquis_archivo'], '.') === 0 ? $t['croquis_archivo'] : 'uploads/' . $t['croquis_archivo']) : '') ?>"
+                     data-cantidad="<?= (int)($t['cantidad'] ?? 1) ?>"
+                     title="Generar Constancia de Numero Oficial"
+                 >
                     <i class="bi bi-file-earmark-check"></i> Constancia
                 </button>
                 <?php endif; ?>
@@ -1106,13 +1107,19 @@ window.onpopstate = function () {
                          title="Solo letras, numeros, espacios y guiones">
                 </div>
 
-                <!-- Fecha de constancia -->
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">Fecha de Expedición <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" name="fecha_constancia" id="c_fecha_constancia"
-                         value="<?= date('Y-m-d') ?>" required>
-                </div>
-                  
+                 <!-- Fecha de constancia -->
+                 <div class="col-md-6">
+                   <label class="form-label fw-bold">Fecha de Expedición <span class="text-danger">*</span></label>
+                   <input type="date" class="form-control" name="fecha_constancia" id="c_fecha_constancia"
+                          value="<?= date('Y-m-d') ?>" required>
+                 </div>
+                 <!-- Cantidad -->
+                 <div class="col-md-6">
+                   <label class="form-label fw-bold">Cantidad <span class="text-danger">*</span></label>
+                   <input type="number" class="form-control" name="cantidad" id="c_cantidad"
+                          min="1" value="1" required>
+                 </div>
+                   
               </div>
             </div>
           </div>

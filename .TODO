@@ -1,9 +1,11 @@
-<<<<<<< HEAD
-07000990010538000
-07001030072004000
-07001010026018000
-07001030010017000
+IMPLEMENTADO:
+- Agregado campo cantidad al formulario de constancia de numero oficial en DashVer.php
+- Modificado verificar.js para pasar el valor de cantidad al modal de constancia
+- Modificado php\actualizarTramite.php para manejar el campo cantidad en modo solo_constancia
+- Modificado php\actualizarTramite.php para crear/eliminar registros en tramites_adicionales cuando cambia la cantidad
+- Modificado php\actualizarTramite.php para crear registros en tramites_adicionales cuando se aprueba un tramite (estatus Aprobado)
+- Creado php\eliminar_adicional.php para eliminar un registro adicional y actualizar la cantidad del registro principal
+- La eliminación en cascada de registros adicionales al eliminar un registro principal ya está manejada por la constraint de clave foranea ON DELETE CASCADE
 
-=======
-si
->>>>>>> 44bebf2e4257af291fcef76c2e044e2f9e46ad41
+PENDIENTE:
+- Agregar interfaz de usuario en el modal de constancia para ver y eliminar registros individuales de tramites_adicionales (requiere modificaciones en verificar.js y DashVer.php)

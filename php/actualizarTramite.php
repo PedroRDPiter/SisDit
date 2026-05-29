@@ -3,7 +3,7 @@
 // ACTUALIZAR ESTATUS DE TRÁMITE
 // Llamado via fetch() POST desde js/verificar.js
 // Permite cambiar estatus, subir fotos y guardar datos de constancia
-// =====================================================
+// ======================= ==============================
 /**
  * ACTUALIZACIÓN DE TRÁMITES — v3
  * Ruta: php/actualizarTramite.php
@@ -72,6 +72,7 @@ $superficie          = trim(isset($_POST['superficie_constancia']) ? $_POST['sup
 $manzana             = trim(isset($_POST['manzana']) ? $_POST['manzana'] : '');
 $lote                = trim(isset($_POST['lote']) ? $_POST['lote'] : '');
 $fecha_constancia    = trim(isset($_POST['fecha_constancia']) ? $_POST['fecha_constancia'] : date('Y-m-d'));
+$cantidad            = isset($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
 
 // Si es solo constancia, solo necesitamos el folio y los datos de constancia
 if ($solo_constancia) {
@@ -135,52 +136,131 @@ try {
     $estatus_anterior = $tramite['estatus'];
     $stmtGet->close();
 
-    // ── MODO SOLO CONSTANCIA ───────────────────────────────
-    if ($solo_constancia) {
-        $uid = (int) $_SESSION['id'];
+     // ── MODO SOLO CONSTANCIA ───────────────────────────────
+     if ($solo_constancia) {
+         $uid = (int) $_SESSION['id'];
 
-        $sql = "UPDATE tramites SET
-                direccion = ?,
-                colonia              = ?,
-                numero_asignado     = ?,
-                tipo_asignacion     = ?,
-                referencia_anterior = ?,
-                entre_calle1        = ?,
-                entre_calle2        = ?,
-                cuenta_catastral    = ?,
-                superficie          = ?,
-                manzana             = ?,
-                lote                = ?,
-                fecha_constancia    = ?
-                WHERE folio_numero = ? AND folio_anio = ?";
+         // Get current cantidad from database
+         $stmtCurrent = $conn->prepare("SELECT cantidad FROM tramites WHERE folio_numero = ? AND folio_anio = ?");
+         $stmtCurrent->bind_param("ii", $folio_numero, $folio_anio);
+         $stmtCurrent->execute();
+         $resultCurrent = $stmtCurrent->get_result();
+         $rowCurrent = $resultCurrent->fetch_assoc();
+         $current_cantidad = $rowCurrent['cantidad'] ?? 1;
+         $stmtCurrent->close();
+
+         $sql = "UPDATE tramites SET
+                 direccion = ?,
+                 colonia              = ?,
+                 numero_asignado     = ?,
+                 tipo_asignacion     = ?,
+                 referencia_anterior = ?,
+                 entre_calle1        = ?,
+                 entre_calle2        = ?,
+                 cuenta_catastral    = ?,
+                 superficie          = ?,
+                 manzana             = ?,
+                 lote                = ?,
+                 fecha_constancia    = ?,
+                 cantidad            = ?
+                 WHERE folio_numero = ? AND folio_anio = ?";
 
         $stmtUp = $conn->prepare($sql);
         if (!$stmtUp) throw new Exception("Error prepare UPDATE: " . $conn->error);
 
-        $stmtUp->bind_param("ssssssssssssii",
-            $direccion_constancia,
-            $colonia,
-            $numero_asignado,
-            $tipo_asignacion,
-            $referencia_anterior,
-            $entre_calle1,
-            $entre_calle2,
-            $cuenta_catastral_c,
-            $superficie,
-            $manzana,
-            $lote,
-            $fecha_constancia,
-            $folio_numero,
-            $folio_anio
-        );
+         $stmtUp->bind_param("sssssssssssssii",
+             $direccion_constancia,
+             $colonia,
+             $numero_asignado,
+             $tipo_asignacion,
+             $referencia_anterior,
+             $entre_calle1,
+             $entre_calle2,
+             $cuenta_catastral_c,
+             $superficie,
+             $manzana,
+             $lote,
+             $fecha_constancia,
+             $cantidad,
+             $folio_numero,
+             $folio_anio
+         );
 
-        if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
-        $stmtUp->close();
+         if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
+         $stmtUp->close();
 
-        // Log
-        $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'desconocida';
-        $ua  = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'desconocido';
-        $det = "Folio: $folio | Datos constancia actualizados | Numero: $numero_asignado";
+         // -- CREAR/ELIMINAR REGISTROS ADICIONALES SEGÚN CANTIDAD --
+         if ($cantidad != $current_cantidad) {
+             if ($cantidad > $current_cantidad) {
+                 // Crear registros adicionales
+                 $additionalCount = $cantidad - $current_cantidad;
+                 for ($i = 0; $i < $additionalCount; $i++) {
+                     $sqlInsertAdicional = "INSERT INTO tramites_adicionales (
+                         tramite_principal_id, tipo_tramite_id, propietario, solicitante, telefono, correo,
+                         folio_numero_adicional, cantidad, estatus
+                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     
+                     $stmtInsertAdicional = $conn->prepare($sqlInsertAdicional);
+                     if (!$stmtInsertAdicional) {
+                         throw new Exception("Error preparar INSERT adicional: " . $conn->error);
+                     }
+                     
+                     // Get the folio number for this additional constancia
+                     // We'll use a sequential number for folio_numero_adicional
+                     $stmtFolio = $conn->prepare("SELECT COALESCE(MAX(folio_numero_adicional), 0) + 1 AS siguiente
+                                                  FROM tramites_adicionales
+                                                  WHERE tramite_principal_id = ?");
+                     $stmtFolio->bind_param("i", $tramite_id);
+                     $stmtFolio->execute();
+                     $resultFolio = $stmtFolio->get_result();
+                     $rowFolio = $resultFolio->fetch_assoc();
+                     $folioAdicional = $rowFolio['siguiente'] ?? 1;
+                     $stmtFolio->close();
+                     
+                      // Prepare correo value to avoid "Only variables should be passed by reference" error
+                      $correo = $tramite['correo'] ?? '';
+                      $estatusAdicional = 'En revisión';
+
+                      $stmtInsertAdicional->bind_param("iisssissi",
+                          $tramite_id,
+                          $tramite['tipo_tramite_id'],
+                          $tramite['propietario'],
+                          $tramite['solicitante'],
+                          $tramite['telefono'],
+                          $correo,
+                          $folioAdicional,
+                          $cantidad, // Store the original requested quantity in each adicional
+                          $estatusAdicional // Initial status
+                      );
+                     
+                     if (!$stmtInsertAdicional->execute()) {
+                         throw new Exception("Error INSERT adicional: " . $stmtInsertAdicional->error);
+                     }
+                     $stmtInsertAdicional->close();
+                 }
+             } else {
+                 // Eliminar registros adicionales (eliminar los más recientes primero)
+                 $deleteCount = $current_cantidad - $cantidad;
+                 $sqlDeleteAdicional = "DELETE FROM tramites_adicionales
+                                        WHERE tramite_principal_id = ?
+                                        ORDER BY id DESC
+                                        LIMIT ?";
+                 $stmtDeleteAdicional = $conn->prepare($sqlDeleteAdicional);
+                 if (!$stmtDeleteAdicional) {
+                     throw new Exception("Error preparar DELETE adicional: " . $conn->error);
+                 }
+                 $stmtDeleteAdicional->bind_param("ii", $tramite_id, $deleteCount);
+                 if (!$stmtDeleteAdicional->execute()) {
+                     throw new Exception("Error DELETE adicional: " . $stmtDeleteAdicional->error);
+                 }
+                 $stmtDeleteAdicional->close();
+             }
+         }
+
+         // Log
+         $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'desconocida';
+         $ua  = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'desconocido';
+         $det = "Folio: $folio | Datos constancia actualizados | Numero: $numero_asignado | Cantidad: $cantidad";
         $stmtL = $conn->prepare("
             INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, registro_id, detalles, ip_address, user_agent)
             VALUES (?, 'Actualizo datos constancia', 'tramites', ?, ?, ?, ?)
@@ -319,9 +399,69 @@ try {
 
     $stmtUp->bind_param($types, ...$params);
     if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
-    $stmtUp->close();
+     $stmtUp->close();
 
-    // 🔥 ASIGNAR FOLIO DE SALIDA solo cuando el Director firma (estatus Aprobado)
+     // -- CREAR REGISTROS ADICIONALES CUANDO SE APRUEBA Y SE ASIGNA NÚMERO --
+     if ($estatus === 'Aprobado' && !empty($numero_asignado)) {
+         // Get current cantidad from database to see if we need to create adicionales
+         $stmtCurrent = $conn->prepare("SELECT cantidad FROM tramites WHERE folio_numero = ? AND folio_anio = ?");
+         $stmtCurrent->bind_param("ii", $folio_numero, $folio_anio);
+         $stmtCurrent->execute();
+         $resultCurrent = $stmtCurrent->get_result();
+         $rowCurrent = $resultCurrent->fetch_assoc();
+         $current_cantidad = $rowCurrent['cantidad'] ?? 1;
+         $stmtCurrent->close();
+
+         // If cantidad is greater than 1, we need to create additional records
+         if ($cantidad > 1 && $current_cantidad < $cantidad) {
+             $additionalCount = $cantidad - $current_cantidad;
+             for ($i = 0; $i < $additionalCount; $i++) {
+                 $sqlInsertAdicional = "INSERT INTO tramites_adicionales (
+                     tramite_principal_id, tipo_tramite_id, propietario, solicitante, telefono, correo,
+                     folio_numero_adicional, cantidad, estatus
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                 
+                 $stmtInsertAdicional = $conn->prepare($sqlInsertAdicional);
+                 if (!$stmtInsertAdicional) {
+                     throw new Exception("Error preparar INSERT adicional: " . $conn->error);
+                 }
+                 
+                 // Get the folio number for this additional constancia
+                 $stmtFolio = $conn->prepare("SELECT COALESCE(MAX(folio_numero_adicional), 0) + 1 AS siguiente
+                                              FROM tramites_adicionales
+                                              WHERE tramite_principal_id = ?");
+                 $stmtFolio->bind_param("i", $tramite_id);
+                 $stmtFolio->execute();
+                 $resultFolio = $stmtFolio->get_result();
+                 $rowFolio = $resultFolio->fetch_assoc();
+                 $folioAdicional = $rowFolio['siguiente'] ?? 1;
+                 $stmtFolio->close();
+                  
+                   // Prepare correo value to avoid "Only variables should be passed by reference" error
+                   $correo = $tramite['correo'] ?? '';
+                   $estatusAdicional = 'En revisión';
+
+                   $stmtInsertAdicional->bind_param("iisssissi",
+                       $tramite_id,
+                       $tramite['tipo_tramite_id'],
+                       $tramite['propietario'],
+                       $tramite['solicitante'],
+                       $tramite['telefono'],
+                       $correo,
+                       $folioAdicional,
+                       $cantidad, // Store the original requested quantity in each adicional
+                       $estatusAdicional // Initial status
+                   );
+                 
+                 if (!$stmtInsertAdicional->execute()) {
+                     throw new Exception("Error INSERT adicional: " . $stmtInsertAdicional->error);
+                 }
+                 $stmtInsertAdicional->close();
+             }
+         }
+     }
+
+     // 🔥 ASIGNAR FOLIO DE SALIDA solo cuando el Director firma (estatus Aprobado)
     if ($estatus === 'Aprobado') {
         $anio_actual = date('Y');
         

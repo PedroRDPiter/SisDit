@@ -34,23 +34,30 @@ if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
 }
 $folio_numero = (int)$m[1];
 $folio_anio   = (int)$m[2];
-$folio_formatted = str_replace('/', '_', $folio);
 
-// Obtener croquis actual para eliminarlo si existe
-$stmt = $conn->prepare("SELECT croquis_archivo FROM tramites WHERE folio_numero=? AND folio_anio=?");
+// Obtener croquis actual y el ID del trámite para organizarlo por ID en lugar de folio
+$stmt = $conn->prepare("SELECT id, croquis_archivo FROM tramites WHERE folio_numero=? AND folio_anio=?");
 $stmt->bind_param("ii", $folio_numero, $folio_anio);
 $stmt->execute();
 $result = $stmt->get_result();
-$current_croquis = $result->fetch_assoc()['croquis_archivo'] ?? '';
+$tramite_data = $result->fetch_assoc();
 $stmt->close();
 
-// Si hay croquis anterior, eliminar el archivo
-if (!empty($current_croquis)) {
-    $old_path = "../" . $current_croquis;
-    if (file_exists($old_path)) {
-        unlink($old_path);
-    }
+$tramite_id = $tramite_data['id'] ?? 0;
+$current_croquis = $tramite_data['croquis_archivo'] ?? '';
+
+if ($tramite_id === 0) {
+    echo json_encode(array('success'=>false,'message'=>'Tramite no encontrado'));
+    exit;
 }
+
+// NOTA: Ya no eliminamos el croquis anterior para mantener historial de versiones
+// if (!empty($current_croquis)) {
+//     $old_path = "../" . $current_croquis;
+//     if (file_exists($old_path)) {
+//         unlink($old_path);
+//     }
+// }
 
 // Verificar que venga archivo
 if (!isset($_FILES['croquis']) || $_FILES['croquis']['error'] !== UPLOAD_ERR_OK) {
@@ -68,11 +75,27 @@ if ($_FILES['croquis']['size'] > 10485760) { // 10MB
     exit;
 }
 
-$carpeta = "../.private/{$folio_formatted}/croquis/";
+// Usar el ID del trámite para organizar los archivos en lugar del folio
+$carpeta = "../.private/{$tramite_id}/croquis/";
 if (!is_dir($carpeta)) mkdir($carpeta, 0755, true);
 
-$nombre = 'croquis_' . uniqid() . '_' . time() . '.' . $ext;
-$relative_path = ".private/{$folio_formatted}/croquis/{$nombre}";
+// Encontrar el siguiente número disponible para evitar conflictos
+$max_num = 0;
+if ($handle = opendir($carpeta)) {
+    while (false !== ($entry = readdir($handle))) {
+        if (preg_match('/^croquis_(\d+)\.' . preg_quote($ext, '/') . '$/i', $entry, $matches)) {
+            $num = (int)$matches[1];
+            if ($num > $max_num) {
+                $max_num = $num;
+            }
+        }
+    }
+    closedir($handle);
+}
+$next_num = $max_num + 1;
+
+$nombre = 'croquis_' . $next_num . '.' . $ext;
+$relative_path = ".private/{$tramite_id}/croquis/{$nombre}";
 if (!move_uploaded_file($_FILES['croquis']['tmp_name'], "../" . $relative_path)) {
     echo json_encode(array('success'=>false,'message'=>'Error al guardar la imagen'));
     exit;
@@ -90,7 +113,7 @@ $stmt->close();
 // Log
 $uid = (int)$_SESSION['id'];
 $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-$det = "Croquis cargado para folio: $folio | Archivo: $relative_path";
+$det = "Croquis cargado para folio: $folio (ID: $tramite_id) | Archivo: $relative_path";
 $log = $conn->prepare("INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, detalles, ip_address) VALUES (?, 'Croquis constancia', 'tramites', ?, ?)");
 $log->bind_param("iss", $uid, $det, $ip);
 $log->execute();
