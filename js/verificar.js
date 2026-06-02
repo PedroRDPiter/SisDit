@@ -136,6 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.btn-generar-constancia').forEach(btn => {
     btn.addEventListener('click', () => {
       // Datos del trámite
+      const cId = document.getElementById('c_id');
+      if (cId) cId.value = btn.dataset.id || '';
       document.getElementById('c_folio').textContent     = btn.dataset.folio;
       document.getElementById('c_folio_hidden').value    = btn.dataset.folio;
       document.getElementById('c_propietario').textContent = btn.dataset.propietario;
@@ -351,6 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Un pequeño delay para que Bootstrap limpie el backdrop correctamente
             setTimeout(function() {
+              const cId = document.getElementById('c_id');
+              if (cId) cId.value = btn.dataset.id || '';
               document.getElementById('c_folio').textContent           = btn.dataset.folio;
               document.getElementById('c_folio_hidden').value          = btn.dataset.folio;
               document.getElementById('c_propietario').textContent     = btn.dataset.propietario;
@@ -591,14 +595,16 @@ document.getElementById('formConstancia')?.addEventListener('submit', function(e
 // Botón "Solo imprimir" — requiere que el croquis ya esté guardado
 document.getElementById('btnSoloImprimir')?.addEventListener('click', function() {
   const folio = document.getElementById('c_folio_hidden')?.value || '';
-  if (!folio) return;
+  const idSub = document.getElementById('c_id')?.value || '';
+  if (!folio && !idSub) return;
 
   if (!_ver_croquis_ok) {
     Swal.fire({ icon: 'warning', title: 'Croquis requerido', text: 'Debes guardar la imagen del croquis antes de imprimir.', confirmButtonColor: '#7b0f2b' });
     return;
   }
 
-  window.open(`constancia_numero.php?folio=${folio}`, '_blank');
+  const url = idSub ? `constancia_numero.php?id=${idSub}` : `constancia_numero.php?folio=${folio}`;
+  window.open(url, '_blank');
 });
 
 // Al cerrar el modal de constancia, recargar para reflejar cambios en la tabla
@@ -757,6 +763,7 @@ function ver_subirCroquis() {
   const msg   = document.getElementById('ver_msg_croquis');
   const btn   = document.getElementById('ver_btn_subir');
   const folio = document.getElementById('c_folio_hidden')?.value || '';
+  const idSub = document.getElementById('c_id')?.value || '';
 
   if (!input.files || !input.files[0]) {
     if (msg) { msg.textContent = '⚠️ Selecciona una imagen primero.'; msg.style.color = '#856404'; }
@@ -772,6 +779,7 @@ function ver_subirCroquis() {
       if (msg) { msg.textContent = 'Guardando...'; msg.style.color = '#555'; }
 
       const fd = new FormData();
+      if (idSub) fd.append('id', idSub);
       fd.append('folio', folio);
       fd.append('croquis', resizedBlob, 'croquis.jpg'); // Nombre fijo
 

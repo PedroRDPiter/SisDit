@@ -73,11 +73,14 @@ $manzana             = trim(isset($_POST['manzana']) ? $_POST['manzana'] : '');
 $lote                = trim(isset($_POST['lote']) ? $_POST['lote'] : '');
 $fecha_constancia    = trim(isset($_POST['fecha_constancia']) ? $_POST['fecha_constancia'] : date('Y-m-d'));
 $cantidad            = isset($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
+// ID del subtrámite específico (cada fila comparte folio de entrada pero tiene su
+// propio folio de salida, croquis y datos de constancia).
+$tramite_id_post     = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
 // Si es solo constancia, solo necesitamos el folio y los datos de constancia
 if ($solo_constancia) {
-    if (empty($folio)) {
-        echo json_encode(['success' => false, 'message' => 'Falta el folio del tramite.']);
+    if (empty($folio) && $tramite_id_post <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Falta el identificador del tramite.']);
         exit;
     }
     if (empty($numero_asignado)) {
@@ -92,12 +95,19 @@ if ($solo_constancia) {
 }
 
 // ── Validar formato folio (ej. 001/2026) ──────────────────
-if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
-    echo json_encode(['success' => false, 'message' => 'Formato de folio inválido.']);
+$folio_numero = 0;
+$folio_anio   = 0;
+if (!empty($folio)) {
+    if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
+        echo json_encode(['success' => false, 'message' => 'Formato de folio inválido.']);
+        exit;
+    }
+    $folio_numero = (int) $m[1];
+    $folio_anio   = (int) $m[2];
+} elseif ($tramite_id_post <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Falta el folio o el id del tramite.']);
     exit;
 }
-$folio_numero = (int) $m[1];
-$folio_anio   = (int) $m[2];
 
 // ── Estatus permitidos (solo validar si no es solo_constancia) ──
 if (!$solo_constancia) {
@@ -112,46 +122,55 @@ try {
     $conn->begin_transaction();
 
     // ── Obtener trámite actual ─────────────────────────────
-    $stmtGet = $conn->prepare("
+    // Si viene un id de subtrámite, lo usamos como identificador exacto
+    // (los subtrámites comparten folio de entrada, así que el folio NO es único).
+    $selectCols = "
         SELECT t.id, t.estatus, t.foto1_archivo, t.foto2_archivo,
                t.ine_archivo, t.titulo_archivo, t.predial_archivo,
                t.escrituras_archivo, t.formato_constancia,
                t.telefono, t.correo, t.solicitante, t.propietario,
+               t.tipo_tramite_id, t.folio_numero, t.folio_anio,
+               t.folio_salida_numero, t.folio_salida_anio,
                tt.nombre AS tipo_tramite_nombre
         FROM tramites t
-        LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-        WHERE t.folio_numero = ? AND t.folio_anio = ?
-        LIMIT 1
-    ");
-    if (!$stmtGet) throw new Exception("Error BD: " . $conn->error);
-    $stmtGet->bind_param("ii", $folio_numero, $folio_anio);
+        LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id ";
+
+    if ($tramite_id_post > 0) {
+        $stmtGet = $conn->prepare($selectCols . "WHERE t.id = ? LIMIT 1");
+        if (!$stmtGet) throw new Exception("Error BD: " . $conn->error);
+        $stmtGet->bind_param("i", $tramite_id_post);
+    } else {
+        $stmtGet = $conn->prepare($selectCols . "WHERE t.folio_numero = ? AND t.folio_anio = ? LIMIT 1");
+        if (!$stmtGet) throw new Exception("Error BD: " . $conn->error);
+        $stmtGet->bind_param("ii", $folio_numero, $folio_anio);
+    }
     $stmtGet->execute();
     $res = $stmtGet->get_result();
 
     if ($res->num_rows === 0) {
-        throw new Exception("Trámite no encontrado: $folio");
+        throw new Exception("Trámite no encontrado: " . ($tramite_id_post > 0 ? "id $tramite_id_post" : $folio));
     }
     $tramite          = $res->fetch_assoc();
     $tramite_id       = (int) $tramite['id'];
     $estatus_anterior = $tramite['estatus'];
+    // Asegurar folio_numero/anio desde la fila (cuando se ubicó por id)
+    $folio_numero     = (int) $tramite['folio_numero'];
+    $folio_anio       = (int) $tramite['folio_anio'];
+    if (empty($folio)) {
+        $folio = $folio_numero . '/' . $folio_anio;
+    }
     $stmtGet->close();
 
      // ── MODO SOLO CONSTANCIA ───────────────────────────────
+     // Guarda los datos de la constancia de UN solo subtrámite (por id) y le
+     // asigna su propio folio de salida (consecutivo por tipo de trámite y año).
      if ($solo_constancia) {
          $uid = (int) $_SESSION['id'];
 
-         // Get current cantidad from database
-         $stmtCurrent = $conn->prepare("SELECT cantidad FROM tramites WHERE folio_numero = ? AND folio_anio = ?");
-         $stmtCurrent->bind_param("ii", $folio_numero, $folio_anio);
-         $stmtCurrent->execute();
-         $resultCurrent = $stmtCurrent->get_result();
-         $rowCurrent = $resultCurrent->fetch_assoc();
-         $current_cantidad = $rowCurrent['cantidad'] ?? 1;
-         $stmtCurrent->close();
-
+         // Actualizar SOLO la fila de este subtrámite (identificada por id)
          $sql = "UPDATE tramites SET
-                 direccion = ?,
-                 colonia              = ?,
+                 direccion           = ?,
+                 colonia             = ?,
                  numero_asignado     = ?,
                  tipo_asignacion     = ?,
                  referencia_anterior = ?,
@@ -161,14 +180,13 @@ try {
                  superficie          = ?,
                  manzana             = ?,
                  lote                = ?,
-                 fecha_constancia    = ?,
-                 cantidad            = ?
-                 WHERE folio_numero = ? AND folio_anio = ?";
+                 fecha_constancia    = ?
+                 WHERE id = ?";
 
         $stmtUp = $conn->prepare($sql);
         if (!$stmtUp) throw new Exception("Error prepare UPDATE: " . $conn->error);
 
-         $stmtUp->bind_param("sssssssssssssii",
+         $stmtUp->bind_param("ssssssssssssi",
              $direccion_constancia,
              $colonia,
              $numero_asignado,
@@ -181,86 +199,47 @@ try {
              $manzana,
              $lote,
              $fecha_constancia,
-             $cantidad,
-             $folio_numero,
-             $folio_anio
+             $tramite_id
          );
 
          if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
          $stmtUp->close();
 
-         // -- CREAR/ELIMINAR REGISTROS ADICIONALES SEGÚN CANTIDAD --
-         if ($cantidad != $current_cantidad) {
-             if ($cantidad > $current_cantidad) {
-                 // Crear registros adicionales
-                 $additionalCount = $cantidad - $current_cantidad;
-                 for ($i = 0; $i < $additionalCount; $i++) {
-                     $sqlInsertAdicional = "INSERT INTO tramites_adicionales (
-                         tramite_principal_id, tipo_tramite_id, propietario, solicitante, telefono, correo,
-                         folio_numero_adicional, cantidad, estatus
-                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                     
-                     $stmtInsertAdicional = $conn->prepare($sqlInsertAdicional);
-                     if (!$stmtInsertAdicional) {
-                         throw new Exception("Error preparar INSERT adicional: " . $conn->error);
-                     }
-                     
-                     // Get the folio number for this additional constancia
-                     // We'll use a sequential number for folio_numero_adicional
-                     $stmtFolio = $conn->prepare("SELECT COALESCE(MAX(folio_numero_adicional), 0) + 1 AS siguiente
-                                                  FROM tramites_adicionales
-                                                  WHERE tramite_principal_id = ?");
-                     $stmtFolio->bind_param("i", $tramite_id);
-                     $stmtFolio->execute();
-                     $resultFolio = $stmtFolio->get_result();
-                     $rowFolio = $resultFolio->fetch_assoc();
-                     $folioAdicional = $rowFolio['siguiente'] ?? 1;
-                     $stmtFolio->close();
-                     
-                      // Prepare correo value to avoid "Only variables should be passed by reference" error
-                      $correo = $tramite['correo'] ?? '';
-                      $estatusAdicional = 'En revisión';
+         // -- ASIGNAR FOLIO DE SALIDA DE ESTE SUBTRÁMITE (si aún no tiene) --
+         // Consecutivo por tipo de trámite y año; cada subtrámite obtiene uno distinto.
+         $folio_salida_resp = null;
+         if (empty($tramite['folio_salida_numero'])) {
+             $anio_salida = (int) date('Y');
+             $stmtSal = $conn->prepare(
+                 "SELECT COALESCE(MAX(folio_salida_numero), 0) + 1 AS siguiente
+                  FROM tramites
+                  WHERE folio_salida_anio = ? AND tipo_tramite_id = ? AND folio_salida_numero IS NOT NULL"
+             );
+             $tipo_tramite_id = (int) $tramite['tipo_tramite_id'];
+             $stmtSal->bind_param("ii", $anio_salida, $tipo_tramite_id);
+             $stmtSal->execute();
+             $rowSal = $stmtSal->get_result()->fetch_assoc();
+             $stmtSal->close();
+             $nuevo_salida = (int) $rowSal['siguiente'];
 
-                      $stmtInsertAdicional->bind_param("iisssissi",
-                          $tramite_id,
-                          $tramite['tipo_tramite_id'],
-                          $tramite['propietario'],
-                          $tramite['solicitante'],
-                          $tramite['telefono'],
-                          $correo,
-                          $folioAdicional,
-                          $cantidad, // Store the original requested quantity in each adicional
-                          $estatusAdicional // Initial status
-                      );
-                     
-                     if (!$stmtInsertAdicional->execute()) {
-                         throw new Exception("Error INSERT adicional: " . $stmtInsertAdicional->error);
-                     }
-                     $stmtInsertAdicional->close();
-                 }
-             } else {
-                 // Eliminar registros adicionales (eliminar los más recientes primero)
-                 $deleteCount = $current_cantidad - $cantidad;
-                 $sqlDeleteAdicional = "DELETE FROM tramites_adicionales
-                                        WHERE tramite_principal_id = ?
-                                        ORDER BY id DESC
-                                        LIMIT ?";
-                 $stmtDeleteAdicional = $conn->prepare($sqlDeleteAdicional);
-                 if (!$stmtDeleteAdicional) {
-                     throw new Exception("Error preparar DELETE adicional: " . $conn->error);
-                 }
-                 $stmtDeleteAdicional->bind_param("ii", $tramite_id, $deleteCount);
-                 if (!$stmtDeleteAdicional->execute()) {
-                     throw new Exception("Error DELETE adicional: " . $stmtDeleteAdicional->error);
-                 }
-                 $stmtDeleteAdicional->close();
-             }
+             $stmtUpS = $conn->prepare(
+                 "UPDATE tramites
+                  SET folio_salida_numero = ?, folio_salida_anio = ?, tiempo_salida = COALESCE(tiempo_salida, NOW())
+                  WHERE id = ?"
+             );
+             $stmtUpS->bind_param("iii", $nuevo_salida, $anio_salida, $tramite_id);
+             $stmtUpS->execute();
+             $stmtUpS->close();
+
+             $folio_salida_resp = str_pad($nuevo_salida, 3, '0', STR_PAD_LEFT) . '/' . $anio_salida;
+         } else {
+             $folio_salida_resp = str_pad($tramite['folio_salida_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_salida_anio'];
          }
 
          // Log
          $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'desconocida';
          $ua  = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'desconocido';
-         $det = "Folio: $folio | Datos constancia actualizados | Numero: $numero_asignado | Cantidad: $cantidad";
+         $det = "Folio entrada: $folio | Subtramite id: $tramite_id | Datos constancia | Numero: $numero_asignado | Folio salida: $folio_salida_resp";
         $stmtL = $conn->prepare("
             INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, registro_id, detalles, ip_address, user_agent)
             VALUES (?, 'Actualizo datos constancia', 'tramites', ?, ?, ?, ?)
@@ -274,9 +253,11 @@ try {
         $conn->commit();
 
         echo json_encode([
-            'success' => true,
-            'message' => 'Datos de constancia guardados correctamente',
-            'folio'   => $folio
+            'success'       => true,
+            'message'       => 'Datos de constancia guardados correctamente',
+            'folio'         => $folio,
+            'id'            => $tramite_id,
+            'folio_salida'  => $folio_salida_resp
         ]);
         exit;
     }
@@ -461,29 +442,53 @@ try {
          }
      }
 
-     // 🔥 ASIGNAR FOLIO DE SALIDA solo cuando el Director firma (estatus Aprobado)
+     // 🔥 ASIGNAR FOLIO DE SALIDA al aprobar (Director) — red de seguridad.
+    // Lo normal es que el folio de salida ya se haya asignado al guardar la constancia
+    // (un folio distinto por subtrámite). Aquí solo asignamos a las filas del grupo
+    // que aún no tengan folio de salida, usando el consecutivo por tipo de trámite y año.
     if ($estatus === 'Aprobado') {
-        $anio_actual = date('Y');
-        
-        $stmtSalida = $conn->prepare("CALL asignar_folio_salida(?, ?)");
-        if (!$stmtSalida) {
-            throw new Exception("Error prepare CALL asignar_folio_salida: " . $conn->error);
-        }
-        
-        $stmtSalida->bind_param("ii", $tramite_id, $anio_actual);
-        $stmtSalida->execute();
-        
-        $result = $stmtSalida->get_result();
-        if ($result && $row = $result->fetch_assoc()) {
-            $folio_asignado = $row['folio_salida_asignado'];
-            $det = "Folio: $folio | $estatus_anterior → $estatus | Verificador: $verificador_nombre | Folio salida: " . str_pad($folio_asignado, 3, '0', STR_PAD_LEFT) . "/$anio_actual";
-        }
-        $stmtSalida->close();
-        
-        // Limpiar resultados pendientes
-        while ($conn->next_result()) {
-            if ($result = $conn->store_result()) {
-                $result->free();
+        $anio_actual = (int) date('Y');
+
+        // Recorrer todas las filas del grupo (mismo folio de entrada) sin folio de salida
+        $stmtPend = $conn->prepare(
+            "SELECT id, tipo_tramite_id FROM tramites
+             WHERE folio_numero = ? AND folio_anio = ?
+               AND (folio_salida_numero IS NULL OR folio_salida_numero = 0)"
+        );
+        $stmtPend->bind_param("ii", $folio_numero, $folio_anio);
+        $stmtPend->execute();
+        $resPend = $stmtPend->get_result();
+        $pendientes = [];
+        while ($rowP = $resPend->fetch_assoc()) { $pendientes[] = $rowP; }
+        $stmtPend->close();
+
+        foreach ($pendientes as $pend) {
+            $tipo_p = (int) $pend['tipo_tramite_id'];
+            $idp    = (int) $pend['id'];
+
+            $stmtSal = $conn->prepare(
+                "SELECT COALESCE(MAX(folio_salida_numero), 0) + 1 AS siguiente
+                 FROM tramites
+                 WHERE folio_salida_anio = ? AND tipo_tramite_id = ? AND folio_salida_numero IS NOT NULL"
+            );
+            $stmtSal->bind_param("ii", $anio_actual, $tipo_p);
+            $stmtSal->execute();
+            $rowSal = $stmtSal->get_result()->fetch_assoc();
+            $stmtSal->close();
+            $nuevo_salida = (int) $rowSal['siguiente'];
+
+            $stmtUpS = $conn->prepare(
+                "UPDATE tramites
+                 SET folio_salida_numero = ?, folio_salida_anio = ?, tiempo_salida = COALESCE(tiempo_salida, NOW())
+                 WHERE id = ?"
+            );
+            $stmtUpS->bind_param("iii", $nuevo_salida, $anio_actual, $idp);
+            $stmtUpS->execute();
+            $stmtUpS->close();
+
+            if ($idp === $tramite_id) {
+                $folio_asignado = $nuevo_salida;
+                $det = "Folio: $folio | $estatus_anterior → $estatus | Verificador: $verificador_nombre | Folio salida: " . str_pad($folio_asignado, 3, '0', STR_PAD_LEFT) . "/$anio_actual";
             }
         }
     }

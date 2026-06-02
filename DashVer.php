@@ -484,9 +484,13 @@ window.onpopstate = function () {
     <tr>
         <td>
             <?= $t['folio_numero'] ?>/<?= $t['folio_anio'] ?>
-            <?php if (($t['grupo_count'] ?? 1) > 1): ?>
+            <?php if (!empty($t['tramite_principal_id'])): ?>
+                <span class="badge bg-warning text-dark ms-1" title="Subtrámite adicional del mismo ingreso (folio de entrada compartido)">
+                    Subtrámite
+                </span>
+            <?php elseif (($t['grupo_count'] ?? 1) > 1): ?>
                 <span class="badge bg-info text-dark ms-1" title="Grupo de <?= $t['grupo_count'] ?> subtrámites con el mismo folio">
-                    Grupo <?= $t['grupo_count'] ?>
+                    Principal · Grupo <?= $t['grupo_count'] ?>
                 </span>
             <?php endif; ?>
         </td>
@@ -512,6 +516,7 @@ window.onpopstate = function () {
                     class="btn btn-sm btn-outline-primary"
                     data-bs-toggle="modal"
                     data-bs-target="#detalleTramite"
+                    data-id="<?= (int)$t['id'] ?>"
                     data-folio="<?= $t['folio_numero'].'/'.$t['folio_anio'] ?>"
                     data-estatus="<?= htmlspecialchars($t['estatus']) ?>"
                     data-observaciones="<?= htmlspecialchars($t['observaciones'] ?? '') ?>"
@@ -552,6 +557,7 @@ window.onpopstate = function () {
                 <button 
                     class="btn btn-sm btn-success btn-generar-constancia"
 
+                    data-id="<?= (int)$t['id'] ?>"
                     data-folio="<?= $t['folio_numero'].'/'.$t['folio_anio'] ?>"
                     data-propietario="<?= htmlspecialchars($t['propietario']) ?>"
                     data-direccion="<?= htmlspecialchars($t['direccion']) ?>"
@@ -976,6 +982,7 @@ window.onpopstate = function () {
           <?php $csrf_constancia = generarCSRF(); ?>
           <input type="hidden" name="csrf_token" value="<?= $csrf_constancia ?>">
           <input type="hidden" name="folio" id="c_folio_hidden">
+          <input type="hidden" name="id" id="c_id">
           <input type="hidden" name="solo_constancia" value="1">
           
           <!-- Info del tramite -->
@@ -1338,8 +1345,12 @@ function guardarConfigConstanciaVer() {
     // Función para abrir modal de constancia
     function abrirModalConstancia(btn) {
     const folio = btn.getAttribute('data-folio');
+    const tramiteId = btn.getAttribute('data-id') || '';
     const modalConstancia = new bootstrap.Modal(document.getElementById('modalConstancia'));
-    
+
+    // ID del subtrámite específico (cada fila tiene su propio folio de salida y croquis)
+    document.getElementById('c_id').value = tramiteId;
+
     // Poblar los datos en el modal de constancia
     document.getElementById('c_folio').textContent = folio;
     document.getElementById('c_propietario').textContent = btn.getAttribute('data-propietario') || '';
@@ -1408,6 +1419,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const tipoTramiteId = document.getElementById('m_tipo_tramite_id') ? document.getElementById('m_tipo_tramite_id').value : '';
 
             // Poblar campos del modal de constancia
+            const subId = document.getElementById('m_tramite_id') ? document.getElementById('m_tramite_id').value : '';
+            document.getElementById('c_id').value = subId;
             document.getElementById('c_folio').textContent = folio;
             document.getElementById('c_propietario').textContent = propietario;
             document.getElementById('c_direccion').textContent = direccion;
@@ -1492,7 +1505,9 @@ function cargarDatosAnterioresVer() {
 
         // Persistir en BD: asignar el croquis al trámite actual
         const folioActual = document.getElementById('c_folio_hidden').value;
+        const idActual    = document.getElementById('c_id') ? document.getElementById('c_id').value : '';
         const fd = new FormData();
+        if (idActual) fd.append('id_destino', idActual);
         fd.append('folio_destino',   folioActual);
         fd.append('croquis_archivo', croquis);
         fetch('php/asignar_croquis.php', { method: 'POST', body: fd, credentials: 'same-origin' })
@@ -1610,7 +1625,10 @@ function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
 
     // Guardar el id del subtrámite actual para el submit (útil para actualizaciones individuales)
     const form = document.getElementById('formActualizarTramite');
-    if (form && tramite && tramite.id) {
+    const idActual = (tramite && tramite.id)
+        ? tramite.id
+        : (buttonFallback ? (buttonFallback.getAttribute('data-id') || '') : '');
+    if (form) {
         let hiddenId = document.getElementById('m_tramite_id');
         if (!hiddenId) {
             hiddenId = document.createElement('input');
@@ -1619,7 +1637,7 @@ function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
             hiddenId.name = 'tramite_id';
             form.appendChild(hiddenId);
         }
-        hiddenId.value = tramite.id;
+        hiddenId.value = idActual;
     }
 }
 
@@ -1706,9 +1724,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Verificar si el formulario es válido usando la validación nativa del navegador
             if (form.checkValidity()) {
-                // Si es válido, redirigir a imprimir
+                // Si es válido, redirigir a imprimir (por id del subtrámite)
+                const idSub = document.getElementById('c_id').value;
                 const folio = document.getElementById('c_folio_hidden').value;
-                const url = 'constancia_numero.php?folio=' + encodeURIComponent(folio) + '&imprimir=1';
+                const url = idSub
+                    ? 'constancia_numero.php?id=' + encodeURIComponent(idSub) + '&imprimir=1'
+                    : 'constancia_numero.php?folio=' + encodeURIComponent(folio) + '&imprimir=1';
                 window.location.href = url;
             } else {
                 // Si no es válido, mostrar los mensajes de validación nativos del navegador

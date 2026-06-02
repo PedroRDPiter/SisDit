@@ -24,28 +24,50 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     exit;
 }
 
-// Obtener folio
-$folio = isset($_GET['folio']) ? $_GET['folio'] : '';
-if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
-    die("Folio invalido");
-}
-$folio_numero = (int)$m[1];
-$folio_anio   = (int)$m[2];
+// Identificación: preferir id del subtrámite (cada subtrámite tiene su propio
+// folio de salida, croquis y datos). Mantener folio como respaldo.
+$id_get = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$folio  = isset($_GET['folio']) ? $_GET['folio'] : '';
+$folio_numero = 0;
+$folio_anio   = 0;
 
-// Consultar trámite
-$stmt = $conn->prepare("
-    SELECT t.*, tt.nombre AS tipo_tramite_nombre
-    FROM tramites t
-    LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-    WHERE t.folio_numero = ? AND t.folio_anio = ?
-    LIMIT 1
-");
-$stmt->bind_param("ii", $folio_numero, $folio_anio);
+if ($id_get > 0) {
+    $stmt = $conn->prepare("
+        SELECT t.*, tt.nombre AS tipo_tramite_nombre
+        FROM tramites t
+        LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
+        WHERE t.id = ?
+        LIMIT 1
+    ");
+    $stmt->bind_param("i", $id_get);
+} else {
+    if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
+        die("Folio o id invalido");
+    }
+    $folio_numero = (int)$m[1];
+    $folio_anio   = (int)$m[2];
+    $stmt = $conn->prepare("
+        SELECT t.*, tt.nombre AS tipo_tramite_nombre
+        FROM tramites t
+        LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
+        WHERE t.folio_numero = ? AND t.folio_anio = ?
+        ORDER BY (t.tramite_principal_id IS NULL) DESC, t.id ASC
+        LIMIT 1
+    ");
+    $stmt->bind_param("ii", $folio_numero, $folio_anio);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) { die("Tramite no encontrado"); }
 $t = $result->fetch_assoc();
+
+// Derivar folio de entrada desde la fila (necesario cuando se consultó por id)
+$folio_numero = (int)$t['folio_numero'];
+$folio_anio   = (int)$t['folio_anio'];
+$folio        = $folio_numero . '/' . $folio_anio;
+// Id real del subtrámite para operaciones de croquis desde esta página
+$tramite_id_actual = (int)$t['id'];
 
 if (empty($t['numero_asignado'])) {
     // Redirigir a la página anterior con un mensaje de error
@@ -253,14 +275,14 @@ else                     $back = 'DashVer.php';
         }
         
         .numero-grande {
-            font-size: 200pt;
+            font-size: 25px;
             font-weight:bold;
             text-align:center;
+            text-size-adjust: 29px;
             color:#7b0f2b;
             width: 280px;
-            height: 50px;
+            height: 80px;
             background: rgba(123,15,43,0.05);
-            border-radius: 8px;
         }
         
         .referencia-anterior { 
@@ -721,14 +743,14 @@ else                     $back = 'DashVer.php';
 
     <table class="tabla-datos" cellspacing="0" cellpadding="0">
         <tr class="header-row">        
-            <td style="background:#f5e6e9; font-weight:bold; text-align:center; color:#7b0f2b; font-size:9pt;" colspan="2">TIPO DE ASIGNACIÓN</td>
+            <td style="background:#f5e6e9; font-weight:bold; text-align:center; color:#7b0f2b; font-size:12pt;" colspan="2">TIPO DE ASIGNACIÓN</td>
             <td><span class="checkbox <?= $es_asignacion ? 'checked' : '' ?>"></span> ASIGNACIÓN</td>
             <td colspan="1"><span class="checkbox <?= $es_rectificacion ? 'checked' : '' ?>"></span> RECTIFICACIÓN</td>
             <td colspan="1"><span class="checkbox <?= $es_reposicion ? 'checked' : '' ?>"></span> REPOSICIÓN</td>
         </tr>
         <tr>
             <td colspan="4" class="label" style="vertical-align:middle;">SE ASIGNA EL NÚMERO</td>
-            <td class="numero-grande" style="font-size: 25px;" rowspan="2"><?= htmlspecialchars($t['numero_asignado']) ?></td>
+            <td class="numero-grande" rowspan="2"><?= htmlspecialchars($t['numero_asignado']) ?></td>
         </tr>
         <tr>
             <td colspan="4" class="referencia-anterior">
@@ -855,6 +877,7 @@ else                     $back = 'DashVer.php';
 
 <script>
 var folioActual = '<?= addslashes($folio) ?>';
+var idActual    = '<?= (int)$tramite_id_actual ?>';
 
 // Panel colapsable
 var _panelAbierto = true;
@@ -908,6 +931,7 @@ function subirCroquis() {
     msg.textContent = 'Guardando...'; msg.className = 'msg info';
     btnS.disabled = true;
     var fd = new FormData();
+    if (idActual && idActual !== '0') fd.append('id', idActual);
     fd.append('folio', folioActual);
     fd.append('croquis', input.files[0]);
     fetch('php/guardar_croquis.php', { method:'POST', body:fd, credentials:'same-origin' })

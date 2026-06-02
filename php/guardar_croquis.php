@@ -27,17 +27,24 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     exit;
 }
 
-$folio = isset($_POST['folio']) ? trim($_POST['folio']) : '';
-if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
-    echo json_encode(array('success'=>false,'message'=>'Folio invalido'));
-    exit;
-}
-$folio_numero = (int)$m[1];
-$folio_anio   = (int)$m[2];
+// Identificación: preferir id del subtrámite (cada subtrámite tiene su propio croquis).
+$id_post = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+$folio   = isset($_POST['folio']) ? trim($_POST['folio']) : '';
 
-// Obtener croquis actual y el ID del trámite para organizarlo por ID en lugar de folio
-$stmt = $conn->prepare("SELECT id, croquis_archivo FROM tramites WHERE folio_numero=? AND folio_anio=?");
-$stmt->bind_param("ii", $folio_numero, $folio_anio);
+if ($id_post > 0) {
+    $stmt = $conn->prepare("SELECT id, croquis_archivo FROM tramites WHERE id=?");
+    $stmt->bind_param("i", $id_post);
+} else {
+    if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
+        echo json_encode(array('success'=>false,'message'=>'Folio o id invalido'));
+        exit;
+    }
+    $folio_numero = (int)$m[1];
+    $folio_anio   = (int)$m[2];
+    // Sin id explícito: tomar la fila principal del grupo (compatibilidad)
+    $stmt = $conn->prepare("SELECT id, croquis_archivo FROM tramites WHERE folio_numero=? AND folio_anio=? ORDER BY (tramite_principal_id IS NULL) DESC, id ASC LIMIT 1");
+    $stmt->bind_param("ii", $folio_numero, $folio_anio);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $tramite_data = $result->fetch_assoc();
@@ -101,9 +108,9 @@ if (!move_uploaded_file($_FILES['croquis']['tmp_name'], "../" . $relative_path))
     exit;
 }
 
-// Actualizar en BD
-$stmt = $conn->prepare("UPDATE tramites SET croquis_archivo=? WHERE folio_numero=? AND folio_anio=?");
-$stmt->bind_param("sii", $relative_path, $folio_numero, $folio_anio);
+// Actualizar en BD: SOLO la fila de este subtrámite (por id)
+$stmt = $conn->prepare("UPDATE tramites SET croquis_archivo=? WHERE id=?");
+$stmt->bind_param("si", $relative_path, $tramite_id);
 if (!$stmt->execute()) {
     echo json_encode(array('success'=>false,'message'=>'Error al guardar en BD'));
     exit;
@@ -113,7 +120,7 @@ $stmt->close();
 // Log
 $uid = (int)$_SESSION['id'];
 $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-$det = "Croquis cargado para folio: $folio (ID: $tramite_id) | Archivo: $relative_path";
+$det = "Croquis cargado para subtramite ID: $tramite_id | Archivo: $relative_path";
 $log = $conn->prepare("INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, detalles, ip_address) VALUES (?, 'Croquis constancia', 'tramites', ?, ?)");
 $log->bind_param("iss", $uid, $det, $ip);
 $log->execute();

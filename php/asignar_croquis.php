@@ -26,16 +26,15 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     exit;
 }
 
+$id_destino     = isset($_POST['id_destino'])     ? (int)$_POST['id_destino']      : 0;
 $folio_destino  = isset($_POST['folio_destino'])  ? trim($_POST['folio_destino'])  : '';
 $croquis_archivo = isset($_POST['croquis_archivo']) ? trim($_POST['croquis_archivo']) : '';
 
-// Validar folio destino (formato NNN/AAAA)
-if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio_destino, $m)) {
-    echo json_encode(['success' => false, 'message' => 'Folio destino invalido']);
+// Validar destino: preferir id del subtrámite
+if ($id_destino <= 0 && !preg_match('/^(\d{1,4})\/(\d{4})$/', $folio_destino, $m)) {
+    echo json_encode(['success' => false, 'message' => 'Destino invalido (id o folio)']);
     exit;
 }
-$folio_numero = (int)$m[1];
-$folio_anio   = (int)$m[2];
 
 // Validar que el archivo existe
 if (empty($croquis_archivo)) {
@@ -50,8 +49,16 @@ if (!file_exists($ruta)) {
 }
 
 // Actualizar el trámite destino con el mismo nombre de archivo
-$stmt = $conn->prepare("UPDATE tramites SET croquis_archivo = ? WHERE folio_numero = ? AND folio_anio = ?");
-$stmt->bind_param("sii", $croquis_archivo, $folio_numero, $folio_anio);
+if ($id_destino > 0) {
+    $stmt = $conn->prepare("UPDATE tramites SET croquis_archivo = ? WHERE id = ?");
+    $stmt->bind_param("si", $croquis_archivo, $id_destino);
+} else {
+    $folio_numero = (int)$m[1];
+    $folio_anio   = (int)$m[2];
+    // Sin id: asignar a la fila principal del grupo (compatibilidad)
+    $stmt = $conn->prepare("UPDATE tramites SET croquis_archivo = ? WHERE id = (SELECT id FROM (SELECT id FROM tramites WHERE folio_numero = ? AND folio_anio = ? ORDER BY (tramite_principal_id IS NULL) DESC, id ASC LIMIT 1) x)");
+    $stmt->bind_param("sii", $croquis_archivo, $folio_numero, $folio_anio);
+}
 if (!$stmt->execute()) {
     echo json_encode(['success' => false, 'message' => 'Error al guardar en BD']);
     exit;
@@ -61,7 +68,8 @@ $stmt->close();
 // Log
 $uid = (int)$_SESSION['id'];
 $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-$det = "Croquis anterior asignado al folio: $folio_destino | Archivo: $croquis_archivo";
+$destino_log = $id_destino > 0 ? "id $id_destino" : $folio_destino;
+$det = "Croquis anterior asignado al destino: $destino_log | Archivo: $croquis_archivo";
 $log = $conn->prepare("INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, detalles, ip_address) VALUES (?, 'Asignar croquis anterior', 'tramites', ?, ?)");
 $log->bind_param("iss", $uid, $det, $ip);
 $log->execute();

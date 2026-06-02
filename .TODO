@@ -1,11 +1,1 @@
-IMPLEMENTADO:
-- Agregado campo cantidad al formulario de constancia de numero oficial en DashVer.php
-- Modificado verificar.js para pasar el valor de cantidad al modal de constancia
-- Modificado php\actualizarTramite.php para manejar el campo cantidad en modo solo_constancia
-- Modificado php\actualizarTramite.php para crear/eliminar registros en tramites_adicionales cuando cambia la cantidad
-- Modificado php\actualizarTramite.php para crear registros en tramites_adicionales cuando se aprueba un tramite (estatus Aprobado)
-- Creado php\eliminar_adicional.php para eliminar un registro adicional y actualizar la cantidad del registro principal
-- La eliminación en cascada de registros adicionales al eliminar un registro principal ya está manejada por la constraint de clave foranea ON DELETE CASCADE
-
-PENDIENTE:
-- Agregar interfaz de usuario en el modal de constancia para ver y eliminar registros individuales de tramites_adicionales (requiere modificaciones en verificar.js y DashVer.php)
+se ocupa que al momento de ingresar varios tramites se guarden con un solo numero de folio si es en un solo ingreso, al momento de pasar a veerificador le apareceran todos los tramites y sub tramites adicionales para que al momento de darle al modal de constancia donde pone los datos del lugar se guarden en un numero de folio de salida que va del ultimo creado, cada subtramite se guardara con diferente folio de salida y asi se separaran al final del flujo de trabajo, si tienes dudas realiza preguntas antes de programar, es importante que se guarden con un solo numero de folio de entrada para que al momento de generar la constancia se pueda relacionar con el numero de folio de salida y croquis diferentes de cada uno y asi tener un mejor control de los tramites realizados.
