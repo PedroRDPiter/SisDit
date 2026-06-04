@@ -464,17 +464,15 @@ else                     $back = 'DashVer.php';
         .croquis-marco {
             border:2px solid #7b0f2b;
             border-radius:4px;
-            min-height:400px;
-            max-height:450px;
+            min-height:500px;
             display:flex;
             align-items:center;
             justify-content:center;
-            overflow:hidden;
         }
 
         .croquis-marco img {
             width:100%;
-            max-height:450px;
+            max-height:650px;
             object-fit:contain;
         }
         
@@ -579,6 +577,7 @@ else                     $back = 'DashVer.php';
             font-size: 12px;
             overflow: hidden;
         }
+        
         
         .panel-croquis .panel-header {
             background: #7b0f2b;
@@ -825,16 +824,16 @@ else                     $back = 'DashVer.php';
     </div>
     <div class="croquis-titulo" style="margin:3px 0 2px;">CROQUIS DE UBICACIÓN DEL PREDIO</div>
     <div class="croquis-subtitulo" style="margin-bottom:5px;">El croquis es de carácter ilustrativo y no constituye deslinde ni apeo del inmueble.</div>
-    <div class="croquis-marco" id="croquis-marco" style="min-height:400px;max-height:450px;">
+    <div class="croquis-marco" id="croquis-marco">
         <?php if (!empty($croquis_archivo) && file_exists($croquis_path)): ?>
-            <img src="<?= htmlspecialchars($croquis_path) ?>" id="img-croquis" alt="Croquis" style="max-height:450px;">
+            <img src="<?= htmlspecialchars($croquis_path) ?>" id="img-croquis" alt="Croquis">
         <?php else: ?>
-            <div id="croquis-placeholder" style="text-align:center;color:#aaa;padding:20px;">
+            <div id="croquis-placeholder">
                 <div style="font-size:2rem;margin-bottom:5px;">🗺️</div>
                 <p><strong>Sin croquis</strong></p>
                 <p style="font-size:8pt;">Usa el panel lateral para cargar la imagen.</p>
             </div>
-            <img id="img-croquis" src="" alt="Croquis" style="display:none;width:100%;max-height:450px;object-fit:contain;">
+            <img id="croquis-img" src="" alt="Croquis">
         <?php endif; ?>
     </div>
     <!-- Texto reglamentario al reverso -->
@@ -906,9 +905,6 @@ function prevCroquis(input) {
         // Imagen en página 2
         var img = document.getElementById('img-croquis');
         var ph  = document.getElementById('croquis-placeholder');
-        img.src = e.target.result;
-        img.style.display = 'block';
-        img.style.maxHeight = '900px';
         if (ph) ph.style.display = 'none';
         // Mostrar botón guardar
         document.getElementById('btn-subir').style.display = 'block';
