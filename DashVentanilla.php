@@ -79,6 +79,12 @@ $aprobados_ver_res = $conn->query("
     ORDER BY t.updated_at ASC
 ");
 
+// ── Números oficiales pendientes por firmar (tipo_tramite_id = 1) ──
+$numeros_oficiales_pendientes = $conn->query("
+    SELECT COUNT(*) as c FROM tramites 
+    WHERE estatus = 'Aprobado por Verificador' 
+    AND tipo_tramite_id = 1
+")->fetch_assoc()['c'];
 
 // ── Trámites firmados por el Director (ya aprobados) ──
 $tramites_firmados_res = $conn->query("
@@ -329,6 +335,22 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
     </div>
   </div>
 </div>
+
+<?php if($total_aprobados_v > 0): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            title: '¡Atención!',
+            text: 'Faltan números oficiales por firmar y aprobar — Hay <?= $total_aprobados_v ?> trámite(s) de Constancia de Número Oficial con estatus "Aprobado por Verificador".',
+            icon: 'warning',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#7b0f2b',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+    });
+</script>
+<?php endif; ?>
 
 <!-- ================================================ -->
 <!-- FIRMA DEL DIRECTOR / RESOLUCIÓN FINAL           -->
@@ -711,6 +733,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         'TER_OBRA'    => ['icon'=>'bi-check-circle-fill',    'color'=>'#6f42c1'], // 6
         'LIC_CONST' => ['icon'=>'bi-building',             'color'=>'#dc3545'], // 7
         'ANUNCIOS'      => ['icon'=>'bi-megaphone',            'color'=>'#ffc107'], // 8
+        'VOBO' => ['icon'=>'bi-check-circle-fill',  'color'=>'#777'], // 9
 
       ];
       $requisitosInfo = [
@@ -722,6 +745,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         6 => ['docs'=>['INE o Pasaporte','Boleta Predial Vigente','Título de Propiedad o Escritura'],'nota'=>''],
         7 => ['docs'=>['INE o Pasaporte','Boleta Predial Vigente','Título de Propiedad o Escritura'],'nota'=>''],
         8 => ['docs'=>['INE o Pasaporte','Boleta Predial Vigente','Contrato de Arrendamiento o Escritura'],'nota'=>'Se requiere memoria descriptiva o calculo de superficie, si es Empresa se requiere Poder Notariado y Acta Constitutiva.'],
+        9 => ['docs'=>['Oficio VOBO'], 'nota'=>'Se anexa oficio solicitado'],
       ];
       $tiposList = [];
       while($tp=$tipos_r->fetch_assoc()) $tiposList[]=$tp;
@@ -952,11 +976,16 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             <input type="file" class="form-control" name="predial" accept=".pdf,.jpg,.jpeg,.png">
             <small class="text-muted">PDF, JPG, PNG (Max. 5MB)</small>
           </div>
-          <div class="col-md-4 mb-4" id="grupo-escritura" style="display:none;">
-            <label class="form-label fw-bold"><i class="bi bi-file-earmark-text me-1"></i>Escritura / Título</label>
-            <input type="file" class="form-control" name="escritura" accept=".pdf,.jpg,.jpeg,.png">
-            <small class="text-muted">PDF, JPG, PNG (Max. 5MB)</small>
-          </div>
+           <div class="col-md-4 mb-4" id="grupo-escritura" style="display:none;">
+             <label class="form-label fw-bold"><i class="bi bi-file-earmark-text me-1"></i>Escritura / Título</label>
+             <input type="file" class="form-control" name="escritura" accept=".pdf,.jpg,.jpeg,.png">
+             <small class="text-muted">PDF, JPG, PNG (Max. 5MB)</small>
+           </div>
+           <div class="col-md-4 mb-4" id="grupo-oficio_vobo" style="display:none;">
+             <label class="form-label fw-bold"><i class="bi bi-file-earmark-ruled me-1"></i>Oficio Visto Bueno</label>
+             <input type="file" class="form-control" name="oficio_vobo" accept=".pdf,.jpg,.jpeg,.png">
+             <small class="text-muted">PDF, JPG, PNG (Max. 5MB)</small>
+           </div>
            <div class="col-md-4 mb-4" id="grupo-formato_constancia" style="display:none;">
              <label class="form-label fw-bold"><i class="bi bi-file-earmark-ruled me-1"></i>Formato de Constancia</label>
              <input type="file" class="form-control" name="formato_constancia" accept=".pdf,.jpg,.jpeg,.png">
@@ -995,6 +1024,11 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             <div class="col-md-4 mb-4" id="grupo-bitacora_de_obra" style="display:none;">
               <label class="form-label fw-bold"><i class="bi bi-journal-text me-1"></i>Bitácora de Obra</label>
               <input type="file" class="form-control" name="bitacora_de_obra" accept=".pdf,.jpg,.jpeg,.png">
+              <small class="text-muted">PDF, JPG, PNG (Max. 5MB)</small>
+            </div>
+            <div class="col-md-4 mb-4" id="grupo-oficio" style="display:none;">
+              <label class="form-label fw-bold"><i class="bi bi-file-earmark-text me-1"></i>Oficio</label>
+              <input type="file" class="form-control" name="oficio" accept=".pdf,.jpg,.jpeg,.png">
               <small class="text-muted">PDF, JPG, PNG (Max. 5MB)</small>
             </div>
           </div>
@@ -1147,13 +1181,14 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="m-0" style="color:#7b0f2b;"><i class="bi bi-map me-2"></i>Mapa Georreferenciado</h4>
     <div class="d-flex gap-2 flex-wrap">
-      <select id="filtro-estatus" class="form-select form-select-sm" style="width:auto;">
-        <option value="todos">Todos los estatus</option>
-        <option value="En revisión">En revisión</option>
-        <option value="Aprobado por Verificador">Aprobado por Verificador</option>
-        <option value="Aprobado">Aprobado</option>
-        <option value="Rechazado">Rechazado</option>
-      </select>
+<select id="filtro-estatus" class="form-select form-select-sm" style="width:auto;">
+          <option value="todos">Todos los estatus</option>
+          <option value="En revisión">En revisión</option>
+          <option value="En Revisión por Validador">En Revisión por Validador</option>
+          <option value="Aprobado por Verificador">Aprobado por Verificador</option>
+          <option value="Aprobado">Aprobado</option>
+          <option value="Rechazado">Rechazado</option>
+        </select>
       <button type="button" class="btn btn-sm btn-outline-primary" onclick="centrarMapa()" aria-label="Centrar mapa en el municipio">
         <i class="bi bi-geo-alt me-1"></i>Centrar municipio
       </button>
@@ -1215,6 +1250,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         $tcorreo     = isset($t['correo'])              ? $t['correo']              : '';
         $tobs        = isset($t['observaciones'])       ? $t['observaciones']       : '';
         $tine        = isset($t['ine_archivo'])         ? $t['ine_archivo']         : '';
+        $tviosto_bueno= isset($t['visto_bueno'])        ? $t['visto_bueno']         : '';
         $tescritura  = isset($t['escrituras_archivo'])  ? $t['escrituras_archivo']  : (isset($t['titulo_archivo']) ? $t['titulo_archivo'] : '');
         $tpredial    = isset($t['predial_archivo'])     ? $t['predial_archivo']     : '';
         $tformato    = isset($t['formato_constancia'])  ? $t['formato_constancia']  : '';
@@ -1247,6 +1283,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
               data-correo="<?= htmlspecialchars($tcorreo) ?>"
               data-observaciones="<?= htmlspecialchars($tobs) ?>"
               data-ine="<?= htmlspecialchars($tine) ?>"
+              data-vobo="<?= htmlspecialchars($tviosto_bueno) ?>"
               data-escritura="<?= htmlspecialchars($tescritura) ?>"
               data-predial="<?= htmlspecialchars($tpredial) ?>"
               data-formato="<?= htmlspecialchars($tformato) ?>"
@@ -1293,7 +1330,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         <label class="form-label fw-semibold"><i class="bi bi-flag me-1"></i>Estatus</label>
         <select name="estatus" class="form-select">
           <option value="">Todos</option>
-          <?php foreach(['En revisión','Aprobado por Verificador','Aprobado','Rechazado','En corrección'] as $es): 
+          <?php foreach(['En revisión','En Revisión por Validador','Aprobado por Verificador','Aprobado','Rechazado','En corrección'] as $es): 
             $sel = (isset($_GET['estatus']) && $_GET['estatus'] === $es) ? 'selected' : '';
           ?>
           <option value="<?= $es ?>" <?= $sel ?>><?= $es ?></option>
@@ -1335,6 +1372,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         $tcorreo     = isset($t['correo'])              ? $t['correo']              : '';
         $tobs        = isset($t['observaciones'])       ? $t['observaciones']       : '';
         $tine        = isset($t['ine_archivo'])         ? $t['ine_archivo']         : '';
+        $tviosto_bueno= isset($t['visto_bueno'])        ? $t['visto_bueno']         : '';
         $tescritura  = isset($t['escrituras_archivo'])  ? $t['escrituras_archivo']  : (isset($t['titulo_archivo']) ? $t['titulo_archivo'] : '');
         $tpredial    = isset($t['predial_archivo'])     ? $t['predial_archivo']     : '';
         $tformato    = isset($t['formato_constancia'])  ? $t['formato_constancia']  : '';
@@ -1343,6 +1381,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         $estatus     = $t['estatus'];
         $fecha       = date('d/m/Y', strtotime($t['created_at']));
         if ($estatus === 'En revisión')              $badge = 'bg-warning text-dark';
+        elseif ($estatus === 'En Revisión por Validador') $badge = 'bg-secondary';
         elseif ($estatus === 'Aprobado por Verificador') $badge = 'bg-info text-dark';
         elseif ($estatus === 'Aprobado')             $badge = 'bg-success';
         elseif ($estatus === 'Rechazado')            $badge = 'bg-danger';
@@ -1397,7 +1436,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             <tbody>
                 <?php if($tramites_firmados_res->num_rows === 0): ?>
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-4">
+                    <td colspan="10" class="text-center text-muted py-4">
                         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                         No hay trámites aprobados aún.
                     </td>
@@ -1748,6 +1787,10 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                 <span><i class="bi bi-file-earmark-text me-2 text-primary"></i>Escritura / Título</span>
                 <span class="badge bg-primary">Ver</span>
               </a>
+              <a id="sec_doc_visto_bueno" href="#" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" style="display:none!important;">
+                <span><i class="bi bi-file-earmark-text me-2 text-primary"></i>Ofico de solicitud</span>
+                <span class="badge bg-primary">Ver</span>
+              </a>
               <a id="sec_doc_predial" href="#" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" style="display:none!important;">
                 <span><i class="bi bi-file-earmark-text me-2 text-primary"></i>Boleta Predial</span>
                 <span class="badge bg-primary">Ver</span>
@@ -1801,6 +1844,10 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                 <div class="col-md-6" id="sec_escritura" style="display:none;">
                   <label class="form-label fw-semibold small">Escritura / Título</label>
                   <input type="file" name="escritura" class="form-control form-control-sm" accept="image/*,.pdf">
+                </div>
+                <div class="col-md-6" id="sec_oficio_visto_bueno" style="display:none;">
+                  <label class="form-label fw-semibold small">Oficio</label>
+                  <input type="file" name="Oficio" class="form-control form-control-sm" accept="image/*,.pdf">
                 </div>
                 <div class="col-md-6" id="sec_predial" style="display:none;">
                   <label class="form-label fw-semibold small">Boleta Predial</label>

@@ -614,6 +614,7 @@ $conn->close();
         }
     ?>'">Regresar al Panel
     </button>
+    <button class="btn-print" onclick="window.open('documentacion.php?folio=<?= urlencode($folio_raw) ?>', '_blank')">Documentacion</button>
 </div>
 
 <!-- FICHA -->

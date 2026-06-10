@@ -13,13 +13,18 @@
  * composer require mpdf/mpdf
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoloadFile = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($autoloadFile)) {
+    throw new Exception("No se encontró vendor/autoload.php. Ejecuta composer install.");
+}
+
+require_once $autoloadFile;
 require_once 'db.php';
 
 /**
  * Generar PDF de Constancia de Número Oficial
  */
-function generarPDFNumeroOficial($tramite_id) {
+function generarPDFNumeroOficial(int $tramite_id): string {
     global $conn;
     
     // Obtener datos del trámite
@@ -48,7 +53,7 @@ function generarPDFNumeroOficial($tramite_id) {
     $director_cargo = obtenerConfiguracion('director_cargo');
     
     // Crear instancia de mPDF
-    $mpdf = new \Mpdf\Mpdf([
+    $mpdf = new Mpdf([
         'format' => 'Letter',
         'margin_left' => 20,
         'margin_right' => 20,
@@ -74,7 +79,7 @@ function generarPDFNumeroOficial($tramite_id) {
         mkdir($rutaPDF, 0755, true);
     }
     
-    $mpdf->Output($rutaPDF . $nombreArchivo, \Mpdf\Output\Destination::FILE);
+    $mpdf->Output($rutaPDF . $nombreArchivo, Destination::FILE);
     
     return $nombreArchivo;
 }
@@ -82,7 +87,7 @@ function generarPDFNumeroOficial($tramite_id) {
 /**
  * Construir HTML para Constancia de Número Oficial
  */
-function construirHTMLNumeroOficial($tramite, $municipio, $director, $director_cargo) {
+function construirHTMLNumeroOficial(array $tramite, string $municipio, string $director, string $director_cargo): string {
     
     $folio = str_pad($tramite['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_anio'];
     $fecha = date('d \d\e F \d\e Y', strtotime($tramite['created_at']));
@@ -251,7 +256,7 @@ HTML;
 /**
  * Generar PDF según tipo de trámite
  */
-function generarPDFTramite($tramite_id) {
+function generarPDFTramite(int $tramite_id): string {
     global $conn;
     
     // Obtener tipo de trámite
@@ -285,6 +290,8 @@ function generarPDFTramite($tramite_id) {
         
         case 'SUBDIVISION':
             return generarPDFSubdivision($tramite_id);
+        case 'VOBO':
+            return generarPDFVOBO($tramite_id);
         
         default:
             throw new Exception("Tipo de trámite no soportado para PDF");
@@ -294,7 +301,7 @@ function generarPDFTramite($tramite_id) {
 /**
  * Descargar PDF de trámite
  */
-function descargarPDF($tramite_id) {
+function descargarPDF(int $tramite_id): void {
     try {
         $nombreArchivo = generarPDFTramite($tramite_id);
         $rutaCompleta = __DIR__ . "/../uploads/pdfs/" . $nombreArchivo;
@@ -316,17 +323,21 @@ function descargarPDF($tramite_id) {
 }
 
 // Funciones placeholder para otros tipos (implementar después)
-function generarPDFCMCU($tramite_id) {
+function generarPDFCMCU(int $_tramite_id): string {
     // TODO: Implementar
     throw new Exception("Función no implementada aún");
 }
 
-function generarPDFFusion($tramite_id) {
+function generarPDFFusion(int $_tramite_id): string {
     // TODO: Implementar
     throw new Exception("Función no implementada aún");
 }
 
-function generarPDFSubdivision($tramite_id) {
+function generarPDFSubdivision(int $_tramite_id): string {
+    // TODO: Implementar
+    throw new Exception("Función no implementada aún");
+}
+function generarPDFVOBO(int $_tramite_id): string {
     // TODO: Implementar
     throw new Exception("Función no implementada aún");
 }

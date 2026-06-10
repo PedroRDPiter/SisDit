@@ -111,7 +111,7 @@ if (!empty($folio)) {
 
 // ── Estatus permitidos (solo validar si no es solo_constancia) ──
 if (!$solo_constancia) {
-    $estatusPermitidos = ['En revisión', 'Aprobado por Verificador', 'Aprobado', 'Rechazado', 'En corrección'];
+    $estatusPermitidos = ['En revisión', 'En Revisión por Validador', 'Aprobado por Verificador', 'Aprobado', 'Rechazado', 'En corrección'];
     if (!in_array($estatus, $estatusPermitidos, true)) {
         echo json_encode(['success' => false, 'message' => 'Estatus no valido: ' . htmlspecialchars($estatus)]);
         exit;
@@ -290,12 +290,14 @@ try {
     $predial_archivo            = $tramite['predial_archivo'];
     $escrituras_archivo         = $tramite['escrituras_archivo'];
     $formato_constancia_archivo = $tramite['formato_constancia'];
+    $oficio_vobo_archivo        = $tramite['oficio_vobo'];
 
     $docMap = [
         'ine'                => ['campo' => &$ine_archivo,                'prefijo' => 'ine'],
         'escritura'          => ['campo' => &$escrituras_archivo,         'prefijo' => 'escritura'],
         'predial'            => ['campo' => &$predial_archivo,            'prefijo' => 'predial'],
         'formato_constancia' => ['campo' => &$formato_constancia_archivo, 'prefijo' => 'formato'],
+        'oficio_vobo'        => ['campo' => &$oficio_vobo_archivo,        'prefijo' => 'oficio_vobo'],
     ];
 
     foreach ($docMap as $inputName => &$info) {
@@ -313,6 +315,16 @@ try {
     }
     unset($info);
 
+    // ── Detectar trámite VOBO con oficio_vobo recién subido ──
+    $tipo_tramite_id_actual = (int) $tramite['tipo_tramite_id'];
+    $oficio_vobo_antes = $tramite['oficio_vobo'];
+    $oficio_vobo_cargado_ahora = isset($_FILES['oficio_vobo']) && $_FILES['oficio_vobo']['error'] === UPLOAD_ERR_OK && !empty($_FILES['oficio_vobo']['name']);
+    
+    // Si es trámite VOBO (id=9) y se subió oficio_vobo, cambiar a "En Revisión por Validador"
+    if ($tipo_tramite_id_actual === 9 && $oficio_vobo_cargado_ahora && empty($oficio_vobo_antes)) {
+        $estatus = 'En Revisión por Validador';
+    }
+
     // ── Sanitizar observaciones ────────────────────────────
     $observaciones      = htmlspecialchars($observaciones, ENT_QUOTES, 'UTF-8');
     $verificador_nombre = htmlspecialchars($verificador_nombre, ENT_QUOTES, 'UTF-8');
@@ -329,6 +341,7 @@ try {
             predial_archivo    = ?,
             escrituras_archivo = ?,
             formato_constancia = ?,
+            oficio_vobo        = ?,
             aprobado_por       = ?,
             verificador_nombre = ?,
             fecha_aprobacion   = NOW()";
@@ -340,10 +353,10 @@ try {
     $params = [
         $estatus, $observaciones, $foto1_archivo, $foto2_archivo,
         $ine_archivo, $titulo_archivo, $predial_archivo,
-        $escrituras_archivo, $formato_constancia_archivo,
+        $escrituras_archivo, $formato_constancia_archivo, $oficio_vobo_archivo,
         $uid, $verificador_nombre
     ];
-    $types = "sssssssssis";
+    $types = "ssssssssssis";
 
     // 🔥 CORREGIDO: Solo cuando el Director firma (estatus Aprobado) se guardan los datos de constancia
     if ($estatus === 'Aprobado' && !empty($numero_asignado)) {
@@ -441,11 +454,6 @@ try {
              }
          }
      }
-
-     // 🔥 ASIGNAR FOLIO DE SALIDA al aprobar (Director) — red de seguridad.
-    // Lo normal es que el folio de salida ya se haya asignado al guardar la constancia
-    // (un folio distinto por subtrámite). Aquí solo asignamos a las filas del grupo
-    // que aún no tengan folio de salida, usando el consecutivo por tipo de trámite y año.
     if ($estatus === 'Aprobado') {
         $anio_actual = (int) date('Y');
 
@@ -496,6 +504,7 @@ try {
     // ── Historial ──────────────────────────────────────────
     $accionMap = [
         'En revisión'              => 'Modificado',
+        'En Revisión por Validador' => 'En Revisión por Validador',
         'Aprobado por Verificador' => 'Aprobado por Verificador',
         'Aprobado'                 => 'Aprobado',
         'Rechazado'                => 'Rechazado',
@@ -571,6 +580,7 @@ try {
 
     $msgs = [
         'En revisión'              => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) está EN REVISIÓN. Le informaremos novedades. — Dirección de Planeación y D.U.",
+        'En Revisión por Validador' => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) está EN REVISIÓN por el Validador. Pronto nos comunicaremos con usted. — Dirección de Planeación y D.U.",
         'Aprobado por Verificador' => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) fue APROBADO por el verificador y está pendiente de firma del Director. — Dirección de Planeación y D.U.",
         'Aprobado'                 => "¡Hola $primerNombre! Su trámite *$folio* ($tipoTramite) fue APROBADO y firmado. Puede pasar a recogerlo con esta papeleta. — Dirección de Planeación y D.U.",
         'Rechazado'                => "Hola $primerNombre, lamentamos informarle que su trámite *$folio* ($tipoTramite) fue RECHAZADO." . (!empty($observaciones) ? " Motivo: $observaciones" : " Comuníquese con nosotros.") . " — Dirección de Planeación y D.U.",
@@ -597,6 +607,7 @@ try {
 
     $asuntos = [
         'En revisión'              => "Trámite $folio en Revisión",
+        'En Revisión por Validador' => "Trámite $folio — En Revisión por Validador",
         'Aprobado por Verificador' => "Trámite $folio — Aprobado por Verificador",
         'Aprobado'                 => "¡Trámite $folio Aprobado!",
         'Rechazado'                => "Trámite $folio Rechazado",

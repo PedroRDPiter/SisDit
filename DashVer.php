@@ -434,6 +434,9 @@ window.onpopstate = function () {
             <option value="En revisión" <?= ($_GET['estatus'] ?? '') === 'En revisión' ? 'selected' : '' ?>>
                 En revisión
             </option>
+            <option value="En Revisión por Validador" <?= ($_GET['estatus'] ?? '') === 'En Revisión por Validador' ? 'selected' : '' ?>>
+                En Revisión por Validador
+            </option>
             <option value="Aprobado" <?= ($_GET['estatus'] ?? '') === 'Aprobado' ? 'selected' : '' ?>>
                 Aprobado
             </option>
@@ -500,9 +503,12 @@ window.onpopstate = function () {
         <td class="text-center">
             <?php
                 $badge = match ($t['estatus']) {
-                    'En revisi������������n' => 'bg-warning text-dark',
+                    'En revisión' => 'bg-warning text-dark',
+                    'En Revisión por Validador' => 'bg-secondary',
                     'Aprobado' => 'bg-success',
+                    'Aprobado por Verificador' => 'bg-info text-dark',
                     'Rechazado' => 'bg-danger',
+                    'En corrección' => 'bg-primary',
                     default => 'bg-secondary'
                 };
             ?>

@@ -259,9 +259,10 @@ const reqPorTramite={
   5:{titulo:'Informe CU',documentos:['ine'],nota:'Requiere cuenta catastral.'},
   6:{titulo:'Terminación de Obra',documentos:['solicitud_por_escrito','licencia_de_construccion','bitacora_de_obra'],nota:''},
   7:{titulo:'Licencia de Construcción',documentos:['ine','escritura','predial'],nota:''},
-  8:{titulo:'Anuncios Publicitarios',documentos:['ine','predial','contrato_arrendamiento','memoria_descriptiva'],nota:'Se requiere memoria descriptiva o calculo de superficie, si es Empresa se requiere Poder Notariado y Acta Constitutiva.'}
+  8:{titulo:'Anuncios Publicitarios',documentos:['ine','predial','contrato_arrendamiento','memoria_descriptiva'],nota:'Se requiere memoria descriptiva o calculo de superficie, si es Empresa se requiere Poder Notariado y Acta Constitutiva.'},
+  9:{titulo:'Visto Bueno',documentos:['oficio_vobo'],nota:''}
 };
-const labelsDoc={'ine':'INE o Pasaporte','escritura':'Escritura / Título','predial':'Boleta Predial Vigente','formato_constancia':'Formato de Constancia','contrato_arrendamiento':'Contrato de Arrendamiento o Escritura','memoria_descriptiva':'Memoria Descriptiva / Cálculo de Superficie','poder_notariado':'Poder Notariado (opcional para empresas)','acta_constitutiva':'Acta Constitutiva (opcional para empresas)','solicitud_por_escrito':'Solicitud por Escrito','licencia_de_construccion':'Licencia de Construcción','bitacora_de_obra':'Bitácora de Obra'};
+const labelsDoc={'ine':'INE o Pasaporte','escritura':'Escritura / Título','predial':'Boleta Predial Vigente','formato_constancia':'Formato de Constancia','contrato_arrendamiento':'Contrato de Arrendamiento o Escritura','memoria_descriptiva':'Memoria Descriptiva / Cálculo de Superficie','poder_notariado':'Poder Notariado (opcional para empresas)','acta_constitutiva':'Acta Constitutiva (opcional para empresas)','solicitud_por_escrito':'Solicitud por Escrito','licencia_de_construccion':'Licencia de Construcción','bitacora_de_obra':'Bitácora de Obra','oficio_vobo':'Oficio Visto Bueno'};
 function seleccionarTramite(id,nombre){
   document.getElementById('tipo_tramite_id_hidden').value=id;
   document.getElementById('tipo_tramite_id').value=id;
@@ -316,7 +317,7 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
     // Mostrar documentos requeridos según tipo de trámite
     const tipoId = d.tipoTramiteId || '';
     // Ocultar todos los campos de subida primero
-    const allInputFields = ['sec_ine', 'sec_escritura', 'sec_predial', 'sec_formato_constancia', 'sec_contrato_arrendamiento', 'sec_memoria_descriptiva', 'sec_poder_notariado', 'sec_acta_constitutiva', 'sec_solicitud_por_escrito', 'sec_licencia_de_construccion', 'sec_bitacora_de_obra'];
+    const allInputFields = ['sec_ine', 'sec_escritura', 'sec_predial', 'sec_formato_constancia', 'sec_contrato_arrendamiento', 'sec_memoria_descriptiva', 'sec_poder_notariado', 'sec_acta_constitutiva', 'sec_solicitud_por_escrito', 'sec_licencia_de_construccion', 'sec_bitacora_de_obra', 'sec_oficio_vobo'];
     allInputFields.forEach(field => {
       const el = document.getElementById(field);
       if (el) el.style.display = 'none';
@@ -371,12 +372,18 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
           if (el) el.style.display = 'block';
         });
         break;
-      case '8':
-        ['sec_ine', 'sec_predial', 'sec_contrato_arrendamiento', 'sec_memoria_descriptiva', 'sec_poder_notariado', 'sec_acta_constitutiva'].forEach(field => {
-          const el = document.getElementById(field);
-          if (el) el.style.display = 'block';
-        });
-        break;
+          case '8':
+            ['sec_ine', 'sec_predial', 'sec_contrato_arrendamiento', 'sec_memoria_descriptiva', 'sec_poder_notariado', 'sec_acta_constitutiva'].forEach(field => {
+              const el = document.getElementById(field);
+              if (el) el.style.display = 'block';
+            });
+            break;
+          case '9':
+            ['sec_oficio_vobo'].forEach(field => {
+              const el = document.getElementById(field);
+              if (el) el.style.display = 'block';
+            });
+            break;
       default:
         break;
     }
@@ -396,7 +403,9 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
       sec_doc_acta_constitutiva: d.acta,
       sec_doc_solicitud_por_escrito: d.solicitud_por_escrito,
       sec_doc_licencia_de_construccion: d.licencia_de_construccion,
-      sec_doc_bitacora_de_obra: d.bitacora_de_obra
+      sec_doc_bitacora_de_obra: d.bitacora_de_obra,
+      sec_doc_oficio_vobo: d.oficio_vobo,
+      sec_doc_oficio_visto_bueno: d.oficio
     };
     
     let hayDocs = false;
@@ -504,7 +513,7 @@ function _abrirNotif(){
 
 // ── DATATABLES ──
 $(document).ready(function(){
-  const lang={paginate:{previous:'Anterior',next:'Siguiente'},info:'Mostrando _START_ a _END_ de _TOTAL_',infoEmpty:'Sin registros',zeroRecords:'Sin resultados',search:'Buscar:',lengthMenu:'Mostrar _MENU_ registros'};
+  const lang={paginate:{previous:'Anterior',next:'Siguiente'},info:'Mostrando _START_ a _END_ de _TOTAL_',infoEmpty:'Sin registros',infoFiltered:'(filtrado de _MAX_ registros totales)',zeroRecords:'Sin resultados',search:'Buscar:',lengthMenu:'Mostrar _MENU_ registros',emptyTable:'No hay datos disponibles',loadingRecords:'Cargando...'};
 
 
 
@@ -1291,6 +1300,39 @@ document.getElementById('cuenta_catastral').addEventListener('keydown', function
     }
 });
 
-// Cargar calles al cargar la página
-document.addEventListener('DOMContentLoaded', cargarCalles);
+function mostrarAlertaNumerosOficiales() {
+    let numeroOficial = null;
+    let estatusVerificador = null;
 
+    if (typeof numero_oficial !== 'undefined' && numero_oficial !== null) {
+        numeroOficial = Number(numero_oficial);
+    } else if (document.getElementById('numero_oficial')) {
+        numeroOficial = Number(document.getElementById('numero_oficial').value || document.getElementById('numero_oficial').textContent);
+    } else if (document.body.dataset.numeroOficial) {
+        numeroOficial = Number(document.body.dataset.numeroOficial);
+    }
+
+    if (typeof estatus_verificador !== 'undefined' && estatus_verificador !== null) {
+        estatusVerificador = String(estatus_verificador).trim();
+    } else if (document.getElementById('Aprobado por Verificador')) {
+        estatusVerificador = String(document.getElementById('Aprobado por Verificador').value || document.getElementById('Aprobado por Verificador').textContent).trim();
+    } else if (document.body.dataset.estatusVerificador) {
+        estatusVerificador = String(document.body.dataset.estatusVerificador).trim();
+    }
+
+    if (!Number.isNaN(numeroOficial) && numeroOficial > 0 &&
+        estatusVerificador && estatusVerificador.toLowerCase().includes('aprob')) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Constancias por firmar',
+            text: 'faltan numeros oficiales por firmar y aprobar',
+            confirmButtonColor: '#7b0f2b'
+        });
+    }
+}
+
+// Cargar calles al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarCalles();
+    mostrarAlertaNumerosOficiales();
+});

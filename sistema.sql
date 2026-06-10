@@ -331,6 +331,7 @@ CREATE TABLE `tramites` (
   `escrituras_archivo` varchar(255) DEFAULT NULL,
   `foto_predio_archivo` varchar(255) DEFAULT NULL,
   `formato_constancia` varchar(255) DEFAULT NULL,
+  `oficio_vobo` varchar(255) DEFAULT NULL,
   `carta_poder` varchar(255) DEFAULT NULL,
   `foto1_archivo` varchar(255) DEFAULT NULL,
   `foto2_archivo` varchar(255) DEFAULT NULL,

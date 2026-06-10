@@ -49,13 +49,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // y se genera automáticamente el mensaje de WhatsApp
   // =====================================================
 
-  // Textos de ayuda que aparecen al seleccionar cada estatus
-  const hints = {
-    'En revision':              'El trámite continúa en proceso de revisión.',
-    'En correccion':            'Se notificará al ciudadano que debe corregir su expediente.',
-    'Aprobado por Verificador': 'El trámite pasará a la Ventanilla para firma final del Director.',
-    'Rechazado':                'El trámite se rechaza definitivamente.'
-  };
+// Textos de ayuda que aparecen al seleccionar cada estatus
+    const hints = {
+        'En revision':              'El trámite continúa en proceso de revisión.',
+        'En Revisión por Validador': 'El trámite está listo para ser revisado por el Validador.',
+        'En correccion':            'Se notificará al ciudadano que debe corregir su expediente.',
+        'Aprobado por Verificador': 'El trámite pasará a la Ventanilla para firma final del Director.',
+        'Rechazado':                'El trámite se rechaza definitivamente.'
+    };
 
   // Muestra u oculta el panel de corrección según el estatus elegido
   function actualizarPanelCorreccion() {
