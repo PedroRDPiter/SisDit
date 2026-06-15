@@ -156,6 +156,67 @@ $seg_res = $stmtSeg->get_result();
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script>
+// Autocompletado de Colonia
+document.addEventListener('DOMContentLoaded', function() {
+  const coloniaInput = document.getElementById('colonia_input');
+  const coloniaLista = document.getElementById('colonia_lista');
+  const cpInput = document.querySelector('input[name="cp"]');
+  
+  if (coloniaInput) {
+    coloniaInput.addEventListener('input', function() {
+      const valor = this.value.trim().toLowerCase();
+      
+      if (valor.length < 2) {
+        coloniaLista.style.display = 'none';
+        return;
+      }
+      
+      // Hacer petición AJAX al servidor
+      fetch('php/buscar_asentamientos.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'q=' + encodeURIComponent(valor)
+      })
+      .then(response => response.json())
+      .then(data => {
+        coloniaLista.innerHTML = '';
+        
+        if (data.length === 0) {
+          coloniaLista.style.display = 'none';
+          return;
+        }
+        
+        data.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item list-group-item-action';
+          li.textContent = item.asentamiento.toUpperCase();
+          li.style.cursor = 'pointer';
+          li.addEventListener('click', function() {
+            coloniaInput.value = item.asentamiento.toUpperCase();
+            if (cpInput && item.codigo_postal) {
+              cpInput.value = item.codigo_postal;
+            }
+            coloniaLista.style.display = 'none';
+          });
+          coloniaLista.appendChild(li);
+        });
+        
+        coloniaLista.style.display = 'block';
+      })
+      .catch(error => console.error('Error:', error));
+    });
+    
+    // Cerrar lista cuando se hace clic fuera
+    document.addEventListener('click', function(e) {
+      if (e.target !== coloniaInput) {
+        coloniaLista.style.display = 'none';
+      }
+    });
+  }
+});
+
 history.pushState(null,null,location.href);
 window.onpopstate=function(){history.go(1);};
 
@@ -861,54 +922,64 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
 
       <!-- Campo oculto para el tipo de trámite actual -->
       <input type="hidden" id="tipo_tramite_actual" value="">
-      <div class="mb-3">
-        <label class="form-label">Dirección <span class="text-danger">*</span></label>
-        <input type="text" class="form-control mayusculas" name="direccion" required placeholder="CALLE EJEMPLO: AV. INDEPENDENCIA">
-        <label class="form-label mt-2">Número</label>
-        <input type="text" class="form-control" name="numero" placeholder="Ej: 123 o S/N" required oninput="this.value=this.value.toUpperCase()">
-      </div>
       <div class="row">
-        <div class="col-md-4 mb-3">
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
+          <label class="form-label">Calle <span class="text-danger">*</span></label>
+          <input type="text" class="form-control mayusculas" name="direccion" required placeholder="CALLE EJEMPLO: AV. INDEPENDENCIA">
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
+          <label class="form-label">Colonia / Asentamiento <span class="badge bg-info ms-1" style="font-size:.65rem;">Buscar</span></label>
+          <div class="position-relative">
+            <input type="text" class="form-control mayusculas" id="colonia_input" name="colonia" placeholder="EJ: CENTRO - Empieza a escribir..." autocomplete="off">
+            <ul id="colonia_lista" class="list-group position-absolute w-100" style="display:none; max-height:250px; overflow-y:auto; z-index:1050; top:100%; box-shadow:0 4px 8px rgba(0,0,0,0.15); border:1px solid #dee2e6; border-radius:4px;">
+            </ul>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
           <label class="form-label">Localidad <span class="text-danger">*</span></label>
           <input type="text" class="form-control mayusculas" name="localidad" required placeholder="EJ: RINCÓN DE ROMOS">
         </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Colonia</label>
-          <input type="text" class="form-control mayusculas" name="colonia" placeholder="EJ: CENTRO">
+      </div>
+      <div class="row">
+        <div class="col-12 col-sm-6 col-md-3 mb-3">
+          <label class="form-label">Número</label>
+          <input type="text" class="form-control" name="numero" placeholder="Ej: 123 o S/N" required oninput="this.value=this.value.toUpperCase()">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-12 col-sm-6 col-md-3 mb-3">
           <label class="form-label">Código Postal</label>
           <input type="text" class="form-control" name="cp" maxlength="5" placeholder="Ej: 20400"
             oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)">
         </div>
-      </div>
-      <div class="row">
-        <div class="col-md-3 mb-3">
+        <div class="col-12 col-sm-6 col-md-3 mb-3">
+          <label class="form-label">Superficie</label>
+          <input type="text" class="form-control" name="superficie" placeholder="Ej: 200 m2">
+        </div>
+        <div class="col-12 col-sm-6 col-md-3 mb-3">
           <label class="form-label">Cuenta Catastral <span class="badge bg-success ms-1" style="font-size:.65rem;">Auto</span></label>
           <div class="input-group">
             <input type="text" class="form-control" name="cuenta_catastral" id="cuenta_catastral"
                                     inputmode="numeric"
                                     placeholder="Ingrese cuenta para buscar"
                                     oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-            <button type="button" class="btn btn-primary" id="btnBuscarCuenta">
+            <button type="button" class="btn btn-primary" id="btnBuscarCuenta" title="Buscar cuenta">
               <i class="bi bi-search"></i>
             </button>
           </div>
-          <small class="text-muted">
-            <i class="bi bi-info-circle me-1"></i>Solo números. Escriba y presione buscar o clic en mapa.
-          </small>
         </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label">Superficie</label>
-          <input type="text" class="form-control" name="superficie" placeholder="Ej: 200 m2">
-        </div>
-        <div class="col-md-3 mb-3">
+      </div>
+      <div class="row">
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
           <label class="form-label">UTM X (Este)</label>
           <input type="text" class="form-control" name="lat" id="lat" placeholder="Ej: 284500.00" readonly>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
           <label class="form-label">UTM Y (Norte)</label>
           <input type="text" class="form-control" name="lng" id="lng" placeholder="Ej: 2460500.00" readonly>
+        </div>
+        <div class="col-12 col-lg-4">
+          <small class="text-muted d-block mt-4">
+            <i class="bi bi-info-circle me-1"></i>Solo números. Escriba y presione buscar o clic en mapa.
+          </small>
         </div>
       </div>
       <div class="alert alert-info"><i class="bi bi-cursor me-2"></i><strong>Tip:</strong> Haz clic en el mapa para capturar las coordenadas UTM del predio.</div>

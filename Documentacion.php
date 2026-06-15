@@ -1,3 +1,18 @@
+<?php
+ini_set('session.cookie_httponly', 1);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once "php/funciones_seguridad.php";
+
+if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
+    header("Location: acceso.php");
+    exit();
+}
+
+$csrf = generarCSRF();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -33,64 +48,64 @@
     </style>
 </head>
 <body>
+        <!-- card de documentos segun los que se tienen guardados en la base de datos con apartado de anexar adicional -->
     <div class="container">
         <div class="documentation-container">
-            <h1 class="documentation-header">Documentación</h1>
-            <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+                <h1 class="documentation-header mb-0">Documentación</h1>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDocumentModal">
                     <i class="bi bi-plus-circle me-2"></i>Añadir Documentación
                 </button>
             </div>
-
             <div id="documentation-list" class="list-group">
                 <p class="text-center text-muted empty-state">No se encontró documentación para mostrar. Añade una nueva.</p>
-            </div>
-
-            <!-- Modal para Añadir Documentación -->
-            <div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header" style="background-color: #7b0f2b; color: white;">
-                            <h5 class="modal-title" id="addDocumentModalLabel">Añadir Nueva Documentación</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <form id="uploadDocumentForm" enctype="multipart/form-data">
-                            <div class="modal-body">
-                                <input type="hidden" id="folioInput" name="folio">
-                                <div class="mb-3">
-                                    <label for="documentType" class="form-label">Tipo de Documento</label>
-                                    <select class="form-select" id="documentType" name="documentType" required>
-                                        <option value="">Selecciona un tipo</option>
-                                        <option value="ine">INE / Identificación</option>
-                                        <option value="escritura">Escritura / Título</option>
-                                        <option value="predial">Boleta Predial</option>
-                                        <option value="formato">Formato de Constancia</option>
-                                        <option value="contrato_arrendamiento">Contrato de Arrendamiento o Escritura</option>
-                                        <option value="memoria_descriptiva">Memoria Descriptiva / Cálculo de Superficie</option>
-                                        <option value="poder_notariado">Poder Notariado</option>
-                                        <option value="acta_constitutiva">Acta Constitutiva</option>
-                                        <option value="solicitud_por_escrito">Solicitud por Escrito</option>
-                                        <option value="licencia_de_construccion">Licencia de Construcción</option>
-                                        <option value="bitacora_de_obra">Bitácora de Obra</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="documentFile" class="form-label">Archivo de Documentación (PDF, DOCX, JPG, PNG)</label>
-                                    <input type="file" class="form-control" id="documentFile" name="documentFile" accept=".pdf,.doc,.docx,.jpg,.png" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-primary">Subir Documento</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- BOOTSTRAP 5 JS -->
+    <div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #7b0f2b; color: white;">
+                    <h5 class="modal-title" id="addDocumentModalLabel">Añadir Nueva Documentación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="uploadDocumentForm" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" id="folioInput" name="folio">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="documentType" class="form-label">Tipo de Documento</label>
+                            <select class="form-select" id="documentType" name="documentType" required>
+                                <option value="">Selecciona un tipo</option>
+                                <option value="ine">INE / Identificación</option>
+                                <option value="escritura">Escritura / Título</option>
+                                <option value="predial">Boleta Predial</option>
+                                <option value="formato">Formato de Constancia</option>
+                                <option value="oficio_vobo">Oficio Visto Bueno</option>
+                                <option value="contrato_arrendamiento">Contrato de Arrendamiento o Escritura</option>
+                                <option value="memoria_descriptiva">Memoria Descriptiva / Cálculo de Superficie</option>
+                                <option value="poder_notariado">Poder Notariado</option>
+                                <option value="acta_constitutiva">Acta Constitutiva</option>
+                                <option value="solicitud_por_escrito">Solicitud por Escrito</option>
+                                <option value="licencia_de_construccion">Licencia de Construcción</option>
+                                <option value="bitacora_de_obra">Bitácora de Obra</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="documentFile" class="form-label">Archivo de Documentación (PDF, DOCX, JPG, PNG)</label>
+                            <input type="file" class="form-control" id="documentFile" name="documentFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                            <div class="form-text">El archivo se guardará en la carpeta privada del folio.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Subir Documento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
             const uploadForm = document.getElementById('uploadDocumentForm');
@@ -115,14 +130,22 @@
             try {
                 const response = await fetch('save_document.php', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const text = await response.text();
+                    let message = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorResult = JSON.parse(text);
+                        if (errorResult && errorResult.message) {
+                            message = errorResult.message;
+                        }
+                    } catch (parseError) {}
+                    throw new Error(message);
                 }
 
-                // Try to parse response as JSON, but handle cases where server returns HTML or invalid JSON
                 const text = await response.text();
                 let result;
                 try {
@@ -138,23 +161,21 @@
 
                 if (result && result.success) {
                     alert('Documento subido exitosamente: ' + result.message);
-                    // Add the new document to the list
-                    addDocumentToList({ type: documentType, filePath: result.filePath, fileName: result.fileName });
-                    // Close the modal
-                        // Close the modal if bootstrap is available and instance exists
+                    if (folio) {
+                        loadDocuments(folio);
+                    }
                         if (typeof bootstrap !== 'undefined') {
                             const modalEl = document.getElementById('addDocumentModal');
                             const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                             try { modal.hide(); } catch(e) { console.warn('Could not hide modal', e); }
                         }
-                    // Reset the form
                     this.reset();
                 } else {
                     alert('Error al subir el documento: ' + result.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Hubo un error al subir el documento.');
+                alert(error.message || 'Hubo un error al subir el documento.');
             }
         });
             }
@@ -170,7 +191,7 @@
 
         async function loadDocuments(folio) {
             try {
-                const response = await fetch(`fetch_documents.php?folio=${folio}`);
+                const response = await fetch(`fetch_documents.php?folio=${encodeURIComponent(folio)}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -204,33 +225,53 @@
                 emptyState.remove();
             }
 
-            const docItem = document.createElement('div');
-            docItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
-            
             // Map document types to user-friendly titles
             const documentTypeTitles = {
                 'ine': 'INE / Identificación',
                 'escritura': 'Escritura / Título',
                 'predial': 'Boleta Predial',
                 'formato': 'Formato de Constancia',
+                'oficio_vobo': 'Oficio Visto Bueno',
                 'contrato_arrendamiento': 'Contrato de Arrendamiento o Escritura',
                 'memoria_descriptiva': 'Memoria Descriptiva / Cálculo de Superficie',
                 'poder_notariado': 'Poder Notariado',
                 'acta_constitutiva': 'Acta Constitutiva',
                 'solicitud_por_escrito': 'Solicitud por Escrito',
                 'licencia_de_construccion': 'Licencia de Construcción',
-                'bitacora_de_obra': 'Bitácora de Obra'
+                'bitacora_de_obra': 'Bitácora de Obra',
+                'foto1': 'Fotografía 1 del Inmueble',
+                'foto2': 'Fotografía 2 del Inmueble'
             };
-            const displayTitle = documentTypeTitles[doc.type] || doc.type;
+            const displayTitle = doc.label || documentTypeTitles[doc.type] || doc.type;
 
-            docItem.innerHTML = `
-                <div>
-                    <h5>${displayTitle}</h5>
-                    <small class="text-muted">Archivo: ${doc.fileName}</small>
-                </div>
-                <a href="${doc.filePath}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-2"></i>Ver Documento</a>
-            `;
-            list.appendChild(docItem);
+            if (!doc.filePath || !doc.filePath.startsWith('uploads/')) {
+                return;
+            }
+
+            const cardItem = document.createElement('div');
+            cardItem.classList.add('card', 'card-documento', 'mb-3');
+
+            const cardBody = document.createElement('div');
+            cardBody.classList.add('card-body');
+
+            const title = document.createElement('h5');
+            title.classList.add('card-title');
+            title.textContent = displayTitle;
+
+            const file = document.createElement('p');
+            file.classList.add('card-text');
+            file.textContent = `Archivo: ${doc.fileName || ''}`;
+
+            const link = document.createElement('a');
+            link.href = doc.filePath;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.classList.add('btn', 'btn-sm', 'btn-outline-primary');
+            link.innerHTML = '<i class="bi bi-eye me-2"></i>Ver Documento';
+
+            cardBody.append(title, file, link);
+            cardItem.appendChild(cardBody);
+            list.appendChild(cardItem);
         }
     </script>
 </body>

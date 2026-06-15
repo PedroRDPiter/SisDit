@@ -247,12 +247,23 @@ else                     $back = 'DashVer.php';
             border-collapse:collapse; 
             margin-bottom:10px; 
         }
+                
+        .numero-grande {
+            font-size: 35px;
+            font-weight:bold;
+            text-align:center;
+            text-size-adjust: 35px;
+            color:#7b0f2b;
+            width: 280px;
+            height: 80px;
+        }
+        
         
         .tabla-datos td,
         .tabla-datos th { 
             border:1px solid #7b0f2b; 
             padding:5px 7px; 
-            font-size:10pt; 
+            /* font-size:10pt;  */
         }
         
         .tabla-datos .header-row td { 
@@ -273,18 +284,7 @@ else                     $back = 'DashVer.php';
         .tabla-datos .valor { 
             text-transform:uppercase; 
         }
-        
-        .numero-grande {
-            font-size: 25px;
-            font-weight:bold;
-            text-align:center;
-            text-size-adjust: 29px;
-            color:#7b0f2b;
-            width: 280px;
-            height: 80px;
-            background: rgba(123,15,43,0.05);
-        }
-        
+
         .referencia-anterior { 
             font-size:9pt; 
             text-align:center; 
@@ -607,6 +607,14 @@ else                     $back = 'DashVer.php';
             .botones-accion, .panel-croquis { 
                 display: none !important; 
             }
+            .numero-grande {
+                font-size: 35px !important;
+                line-height: 35px !important;
+                font-weight: bold !important;
+                color: #7b0f2b !important;
+                -webkit-text-size-adjust: none !important;
+                text-size-adjust: none !important;
+            }
             
             html, body { 
                 height: auto; 
@@ -649,7 +657,7 @@ else                     $back = 'DashVer.php';
 
             /* Comprimir elementos de página 1 para dar espacio a la firma */
             .titulo-principal { margin: 8px 0 6px !important; font-size: 14pt !important; }
-            .tabla-datos td, .tabla-datos th { padding: 3px 6px !important; font-size: 9pt !important; }
+            .tabla-datos td, .tabla-datos th { padding: 3px 6px !important; font-size: 9pt; }
             .seccion-nombre .valor-nombre { font-size: 15pt !important; padding: 6px 10px !important; }
             .seccion-nombre .label-nombre { padding: 6px 10px !important; }
             .seccion-fecha .valor-fecha { padding: 5px 10px !important; font-size: 10pt !important; }

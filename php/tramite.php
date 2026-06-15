@@ -133,26 +133,21 @@ try {
     $esc_archivo    = $archivos['escritura']          ?? null;  // s 19
     $pre_archivo    = $archivos['predial']            ?? null;  // s 20
     $fmt_constancia = $archivos['formato_constancia'] ?? null;  // s 21
-    $oficio_vobo    = $archivos['oficio_vobo']        ?? null;  // s 22
+    $oficio_vobo    = $archivos['oficio_vobo']        ?? '';  // s 22
     $datos_json     = null;                                     // s 23
     $usuario_id     = (int) $_SESSION['id'];                    // i 25
 
     /* ══════════════════════════════════════════════════════
-       INSERT tramites — 28 columnas, 28 valores
+       INSERT tramites — 30 columnas, 30 valores
        Mapeo columna → tipo:
        1-3  folio_numero, folio_anio, tipo_tramite_id        => i i i
        4-11 propietario, direccion, localidad, colonia, cp,
-            calle, entre_calle1, entre_calle2                  => s s s s s s s s
+            calle, entre_calle1, entre_calle2                  => s x 8
        12-13 lat, lng                                         => d d
-       14-15 fecha_ingreso, fecha_entrega                     => s s
-       16-18 solicitante, telefono, correo                    => s s s
-       19-20 cuenta_catastral, superficie                     => s s
-       21-24 ine_archivo, escrituras_archivo, predial_archivo, formato_constancia  => s s s s
-       25-26 datos_especificos, comentario_sin_doc            => s s
-       27 cantidad_princial                                   => i
-       28 usuario_creador_id                                  => i
-       Total: 3i + 8s + 2d + 2s + 3s + 2s + 4s + 2s + 2i = 28
-    ══════════════════════════════════════════════════════ */
+       14-27 solicitante ... comentario_sin_doc               => s x 14
+       28-29 cantidad, usuario_creador_id                     => i i
+       30   tramite_principal_id                              => s (nullable)
+       ══════════════════════════════════════════════════════ */
     $cantidad_principal = isset($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
     if ($cantidad_principal < 1) $cantidad_principal = 1;
     if ($cantidad_principal > 50) $cantidad_principal = 50;
@@ -165,20 +160,36 @@ try {
         solicitante, telefono, correo, cuenta_catastral, superficie,
         ine_archivo, escrituras_archivo, predial_archivo, formato_constancia, oficio_vobo,
         datos_especificos, comentario_sin_doc, cantidad, usuario_creador_id, tramite_principal_id
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) throw new Exception("Error preparar INSERT principal: " . $conn->error);
 
-    $bind_types = "iiissssssssddssssssssssssssiiis";
+    $bind_types = "iiissssssssddssssssssssssssiis";
     $null_principal = null;
+
+     $bound_calle = $calle ?? '';
+    $bound_entre_calle1 = $entre_calle1 ?? '';
+    $bound_lat = $lat === null ? 0.0 : $lat;
+    $bound_lng = $lng === null ? 0.0 : $lng;
+    $bound_correo = $correo ?? '';
+    $bound_cuenta_catastral = $cuenta_catastral ?? '';
+    $bound_superficie = $superficie ?? '';
+    $bound_ine_archivo = $ine_archivo ?? '';
+    $bound_esc_archivo = $esc_archivo ?? '';
+    $bound_pre_archivo = $pre_archivo ?? '';
+    $bound_fmt_constancia = $fmt_constancia ?? '';
+    $bound_oficio_vobo = $oficio_vobo ?? '';
+    $bound_datos_json = $datos_json ?? '';
+    $bound_comentario_sin_doc = $comentario_sin_doc ?? '';
+    $bound_null_principal = $null_principal;
 
     $stmt->bind_param($bind_types,
         $folio_numero, $folio_anio, $tipo_tramite_id, $propietario, $direccion, $localidad, $colonia, $cp,
-        $calle, $entre_calle1, $entre_calle2, $lat, $lng, $fecha_ingreso, $fecha_entrega,
-        $solicitante, $telefono, $correo, $cuenta_catastral, $superficie,
-        $ine_archivo, $esc_archivo, $pre_archivo, $fmt_constancia, $oficio_vobo,
-        $datos_json, $comentario_sin_doc, $cantidad_principal, $usuario_id, $null_principal
+        $bound_calle, $bound_entre_calle1, $entre_calle2, $bound_lat, $bound_lng, $fecha_ingreso, $fecha_entrega,
+        $solicitante, $telefono, $bound_correo, $bound_cuenta_catastral, $bound_superficie,
+        $bound_ine_archivo, $bound_esc_archivo, $bound_pre_archivo, $bound_fmt_constancia, $bound_oficio_vobo,
+        $bound_datos_json, $bound_comentario_sin_doc, $cantidad_principal, $usuario_id, $bound_null_principal
     );
 
     if (!$stmt->execute()) throw new Exception("Error insert principal: " . $stmt->error);
@@ -188,13 +199,34 @@ try {
 
     // ── Determinar estatus inicial según tipo de trámite ──
     $estatus_inicial = 'En revisión';
-    if ($tipo_tramite_id === 9 && $oficio_vobo !== null) {
+    if ($tipo_tramite_id === 9 && $oficio_vobo !== '') {
         $estatus_inicial = 'En Revisión por Validador';
     }
 
     // Historial y log del principal
-    $hist = $conn->prepare("INSERT INTO historial_tramites (tramite_id, usuario_id, accion, estatus_nuevo, comentario) VALUES (?,?, 'Creado', ?, 'Trámite creado')");
-    if ($hist) { $hist->bind_param("iii", $first_tramite_id, $usuario_id, $estatus_inicial); $hist->execute(); $hist->close(); }
+    $accion_hist_val = 'Creado';
+    $comentario_hist_val = 'Trámite creado';
+    
+    // Explicitly define variables for binding to ensure they are passed by reference correctly
+    $hist_param1 = $first_tramite_id;
+    $hist_param2 = $usuario_id;
+    $hist_param3 = $accion_hist_val;
+    $hist_param4 = $estatus_inicial;
+    $hist_param5 = $comentario_hist_val;
+
+    $hist = $conn->prepare("INSERT INTO historial_tramites (tramite_id, usuario_id, accion, estatus_nuevo, comentario) VALUES (?, ?, ?, ?, ?)");
+    if ($hist) {
+        // Bind parameters using the explicitly defined variables
+        $hist->bind_param("iisss", 
+            $hist_param1, 
+            $hist_param2, 
+            $hist_param3, 
+            $hist_param4, 
+            $hist_param5
+        );
+        $hist->execute();
+        $hist->close();
+    }
 
     $folioStr = str_pad($folio_numero, 3, "0", STR_PAD_LEFT) . "/" . $folio_anio;
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
@@ -229,13 +261,13 @@ try {
                 solicitante, telefono, correo, cuenta_catastral, superficie,
                 ine_archivo, escrituras_archivo, predial_archivo, formato_constancia, oficio_vobo,
                 datos_especificos, comentario_sin_doc, cantidad, usuario_creador_id, tramite_principal_id
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
             $stmt2 = $conn->prepare($sql2);
             if (!$stmt2) throw new Exception("Error preparar INSERT adicional: " . $conn->error);
 
             // Usar oficio_vobo del principal para los adicionales (pueden tener su propio oficio_vobo si es tipo 9)
-            $ta_oficio_vobo = ($ta_tipo_id === 9) ? (isset($_FILES['ta1_oficio_vobo']) ? 'placeholder' : null) : $oficio_vobo;
+            $ta_oficio_vobo = ($ta_tipo_id === 9) ? (isset($_FILES['ta1_oficio_vobo']) ? 'placeholder' : '') : $oficio_vobo;
 
             $stmt2->bind_param($bind_types,
                 $folio_numero, $folio_anio, $ta_tipo_id, $ta_prop, $direccion, $localidad, $colonia, $cp,

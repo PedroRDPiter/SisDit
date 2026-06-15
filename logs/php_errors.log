@@ -1,3 +1,107 @@
 [08-Jun-2026 10:32:57 America/Mexico_City] Error registro.php: El correo ya esta registrado en el sistema
 [08-Jun-2026 10:33:17 America/Mexico_City] Error registro.php: Duplicate entry 'dir.planeacionydu@gmail.com' for key 'uk_correo'
 [08-Jun-2026 10:33:40 America/Mexico_City] Error registro.php: Duplicate entry 'dir.planeacionydu@gmail.com' for key 'uk_correo'
+[15-Jun-2026 14:07:12 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:176
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(176): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'ANTONIO MU\xC3\x91OZ ...', 'RINC\xC3\x93N DE ROMO...', 'EL VALLE DE LAS...', '20427', NULL, NULL, '', NULL, NULL, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 18, NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 176
+[15-Jun-2026 14:09:53 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:176
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(176): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'ANTONIO MU\xC3\x91OZ ...', 'RINC\xC3\x93N DE ROMO...', 'EL VALLE DE LAS...', '20427', NULL, NULL, '', NULL, NULL, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 18, NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 176
+[15-Jun-2026 14:09:54 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:176
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(176): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'ANTONIO MU\xC3\x91OZ ...', 'RINC\xC3\x93N DE ROMO...', 'EL VALLE DE LAS...', '20427', NULL, NULL, '', NULL, NULL, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 18, NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 176
+[15-Jun-2026 14:10:06 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:176
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(176): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'ANTONIO MU\xC3\x91OZ ...', 'RINC\xC3\x93N DE ROMO...', NULL, '20427', NULL, NULL, '', NULL, NULL, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 18, NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 176
+[15-Jun-2026 14:10:47 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:176
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(176): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', NULL, NULL, '', NULL, NULL, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 18, NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 176
+[15-Jun-2026 14:11:14 America/Mexico_City] PHP Fatal error:  Uncaught Error: mysqli_stmt::bind_param(): Argument #10 cannot be passed by reference in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:178
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 178
+[15-Jun-2026 14:11:32 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:11:53 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:13:11 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:13:47 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:14:08 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:14:09 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', 'SOLIDARIDAD', '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:14:20 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:14:37 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:15:00 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:15:01 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:15:01 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:15:01 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:15:02 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:15:02 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
+[15-Jun-2026 14:16:00 America/Mexico_City] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php:192
+Stack trace:
+#0 C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php(192): mysqli_stmt->bind_param('iiissssssssddss...', 533, 2026, 1, 'PRUEBA', 'HIDALGO 20', 'RINC\xC3\x93N DE ROMO...', NULL, '20416', '', '', '', 0.0, 0.0, '2026-06-15', '2026-06-29', 'PRUEBA', '0000000000', '', '', '', '', '', '', '', '', '', '', 1, 18, '')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiTdesarrollo\php\tramite.php on line 192
