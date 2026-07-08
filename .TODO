@@ -1,1 +1,5 @@
-se ocupa que al momento de ingresar varios tramites se guarden con un solo numero de folio si es en un solo ingreso, al momento de pasar a veerificador le apareceran todos los tramites y sub tramites adicionales para que al momento de darle al modal de constancia donde pone los datos del lugar se guarden en un numero de folio de salida que va del ultimo creado, cada subtramite se guardara con diferente folio de salida y asi se separaran al final del flujo de trabajo, si tienes dudas realiza preguntas antes de programar, es importante que se guarden con un solo numero de folio de entrada para que al momento de generar la constancia se pueda relacionar con el numero de folio de salida y croquis diferentes de cada uno y asi tener un mejor control de los tramites realizados.
+cerrar tunel
+Get-Process cloudflared | Stop-Process -Force
+iniciar tunel
+$exe = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter cloudflared.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+& $exe tunnel --protocol http2 --url http://127.0.0.1:8081

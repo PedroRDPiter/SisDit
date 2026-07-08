@@ -10872,6 +10872,69 @@
                     776367.75
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "575\/2026",
+                "NOM_SOLI": "PRUEBA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "PRUEBA",
+                "FECH_INGRE": "2026-07-01",
+                "FECH_ENTRE": "2026-07-15",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "0000000000",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2459595.37,
+                    776223.44
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "574\/2026",
+                "NOM_SOLI": "JUANA ESMERALDA AVILA GONZALEZ",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "GILBERTO ROMO NAJERA",
+                "FECH_INGRE": "2026-07-01",
+                "FECH_ENTRE": "2026-07-15",
+                "ESTATUS": "Aprobado por Verificador",
+                "CONTACTO": "7143179075",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460040.64,
+                    775146.71
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "593\/2026",
+                "NOM_SOLI": "PRUEBA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "DOLORES HIDALGO 101",
+                "FECH_INGRE": "2026-07-08",
+                "FECH_ENTRE": "2026-07-22",
+                "ESTATUS": "Aprobado por Verificador",
+                "CONTACTO": "0000000000",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460777.97,
+                    776550.18
+                ]
+            }
         }
     ]
 }

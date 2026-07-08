@@ -92,7 +92,7 @@ if (isset($_GET['sin_foto']) && $_GET['sin_foto'] !== '') {
     }
 }
 
-$sql .= " ORDER BY t.created_at DESC";
+$sql .= " ORDER BY COALESCE(t.created_at, t.tiempo_ingreso, t.fecha_ingreso) DESC, t.id DESC";
 
 $stmt = $conn->prepare($sql);
 
@@ -117,8 +117,8 @@ $resultado = $stmt->get_result();
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
-<!-- LEAFLET -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<!-- OPENLAYERS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css"/>
 
 <!-- CSS PROPIO -->
 <link rel="stylesheet" href="./css/style.css?v=1">
@@ -251,10 +251,98 @@ window.onpopstate = function () {
 .modal .form-label { font-size: .9rem; }
 .modal .form-control { height: calc(1.9em + .75rem + 2px); }
 .modal .card-body .row > [class*="col-"] { display:flex; flex-direction:column; }
+#modalConstancia .modal-dialog {
+  max-width: min(1280px, calc(100vw - 24px));
+}
 
 /* Ajuste específico: asegurar que los tres inputs principales estén alineados */
 @media (min-width: 768px) {
   #modalConstancia .card-body .row.g-3 > .col-md-4 { display:flex; flex-direction:column; }
+}
+
+#ver_mapa_croquis {
+  width: 100%;
+  height: 430px;
+  min-height: 360px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #eef2f3;
+}
+.croquis-map-label {
+  color: #111;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  text-shadow: 0 1px 3px #fff, 1px 0 3px #fff, -1px 0 3px #fff;
+  white-space: nowrap;
+  line-height: 22px;
+}
+.croquis-map-label-text {
+  display: inline-block;
+  padding: 0 4px;
+  transform-origin: center center;
+  user-select: none;
+}
+.croquis-extra-text-selected .croquis-map-label-text {
+  outline: 1px dashed #0d6efd;
+  outline-offset: 3px;
+}
+.croquis-extra-text .croquis-map-label-text {
+  background: rgba(255, 255, 255, 0);
+  border: 0px solid rgba(0,0,0,.35);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.croquis-text-list {
+  max-height: 105px;
+  overflow: auto;
+}
+.croquis-selected-info {
+  font-size: .8rem;
+  min-height: 1.25rem;
+}
+.croquis-ol-toolbar {
+  top: 4.6em;
+  left: .5em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+.croquis-ol-toolbar button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
+}
+.croquis-ol-toolbar button:hover,
+.croquis-ol-toolbar button.active {
+  background: #7b0f2b;
+  color: #fff;
+}
+#ver_mapa_croquis.croquis-capturando .ol-control,
+#ver_mapa_croquis.croquis-capturando .ol-attribution {
+  display: none;
+}
+#ver_mapa_croquis.croquis-capturando {
+  cursor: default;
+}
+.croquis-capture-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 650;
+  pointer-events: none;
 }
 </style>
 </head>
@@ -975,8 +1063,8 @@ window.onpopstate = function () {
 
 <!-- MODAL: CONSTANCIA DE NUMERO OFICIAL -->
 <div class="modal fade" id="modalConstancia" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content shadow" style="max-height: 80vh; overflow-y: auto;">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content shadow" style="max-height: 90vh; overflow-y: auto;">
       <div class="modal-header bg-success text-white">
         <h5 class="modal-title">
           <i class="bi bi-file-earmark-check me-2"></i> Constancia de Número Oficial
@@ -1146,34 +1234,79 @@ window.onpopstate = function () {
     <div class="card-body">
         <div id="ver_alerta_croquis" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
             <i class="bi bi-exclamation-triangle-fill"></i>
-            <span>Sin croquis. Selecciona una imagen y guárdala para poder imprimir.</span>
+            <span>Sin croquis. Selecciona o dibuja un poligono en el mapa y guardalo para poder imprimir.</span>
         </div>
         <div id="ver_ok_croquis" class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
             <i class="bi bi-check-circle-fill"></i>
-            <span>Croquis cargado correctamente.</span>
+            <span>Croquis guardado correctamente.</span>
         </div>
-        <div class="row g-2 align-items-start">
-            <div class="col-md-6">
-                <label class="form-label small fw-semibold">Imagen del croquis (JPG/PNG, máx. 10MB, se redimensiona a 500x800 píxeles)</label>
-                <input type="file" class="form-control form-control-sm" id="ver_inp_croquis"
-                       accept="image/jpeg,image/png,image/webp"
-                       onchange="ver_prevCroquis(this)">
-                <div class="text-muted small mt-1">
-                    <i class="bi bi-clipboard me-1"></i>También puedes pegar una imagen con Ctrl+V
+        <div class="row g-3 align-items-start">
+            <div class="col-lg-8">
+                <div id="ver_mapa_croquis" aria-label="Mapa para croquis del predio"></div>
+                <div class="croquis-selected-info text-muted mt-2" id="ver_croquis_info">
+                    Selecciona un poligono existente o dibuja uno nuevo.
                 </div>
-                <button type="button" class="btn btn-sm btn-secondary w-100 mt-2"
-                        id="ver_btn_subir" onclick="ver_subirCroquis()" style="display:none;">
-                    <i class="bi bi-cloud-upload me-1"></i>Guardar croquis
-                </button>
-                <div id="ver_msg_croquis" class="small fw-semibold mt-1"></div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-semibold">Vista previa:</label>
-                <div id="ver_preview_box" style="border:2px dashed #ccc;border-radius:6px;min-height:200px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;overflow:hidden;">
+            <div class="col-lg-4">
+                <label class="form-label small fw-semibold" for="ver_texto_poligono">Texto sobre el poligono</label>
+                <textarea class="form-control form-control-sm" id="ver_texto_poligono" rows="3"
+                          placeholder="Ej. Predio del solicitante"></textarea>
+                <div class="row g-2 mt-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold mb-1" for="ver_texto_tamano">Tamano</label>
+                        <input type="number" class="form-control form-control-sm" id="ver_texto_tamano" min="8" max="72" step="1" value="14">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold mb-1" for="ver_texto_orientacion">Orientacion</label>
+                        <input type="number" class="form-control form-control-sm" id="ver_texto_orientacion" min="-180" max="180" step="1" value="0">
+                    </div>
+                    <div class="col-12">
+                        <input type="range" class="form-range" id="ver_texto_orientacion_slider" min="-180" max="180" step="1" value="0">
+                    </div>
+                </div>
+                <div class="text-muted small mt-1">
+                    El texto se muestra solamente cuando el poligono esta seleccionado y se imprime en el croquis guardado.
+                </div>
+                <hr class="my-3">
+                <label class="form-label small fw-semibold" for="ver_texto_libre">Textbox / referencia</label>
+                <textarea class="form-control form-control-sm" id="ver_texto_libre" rows="2"
+                          placeholder="Ej. CALLE HIDALGO, NORTE, REFERENCIA"></textarea>
+                <div class="row g-2 mt-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold mb-1" for="ver_texto_libre_tamano">Tamano</label>
+                        <input type="number" class="form-control form-control-sm" id="ver_texto_libre_tamano" min="8" max="72" step="1" value="14">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold mb-1" for="ver_texto_libre_orientacion">Orientacion</label>
+                        <input type="number" class="form-control form-control-sm" id="ver_texto_libre_orientacion" min="-180" max="180" step="1" value="0">
+                    </div>
+                    <div class="col-12">
+                        <input type="range" class="form-range" id="ver_texto_libre_orientacion_slider" min="-180" max="180" step="1" value="0">
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm w-100 mt-2" role="group" aria-label="Acciones de textbox">
+                    <button type="button" class="btn btn-outline-primary" id="ver_btn_agregar_texto">
+                        <i class="bi bi-plus-lg me-1"></i>Crear textbox
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="ver_btn_actualizar_texto">Actualizar</button>
+                    <button type="button" class="btn btn-outline-danger" id="ver_btn_borrar_texto">Borrar</button>
+                </div>
+                <div id="ver_textos_libres_lista" class="croquis-text-list small mt-2"></div>
+                <div class="btn-group btn-group-sm w-100 mt-3" role="group" aria-label="Capa base del mapa">
+                    <button type="button" class="btn btn-outline-secondary active" id="ver_btn_capa_mapa">CALLES</button>
+                    <button type="button" class="btn btn-outline-secondary" id="ver_btn_capa_satelite">Satelital</button>
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button type="button" class="btn btn-sm btn-secondary" id="ver_btn_subir" onclick="ver_guardarCroquisMapa()">
+                        <i class="bi bi-cloud-upload me-1"></i>Guardar croquis
+                    </button>
+                </div>
+                <div id="ver_msg_croquis" class="small fw-semibold mt-2"></div>
+                <div id="ver_preview_box" class="mt-3" style="border:1px dashed #ccc;border-radius:6px;min-height:120px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;overflow:hidden;">
                     <span id="ver_prev_ph" class="text-muted small text-center px-2">
-                        <i class="bi bi-image fs-3 d-block mb-1"></i>Vista previa del croquis
+                        <i class="bi bi-map fs-3 d-block mb-1"></i>Vista previa del croquis guardado
                     </span>
-                    <img id="ver_prev_img" src="" style="display:none;width:100%;max-height:100px;object-fit:contain;">
+                    <img id="ver_prev_img" src="" style="display:none;width:100%;max-height:160px;object-fit:contain;">
                 </div>
             </div>
         </form>
@@ -1245,9 +1378,11 @@ window.onpopstate = function () {
   </div>
 </div>
 
-<!-- SCRIPTS -->
+<!-- SCRIPTS --> 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="js/verificar.js"></script>
 
@@ -1470,7 +1605,15 @@ function cargarDatosAnterioresVer() {
   }
 
   fetch(url)
-    .then(r => r.json())
+    .then(async r => {
+      const text = await r.text();
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        console.error('Respuesta no JSON al buscar tramite anterior:', text);
+        throw new Error('El servidor no devolvio JSON valido. Revisa el log de PHP.');
+      }
+    })
     .then(data => {
       if (data.error) {
         msg.style.color = '#dc3545';
@@ -1529,9 +1672,9 @@ function cargarDatosAnterioresVer() {
       const countText = tramites.length > 1 ? ` (${tramites.length} subtrámites)` : '';
       msg.textContent = '✅ Datos cargados del folio ' + (tramites[0]?.folio_salida || tramites[0]?.folio) + ' — ' + (tramites[0]?.propietario || '') + countText;
     })
-    .catch(() => {
+    .catch((err) => {
       msg.style.color = '#dc3545';
-      msg.textContent = '❌ Error de conexión.';
+      msg.textContent = 'Error: ' + (err.message || 'Error de conexion.');
     });
 }
 

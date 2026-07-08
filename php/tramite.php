@@ -134,7 +134,7 @@ try {
     $pre_archivo    = $archivos['predial']            ?? null;  // s 20
     $fmt_constancia = $archivos['formato_constancia'] ?? null;  // s 21
     $oficio_vobo    = $archivos['oficio_vobo']        ?? '';  // s 22
-    $datos_json     = null;                                     // s 23
+    $datos_json     = '{}';                                     // s 23 - JSON valido para CHECK json_valid(datos_especificos)
     $usuario_id     = (int) $_SESSION['id'];                    // i 25
 
     /* ══════════════════════════════════════════════════════
@@ -180,7 +180,7 @@ try {
     $bound_pre_archivo = $pre_archivo ?? '';
     $bound_fmt_constancia = $fmt_constancia ?? '';
     $bound_oficio_vobo = $oficio_vobo ?? '';
-    $bound_datos_json = $datos_json ?? '';
+    $bound_datos_json = $datos_json;
     $bound_comentario_sin_doc = $comentario_sin_doc ?? '';
     $bound_null_principal = $null_principal;
 

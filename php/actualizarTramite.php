@@ -10,9 +10,9 @@
  * Llamado vía fetch() POST desde js/verificar.js
  */
 
-// Suprimir warnings para que nunca contaminen la respuesta JSON
+// Registrar warnings sin contaminar la respuesta JSON
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 
 // Limpiar cualquier output previo
 if (ob_get_length()) ob_clean();
@@ -128,6 +128,7 @@ try {
         SELECT t.id, t.estatus, t.foto1_archivo, t.foto2_archivo,
                t.ine_archivo, t.titulo_archivo, t.predial_archivo,
                t.escrituras_archivo, t.formato_constancia,
+               t.oficio_vobo,
                t.telefono, t.correo, t.solicitante, t.propietario,
                t.tipo_tramite_id, t.folio_numero, t.folio_anio,
                t.folio_salida_numero, t.folio_salida_anio,
@@ -642,8 +643,11 @@ try {
         ],
     ]);
 
-} catch (Exception $e) {
-    $conn->rollback();
+} catch (Throwable $e) {
+    if (isset($conn) && $conn instanceof mysqli) {
+        $conn->rollback();
+    }
     error_log("[actualizarTramite] " . $e->getMessage());
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
