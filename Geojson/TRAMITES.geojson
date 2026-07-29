@@ -10935,6 +10935,48 @@
                     776550.18
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "614\/2026",
+                "NOM_SOLI": "ANDRES RUVALCABA PEREZ",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "VICTORIA",
+                "FECH_INGRE": "2026-07-15",
+                "FECH_ENTRE": "2026-07-29",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4651190490",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2461373.57,
+                    772616.4
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "654\/2026",
+                "NOM_SOLI": "VERONICA VARGAS VARGAS",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "ALLENDE",
+                "FECH_INGRE": "2026-07-23",
+                "FECH_ENTRE": "2026-08-06",
+                "ESTATUS": "Nuevo",
+                "CONTACTO": "4492576235",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2460815.62,
+                    776111.06
+                ]
+            }
         }
     ]
 }

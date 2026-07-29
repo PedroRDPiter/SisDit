@@ -12,16 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Para los campos del formulario de constancia
   // =====================================================
 
-  // Forzar mayúsculas y filtrar caracteres raros en campos de dirección
+  // Conservar todos los caracteres (acentos, comas, símbolos, etc.) y
+  // únicamente normalizar a mayúsculas los campos que lo requieren.
   document.querySelectorAll('.input-mayusculas').forEach(input => {
     input.addEventListener('input', function() {
       this.value = this.value.toUpperCase();
-      this.value = this.value.replace(/[^A-Z0-9\s\-]/g, '');
-    });
-    input.addEventListener('paste', function() {
-      setTimeout(() => {
-        this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s\-]/g, '');
-      }, 10);
     });
   });
 

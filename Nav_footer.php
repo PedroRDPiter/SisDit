@@ -98,6 +98,7 @@ nav a{
             <ul>
                 <li><a href="index.php">Inicio</a></li>
                 <li><a href="requisitos.php">Requisitos</a></li>
+                <li><a href="http://10.1.85.9:3344/" class="btn-secondary" target="_blank" rel="Control de Oficios">Control de Oficios</a></li>
                 <li><a href="acceso.php" class="btn-nav">Acceso al sistema</a></li>
             </ul>
         </nav>

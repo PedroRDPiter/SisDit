@@ -214,7 +214,7 @@ fetch('./Geojson/TRAMITES.geojson')
 document.querySelectorAll('.mayusculas').forEach(i=>{
   i.addEventListener('input',function(){
     const p=this.selectionStart;
-    this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s\.,#\/\-]/gi,'');
+    this.value=this.value.toUpperCase();
     try{this.setSelectionRange(p,p);}catch(e){}
   });
   i.addEventListener('blur',function(){this.value=this.value.toUpperCase().trim();});
@@ -569,19 +569,22 @@ $(document).ready(function(){
 // ── VARIABLES GLOBALES PARA CONSTANCIA ──
 let _cs_croquis_guardado = false;
 let _cs_folio_actual = '';
-
-
+let _cs_id_actual = '';
+let _cs_boton_actual = null;
 
 // ── Modal CONSTANCIA Ventanilla: poblar ──
 $(document).on('click', '.btn-constancia-sec', function(){
-  // GUARDAR FOLIO
+  _cs_boton_actual = this;
+  _cs_id_actual = $(this).data('id') || '';
   _cs_folio_actual = $(this).data('folio');
   document.getElementById('cs_folio_hidden').value = _cs_folio_actual;
+  document.getElementById('cs_id_hidden').value = _cs_id_actual;
   
   // DATOS GENERALES
   $('#cs_folio').text($(this).data('folio'));
   $('#cs_propietario').text($(this).data('propietario'));
   $('#cs_direccion').text($(this).data('direccion') || '—');
+  $('#cs_numero').text($(this).data('numero') || '—');
   $('#cs_localidad').text($(this).data('localidad') || '—');
   // ── FOLIO SALIDA ──
 let folioSalidaNumero = $(this).data('folio-salida-numero');
@@ -594,16 +597,19 @@ if (folioSalidaNumero) {
   $('#cs_folio_salida').text('—');
 }
 
-  // DATOS ESPECÍFICOS DE CONSTANCIA
-  $('#cs_tipo_asignacion').text($(this).data('tipo-asignacion') || 'ASIGNACIÓN');
-  $('#cs_numero_asignado').text($(this).data('numero-asignado') || '—');
-  $('#cs_referencia_anterior').text($(this).data('referencia-anterior') || '—');
-  $('#cs_entre_calle1').text($(this).data('entre-calle1') || '—');
-  $('#cs_entre_calle2').text($(this).data('entre-calle2') || '—');
-  $('#cs_cuenta_catastral').text($(this).data('cuenta-catastral') || '—');
-  $('#cs_manzana').text($(this).data('manzana') || '—');
-  $('#cs_lote').text($(this).data('lote') || '—');
-  $('#cs_fecha_constancia').text($(this).data('fecha-constancia') || new Date().toLocaleDateString('es-MX'));
+  // DATOS ESPECÍFICOS DE CONSTANCIA (campos editables)
+  $('#cs_tipo_asignacion').val($(this).data('tipo-asignacion') || 'ASIGNACION');
+  $('#cs_numero_asignado').val($(this).data('numero-asignado') || '');
+  $('#cs_referencia_anterior').val($(this).data('referencia-anterior') || '');
+  $('#cs_direccion_constancia').val($(this).data('direccion') || '');
+  $('#cs_colonia_constancia').val($(this).data('colonia') || '');
+  $('#cs_entre_calle1').val($(this).data('entre-calle1') || '');
+  $('#cs_entre_calle2').val($(this).data('entre-calle2') || '');
+  $('#cs_cuenta_catastral').val($(this).data('cuenta-catastral') || '');
+  $('#cs_superficie_constancia').val($(this).data('superficie') || '');
+  $('#cs_manzana').val($(this).data('manzana') || '');
+  $('#cs_lote').val($(this).data('lote') || '');
+  $('#cs_fecha_constancia').val($(this).data('fecha-constancia') || new Date().toISOString().split('T')[0]);
 
   // CROQUIS
   let croquis = $(this).data('croquis');
@@ -618,8 +624,101 @@ if (folioSalidaNumero) {
   }
 });
 
-// ── Imprimir constancia (CORREGIDO CON VALIDACIÓN DE FOLIO SALIDA) ──
-document.getElementById('btnImprimirConstanciaSec').addEventListener('click', function() {
+function actualizarDatosBotonConstanciaSec(formData) {
+  if (!_cs_boton_actual) return;
+
+  const datos = {
+    'direccion': formData.get('direccion_constancia') || '',
+    'colonia': formData.get('colonia_constancia') || '',
+    'tipo-asignacion': formData.get('tipo_asignacion') || 'ASIGNACION',
+    'numero-asignado': formData.get('numero_asignado') || '',
+    'referencia-anterior': formData.get('referencia_anterior') || '',
+    'entre-calle1': formData.get('entre_calle1') || '',
+    'entre-calle2': formData.get('entre_calle2') || '',
+    'cuenta-catastral': formData.get('cuenta_catastral_constancia') || '',
+    'superficie': formData.get('superficie_constancia') || '',
+    'manzana': formData.get('manzana') || '',
+    'lote': formData.get('lote') || '',
+    'fecha-constancia': formData.get('fecha_constancia') || ''
+  };
+
+  Object.entries(datos).forEach(([clave, valor]) => {
+    $(_cs_boton_actual).attr('data-' + clave, valor).data(clave, valor);
+  });
+
+  $('#cs_direccion').text(datos.direccion || '—');
+}
+
+function guardarConstanciaSec(imprimirDespues = false) {
+  const form = document.getElementById('formConstanciaSec');
+  if (!form || !form.reportValidity()) return;
+
+  const formData = new FormData(form);
+  Swal.fire({
+    title: 'Guardando...',
+    html: 'Por favor espere',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  fetch('php/actualizarTramite.php', {
+    method: 'POST',
+    body: formData,
+    credentials: 'same-origin'
+  })
+    .then(res => {
+      if (!res.ok) {
+        return res.text().then(txt => { throw new Error(`HTTP ${res.status}: ${txt.substring(0, 200)}`); });
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (!data.success) {
+        throw new Error(data.message || 'No se pudieron guardar los cambios.');
+      }
+
+      actualizarDatosBotonConstanciaSec(formData);
+      if (data.folio_salida) {
+        $('#cs_folio_salida').text(data.folio_salida);
+      }
+
+      if (imprimirDespues) {
+        const url = _cs_id_actual
+          ? 'constancia_numero.php?id=' + encodeURIComponent(_cs_id_actual) + '&imprimir=1'
+          : 'constancia_numero.php?folio=' + encodeURIComponent(_cs_folio_actual) + '&imprimir=1';
+        window.location.href = url;
+        return;
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Información actualizada',
+        text: 'Los datos de la constancia se guardaron correctamente.',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true
+      });
+    })
+    .catch(err => {
+      console.error('[guardarConstanciaSec]', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al guardar',
+        text: err.message || 'No se pudieron guardar los cambios.',
+        confirmButtonColor: '#7b0f2b'
+      });
+    });
+}
+
+document.getElementById('formConstanciaSec')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  guardarConstanciaSec(false);
+});
+
+// ── Guardar e imprimir constancia ──
+document.getElementById('btnImprimirConstanciaSec')?.addEventListener('click', function() {
   const folio = _cs_folio_actual || document.getElementById('cs_folio_hidden').value;
   const folioSalida = document.getElementById('cs_folio_salida').textContent;
   
@@ -657,15 +756,16 @@ document.getElementById('btnImprimirConstanciaSec').addEventListener('click', fu
     return;
   }
 
-  // Abrir constancia para impresión/firma en la MISMA PESTAÑA
-  const url = 'constancia_numero.php?folio=' + encodeURIComponent(folio) + '&imprimir=1';
-  window.location.href = url;
+  guardarConstanciaSec(true);
 });
 
 // ── Limpiar estado al cerrar modal ──
-document.getElementById('modalConstanciaSec').addEventListener('hidden.bs.modal', function() {
+document.getElementById('modalConstanciaSec')?.addEventListener('hidden.bs.modal', function() {
   _cs_croquis_guardado = false;
   _cs_folio_actual = '';
+  _cs_id_actual = '';
+  _cs_boton_actual = null;
+  document.getElementById('formConstanciaSec')?.reset();
   $('#cs_preview_img').hide();
   $('#cs_no_img').show();
 });

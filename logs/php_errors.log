@@ -204,3 +204,10 @@ Stack trace:
 [07-Jul-2026 14:01:24 America/Mexico_City] PHP Warning:  Undefined array key "oficio_vobo" in C:\xampp\htdocs\SisDiT\php\actualizarTramite.php on line 320
 [08-Jul-2026 08:34:40 America/Mexico_City] PHP Warning:  Undefined array key "oficio_vobo" in C:\xampp\htdocs\SisDiT\php\actualizarTramite.php on line 293
 [08-Jul-2026 08:34:40 America/Mexico_City] PHP Warning:  Undefined array key "oficio_vobo" in C:\xampp\htdocs\SisDiT\php\actualizarTramite.php on line 320
+[15-Jul-2026 08:51:12 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: MySQL server has gone away in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[15-Jul-2026 08:56:44 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[15-Jul-2026 08:56:52 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión

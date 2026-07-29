@@ -42,7 +42,7 @@ if ($id_get > 0) {
     $stmt->bind_param("i", $id_get);
 } else {
     if (!preg_match('/^(\d{1,4})\/(\d{4})$/', $folio, $m)) {
-        die("Folio o id invalido");
+        die("Folio o ID inválido");
     }
     $folio_numero = (int)$m[1];
     $folio_anio   = (int)$m[2];
@@ -59,7 +59,7 @@ if ($id_get > 0) {
 $stmt->execute();
 $result = $stmt->get_result();
 
-if ($result->num_rows === 0) { die("Tramite no encontrado"); }
+if ($result->num_rows === 0) { die("Trámite no encontrado"); }
 $t = $result->fetch_assoc();
 
 // Derivar folio de entrada desde la fila (necesario cuando se consultó por id)
@@ -77,7 +77,7 @@ if (empty($t['numero_asignado'])) {
 }
 
 // ── FOLIO DE SALIDA ──────────────────────────────────────────────────────────
-// El folio de salida es independiente al de ingreso.
+// El folio de salida es independiente del de ingreso.
 // Se asigna la primera vez que se abre la constancia y queda guardado.
 $anio_salida = date('Y');
 if (empty($t['folio_salida_numero'])) {
@@ -113,20 +113,20 @@ $config = [];
 $resConfig = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 while ($row = $resConfig->fetch_assoc()) { $config[$row['clave']] = $row['valor']; }
 
-// Reglamentos editables (con fallback si aún no existen en BD)
+// Reglamentos editables (con valor predeterminado si aún no existen en la BD)
 $reglamentos = [
     1 => !empty($config['constancia_reglamento_1'])
         ? $config['constancia_reglamento_1']
-        : 'En inmuebles construidos deberán colocarse en el exterior, al frente de la construcción junto al acceso principal;',
+        : 'En inmuebles construidos, deberán colocarse en el exterior, al frente de la construcción, junto al acceso principal;',
     2 => !empty($config['constancia_reglamento_2'])
         ? $config['constancia_reglamento_2']
-        : 'Los números oficiales en ningún caso deberán ser pintados sobre muros, bloques, columnas y/o en elementos de fácil destrucción;',
+        : 'Los números oficiales, en ningún caso, deberán pintarse sobre muros, bloques, columnas o elementos de fácil destrucción;',
     3 => !empty($config['constancia_reglamento_3'])
         ? $config['constancia_reglamento_3']
-        : 'Deberán además ser de tipo de fuente legible y permitir una fácil lectura a un mínimo de veinte metros;',
+        : 'Deberán, además, tener una tipografía legible y permitir una fácil lectura a una distancia mínima de veinte metros;',
     4 => !empty($config['constancia_reglamento_4'])
         ? $config['constancia_reglamento_4']
-        : 'Las placas de numeración deberán colocarse en una altura mínima de dos metros con cincuenta centímetros a partir del nivel de la banqueta.',
+        : 'Las placas de numeración deberán colocarse a una altura mínima de dos metros con cincuenta centímetros, a partir del nivel de la banqueta.',
 ];
 
 // Datos con compatibilidad PHP 5+
@@ -141,7 +141,7 @@ $meses = ['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','
 $fp = explode('-', $fecha_constancia);
 $fecha_formateada = (int)$fp[2] . ' DE ' . $meses[(int)$fp[1]] . ' DE ' . $fp[0];
 
-// Tipo asignacion
+// Tipo de asignación
 $tipo = strtoupper($tipo_asignacion);
 $es_asignacion    = (strpos($tipo, 'ASIGNACION')    !== false);
 $es_rectificacion = (strpos($tipo, 'RECTIFICACION') !== false);
@@ -157,7 +157,7 @@ else                     $back = 'DashVer.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sis Dit - <?= $folio ?></title>
+    <title>SisDiT - <?= $folio ?></title>
     <style>
         @page { 
             size: letter; 
@@ -746,7 +746,7 @@ else                     $back = 'DashVer.php';
     </div>
 
     <div class="folio-line">FOLIO: <span><?= htmlspecialchars($folio_salida_display) ?></span></div>
-    <h1 class="titulo-principal">CONSTANCIA DE NUMERO OFICIAL</h1>
+    <h1 class="titulo-principal">CONSTANCIA DE NÚMERO OFICIAL</h1>
 
     <table class="tabla-datos" cellspacing="0" cellpadding="0">
         <tr class="header-row">        
@@ -771,16 +771,16 @@ else                     $back = 'DashVer.php';
             <td style="text-align:center;" colspan="2"><strong><?= htmlspecialchars(isset($t['entre_calle2']) ? $t['entre_calle2'] : '—') ?></strong></td>
         </tr>
         <tr>
-            <td class="label">UBICACION:</td>
+            <td class="label">UBICACIÓN:</td>
             <td style="text-align:center;">MANZANA</td>
             <td style="text-align:center;"><strong><?= htmlspecialchars(isset($t['manzana']) ? $t['manzana'] : '—') ?></strong></td>
             <td style="text-align:center;">LOTE</td>
             <td style="text-align:center;"><strong><?= htmlspecialchars(isset($t['lote']) ? $t['lote'] : '—') ?></strong></td>
         </tr>
-        <tr><td class="label">COLONIA Y/O FRACCIONAMIENTO</td><td colspan="4" class="valor"><?= htmlspecialchars(isset($t['colonia']) ? $t['colonia'] : $t['localidad']) ?></td></tr>
-        <tr><td class="label">POBLADO Y/O DELEGACIÓN</td><td colspan="4" class="valor"><?= htmlspecialchars(isset($config['municipio_nombre']) ? $config['municipio_nombre'] : 'RINCON DE ROMOS') ?>, AGS.</td></tr>
-        <tr><td class="label">CODIGO POSTAL</td><td colspan="4" class="valor"><?= htmlspecialchars(isset($t['cp']) ? $t['cp'] : '20400') ?></td></tr>
-        <tr><td class="label">CUENTA CATASTRAL No.</td><td colspan="4" class="valor"><?= htmlspecialchars($t['cuenta_catastral']) ?></td></tr>
+        <tr><td class="label">COLONIA O FRACCIONAMIENTO</td><td colspan="4" class="valor"><?= htmlspecialchars(isset($t['colonia']) ? $t['colonia'] : $t['localidad']) ?></td></tr>
+        <tr><td class="label">POBLADO O DELEGACIÓN</td><td colspan="4" class="valor"><?= htmlspecialchars(isset($config['municipio_nombre']) ? $config['municipio_nombre'] : 'RINCÓN DE ROMOS') ?>, AGS.</td></tr>
+        <tr><td class="label">CÓDIGO POSTAL</td><td colspan="4" class="valor"><?= htmlspecialchars(isset($t['cp']) ? $t['cp'] : '20400') ?></td></tr>
+        <tr><td class="label">CUENTA CATASTRAL N.º</td><td colspan="4" class="valor"><?= htmlspecialchars($t['cuenta_catastral']) ?></td></tr>
     </table>
 
     <div class="seccion-nombre">
@@ -792,23 +792,23 @@ else                     $back = 'DashVer.php';
         <div class="label-fecha">LUGAR Y FECHA DE EXPEDICIÓN:</div>
         <div class="valor-fecha">
             <?= $fecha_formateada ?><br>
-            <?= strtoupper(isset($config['municipio_nombre']) ? $config['municipio_nombre'] : 'RINCON DE ROMOS') ?>, AGS.
+            <?= strtoupper(isset($config['municipio_nombre']) ? $config['municipio_nombre'] : 'RINCÓN DE ROMOS') ?>, AGS.
         </div>
     </div>
 
     <div class="notas">
         <div class="notas-titulo">NOTAS:</div>
-        <p>1.- EL <span class="destacado">NUMERO OFICIAL</span> DEBERÁ COLOCARSE EN <span class="destacado">PARTE VISIBLE</span> DEL FRENTE DEL PREDIO, Y DEBERÁ DE SER CLARAMENTE LEGIBLE, A UN MÍNIMO DE 15 MTS DE DISTANCIA.</p>
-        <p>2.- ESTE DOCUMENTO <span class="destacado">NO CONSTITUYE APEO O DESLINDE AL RESPECTO DEL INMUEBLE, NI ACREDITA LA PROPIEDAD O POSESIÓN DEL MISMO.</span></p>
-        <p>3.- SE FUNDAMENTA LA CONSTANCIA EN EL <span class="destacado">ARTÍCULO 34 FRACC 11 INCISO I DEL BANDO DE POLICÍA Y GOBIERNO DE RINCON DE ROMOS, AGS.</span></p>
+        <p>1. EL <span class="destacado">NÚMERO OFICIAL</span> DEBERÁ COLOCARSE EN UNA <span class="destacado">PARTE VISIBLE</span> DEL FRENTE DEL PREDIO Y DEBERÁ SER CLARAMENTE LEGIBLE A UNA DISTANCIA MÍNIMA DE 15 m.</p>
+        <p>2. ESTE DOCUMENTO <span class="destacado">NO CONSTITUYE APEO NI DESLINDE DEL INMUEBLE, NI ACREDITA SU PROPIEDAD O POSESIÓN.</span></p>
+        <p>3. LA CONSTANCIA SE FUNDAMENTA EN EL <span class="destacado">ARTÍCULO 34, FRACC. 11, INCISO I, DEL BANDO DE POLICÍA Y GOBIERNO DE RINCÓN DE ROMOS, AGS.</span></p>
     </div>
 
-    <div class="atentamente">A T E N T A M E N T E:</div>
+    <div class="atentamente">A T E N T A M E N T E</div>
     <div class="firma">
         <div class="linea"></div>
         <div class="nombre-director"><?= htmlspecialchars(isset($config['director_nombre']) ? $config['director_nombre'] : 'DIRECTOR DE PLANEACIÓN Y DESARROLLO URBANO') ?></div>
         <div class="cargo-director"><?= htmlspecialchars(isset($config['director_cargo']) ? $config['director_cargo'] : 'DIRECTOR DE PLANEACIÓN Y DESARROLLO URBANO') ?>.</div>
-        <div class="municipio">DEL MUNICIPIO DE <?= strtoupper(isset($config['municipio_nombre']) ? $config['municipio_nombre'] : 'RINCON DE ROMOS') ?>, AGS.</div>
+        <div class="municipio">DEL MUNICIPIO DE <?= strtoupper(isset($config['municipio_nombre']) ? $config['municipio_nombre'] : 'RINCÓN DE ROMOS') ?>, AGS.</div>
     </div>
     <div class="ccp"><em>C.C.P. ARCHIVO.</em></div>
 </div>
@@ -847,7 +847,7 @@ else                     $back = 'DashVer.php';
     <!-- Texto reglamentario al reverso -->
     <div style="margin-top:14px;border-top:2px solid #000;padding-top:10px;">
         <div style="font-size:10pt;font-weight:bold;text-align:center;margin-bottom:10px;text-transform:uppercase;">
-            La instalación de Número Oficial deberá apegarse a lo siguiente:
+            La instalación del número oficial deberá apegarse a lo siguiente:
         </div>
         <ol style="list-style:upper-roman;padding-left:28px;margin:0;">
             <li style="font-size:9pt;margin-bottom:8px;line-height:1.5;text-align:justify;"><?= htmlspecialchars($reglamentos[1]) ?></li>
@@ -861,7 +861,7 @@ else                     $back = 'DashVer.php';
 <!-- ══ PANEL CROQUIS (no se imprime) ══ -->
 <div class="panel-croquis">
     <div class="panel-header" onclick="togglePanel()" id="panel-header-btn">
-        <span>🗺️ Croquis del Predio</span>
+        <span>🗺️ Croquis del predio</span>
         <span id="panel-toggle-ico">▲</span>
     </div>
     <div class="panel-body" id="panel-body">

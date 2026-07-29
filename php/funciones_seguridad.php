@@ -271,12 +271,11 @@ function validarSoloMayusculas($texto) {
     return preg_match('/^[A-ZÁÉÍÓÚÜÑ\s]+$/u', strtoupper(trim($texto)));
 }
 
-// Convertir a mayúsculas y quitar caracteres no permitidos en campos de dirección
+// Convertir a mayúsculas sin eliminar acentos, comas ni otros símbolos.
+// La seguridad de estos valores se aplica al consultar con sentencias preparadas
+// y al mostrarlos con escape HTML, no destruyendo el texto ingresado.
 function limpiarMayusculas($texto) {
-    $texto = mb_strtoupper(trim($texto), 'UTF-8');
-    // Solo letras, números, espacios y caracteres comunes en direcciones
-    $texto = preg_replace('/[^A-ZÁÉÍÓÚÜÑ0-9\s\.\,\#\/\-]/u', '', $texto);
-    return $texto;
+    return mb_strtoupper(trim($texto), 'UTF-8');
 }
 
 // Cuenta catastral: solo números sin letras ni guiones

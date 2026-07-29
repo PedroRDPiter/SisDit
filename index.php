@@ -181,7 +181,7 @@ body{
         font-size: 14px;
     }
 }
-
+ 
 </style>
 
 <section class="hero">
@@ -194,6 +194,7 @@ body{
 
     <div class="hero-buttons">
         <a href="acceso.php" class="btn-primary">Acceder al sistema</a>
+        <a href="http://10.1.85.9:3344/" class="btn-secondary" target="_blank" rel="Control de Oficios">Control de Oficios</a>
         <a href="requisitos.php" class="btn-secondary">Ver requisitos</a>
     </div>
 </section>

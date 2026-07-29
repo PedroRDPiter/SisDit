@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require "seguridad.php";
 require_once "php/funciones_seguridad.php";
 ?>
@@ -362,6 +362,7 @@ window.onpopstate = function () {
             <li class="nav-item"><a class="nav-link" href="#inicio"><i class="bi bi-house me-2"></i> Inicio</a></li>
             <li class="nav-item"><a class="nav-link" href="#seguimiento"><i class="bi bi-search me-2"></i> Seguimiento</a></li>
             <li class="nav-item"><a class="nav-link" href="#config-constancia"><i class="bi bi-file-earmark-text me-2"></i> Formato Constancia</a></li>
+            <li class="nav-item"><a class="nav-link btn-secondary" href="http://10.1.85.9:3344/" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-2"></i> Control de Oficios</a></li>
             <li class="nav-item"><a class="nav-link text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a></li>
         </ul>
     </div>
@@ -373,6 +374,7 @@ window.onpopstate = function () {
     <a class="nav-link text-white" href="#inicio"><i class="bi bi-house me-2"></i> Inicio</a>
     <a class="nav-link text-white" href="#seguimiento"><i class="bi bi-search me-2"></i> Seguimiento</a>
     <a class="nav-link text-white" href="#config-constancia"><i class="bi bi-file-earmark-text me-2"></i> Formato Constancia</a>
+    <a class="nav-link text-white btn-secondary" href="http://10.1.85.9:3344/" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-2"></i> Control de Oficios</a>
     <a class="nav-link text-danger mt-auto" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
 </div>
 
@@ -1136,17 +1138,14 @@ window.onpopstate = function () {
                 <div class="col-md-8">
                     <label class="form-label small mt-1">Dirección<span class="text-danger">*</span></label>
                     <input type="text" class="form-control input-mayusculas" name="direccion_constancia" id="c_direccion_constancia"
-                           value="" pattern="[A-Za-z0-9\s\#\.\-]+"
-                           title="Solo letras, numeros, espacios, #, puntos y guiones" required>
+                           value="" required>
                     
                     <label class="form-label small mt-1">Colonia <span class="text-danger">*</span></label>
                     <input type="text" class="form-control input-mayusculas" name="colonia_constancia" id="c_colonia_constancia"
-                           value="" pattern="[A-Za-z0-9\s\#\.\-]+"
-                           title="Solo letras, numeros, espacios, #, puntos y guiones" required>
+                           value="" required>
                               <label class="form-label fw-bold">Número Asignado <span class="text-danger">*</span></label>
                   <input type="text" class="form-control input-mayusculas" name="numero_asignado" id="c_numero_asignado" 
-                         placeholder="Ej: 103" pattern="[A-Za-z0-9\s\-]+" 
-                         title="Solo letras, numeros, espacios y guiones" required>
+                         placeholder="Ej: 103" required>
                 </div>
                 
                 <!-- Numero asignado -->
@@ -1158,8 +1157,7 @@ window.onpopstate = function () {
                 <div class="col-md-4">
                   <label class="form-label fw-bold">Referencia Anterior</label>
                   <input type="text" class="form-control input-mayusculas" name="referencia_anterior" id="c_referencia_anterior" 
-                         placeholder="Opcional" pattern="[A-Za-z0-9\s\-]*"
-                         title="Solo letras, numeros, espacios y guiones">
+                         placeholder="Opcional">
                   <small class="text-muted">Solo si aplica</small>
                 </div>
                 
@@ -1167,12 +1165,12 @@ window.onpopstate = function () {
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Entre Calles <span class="text-danger">*</span></label>
                   <input type="text" class="form-control input-mayusculas" name="entre_calle1" id="c_entre_calle1" 
-                         placeholder="Ej: NINOS HEROES Y JUAREZ" pattern="[A-Za-z0-9\s\-]+" title="Solo letras, numeros, espacios y guiones" required>
+                         placeholder="Ej: NIÑOS HÉROES Y JUÁREZ" required>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold invisible">Entre Calles (continuación) <span class="text-danger invisible">*</span></label>
                   <input type="text" class="form-control input-mayusculas" name="entre_calle2" id="c_entre_calle2" 
-                         placeholder="Ej: INDEPENDENCIA Y HIDALGO" pattern="[A-Za-z0-9\s\-]*" title="Solo letras, numeros, espacios y guiones">
+                         placeholder="Ej: INDEPENDENCIA Y HIDALGO">
                 </div>
                 </div>
               </div>
@@ -1195,8 +1193,7 @@ window.onpopstate = function () {
                 <div class="col-md-3">
                   <label class="form-label fw-bold">Manzana</label>
                   <input type="text" class="form-control input-mayusculas" name="manzana" id="c_manzana" 
-                         placeholder="Opcional" pattern="[A-Za-z0-9\s\-]*"
-                         title="Solo letras, numeros, espacios y guiones">
+                         placeholder="Opcional">
                 </div>
                 
                 
@@ -1204,8 +1201,7 @@ window.onpopstate = function () {
                 <div class="col-md-3">
                   <label class="form-label fw-bold">Lote</label>
                   <input type="text" class="form-control input-mayusculas" name="lote" id="c_lote"
-                         placeholder="Opcional" pattern="[A-Za-z0-9\s\-]*"
-                         title="Solo letras, numeros, espacios y guiones">
+                         placeholder="Opcional">
                 </div>
 
                  <!-- Fecha de constancia -->
@@ -1266,6 +1262,7 @@ window.onpopstate = function () {
                 </div>
                 <div class="text-muted small mt-1">
                     El texto se muestra solamente cuando el poligono esta seleccionado y se imprime en el croquis guardado.
+                    en datos de la constaancia de dashver, acomoda 
                 </div>
                 <hr class="my-3">
                 <label class="form-label small fw-semibold" for="ver_texto_libre">Textbox / referencia</label>

@@ -251,6 +251,50 @@ function mostrarCamposTA(indice, tipoId) {
     hidden.value = '';
   }
 }
+
+function actualizarTramitesAdicionales(checkbox) {
+  const seleccionados = Array.from(document.querySelectorAll('.tramite-adicional-check:checked'));
+  const aviso = document.getElementById('ta-limite-aviso');
+
+  if (seleccionados.length > 3) {
+    checkbox.checked = false;
+    if (aviso) {
+      aviso.textContent = 'Solo puede seleccionar un máximo de 3 trámites adicionales.';
+      aviso.classList.remove('d-none');
+    }
+    return;
+  }
+
+  if (aviso) aviso.classList.add('d-none');
+
+  let indice = checkbox.dataset.indice || '';
+  if (checkbox.checked && !indice) {
+    for (let i = 1; i <= 3; i++) {
+      if (!document.getElementById('ta' + i + '_tipo_tramite_id').value) {
+        indice = 'ta' + i;
+        checkbox.dataset.indice = indice;
+        break;
+      }
+    }
+    mostrarCamposTA(indice, checkbox.value);
+    document.getElementById(indice + '_titulo').textContent = checkbox.dataset.nombre;
+  } else if (!checkbox.checked && indice) {
+    const panel = document.getElementById(indice + '_campos');
+    mostrarCamposTA(indice, '');
+    panel.querySelectorAll('input:not([type="hidden"])').forEach(function(input) {
+      input.value = input.type === 'number' ? '1' : '';
+    });
+    document.getElementById(indice + '_titulo').textContent = 'Trámite adicional';
+    delete checkbox.dataset.indice;
+  }
+
+  document.querySelectorAll('.tramite-adicional-check').forEach(function(item) {
+    item.disabled = !item.checked && seleccionados.length >= 3;
+  });
+
+  const contenedorDatos = document.getElementById('ta-datos-seleccionados');
+  if (contenedorDatos) contenedorDatos.style.display = seleccionados.length ? 'flex' : 'none';
+}
 </script>
 <style>
 :root{--vino:#7b0f2b;--vino-oscuro:#5e0b20;}
@@ -320,6 +364,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
       <li class="nav-item"><a class="nav-link" href="#tramites-aprobados">Constancias</a></li>
       <li class="nav-item"><a class="nav-link" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a></li>
       <li class="nav-item"><a class="nav-link" href="#config-constancia"><i class="bi bi-file-earmark-text me-1"></i> Formato Constancia</a></li>
+      <li class="nav-item"><a class="nav-link btn-secondary" href="http://10.1.85.9:3344/" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-1"></i> Control de Oficios</a></li>
       <li class="nav-item"><a class="nav-link text-danger" href="logout.php">Cerrar sesión</a></li>
     </ul>
   </div>
@@ -347,6 +392,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
 </a>
   <a href="#reporte"><i class="bi bi-bar-chart-line me-2"></i>Reporte</a>
   <a href="#config-constancia"><i class="bi bi-file-earmark-text me-2"></i>Formato Constancia</a>
+  <a href="http://10.1.85.9:3344/" class="btn-secondary" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-2"></i>Control de Oficios</a>
 
   <a href="logout.php" class="text-danger mt-auto"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
 </div>
@@ -492,9 +538,11 @@ if (!empty($av['folio_salida_numero'])) {
         <td class="text-center">
           <?php if((int)$av['tipo_tramite_id'] === 1): ?>
            <button class="btn btn-sm btn-outline-success btn-constancia-sec mb-1"
+            data-id="<?= (int)$av['id'] ?>"
             data-folio="<?= htmlspecialchars($fav) ?>"
             data-propietario="<?= htmlspecialchars($propav) ?>"
             data-direccion="<?= htmlspecialchars($dirav) ?>"
+            data-colonia="<?= htmlspecialchars($av['colonia'] ?? '') ?>"
             data-numero="<?= htmlspecialchars($num) ?>"
             data-localidad="<?= htmlspecialchars($locav) ?>"
             data-numero-asignado="<?= htmlspecialchars($num_asig) ?>"
@@ -508,6 +556,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             data-lote="<?= htmlspecialchars($loteav) ?>"
             data-fecha-constancia="<?= htmlspecialchars($fec_const) ?>"
             data-cuenta-catastral="<?= htmlspecialchars($cta_cat) ?>"
+            data-superficie="<?= htmlspecialchars($av['superficie'] ?? '') ?>"
             data-croquis="<?= htmlspecialchars($av['croquis_archivo'] ?? '') ?>"
             data-bs-toggle="modal" data-bs-target="#modalConstanciaSec"
             title="Editar e imprimir constancia para firma">
@@ -620,8 +669,6 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <input type="hidden" id="cs_folio_hidden">
-
       <!-- BODY -->
       <div class="modal-body">
 
@@ -643,57 +690,90 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           </div>
         </div>
 
-        <!-- DATOS CONSTANCIA -->
-        <div class="card border-success mb-3">
-          <div class="card-header bg-success text-white">
-            <i class="bi bi-file-earmark-text me-2"></i>Datos de la Constancia
-          </div>
-          <div class="card-body">
-            <div class="row g-2">
+        <!-- DATOS CONSTANCIA EDITABLES -->
+        <form id="formConstanciaSec">
+          <?php $csrf_cs = generarCSRF(); ?>
+          <input type="hidden" name="csrf_token" value="<?= $csrf_cs ?>">
+          <input type="hidden" name="solo_constancia" value="1">
+          <input type="hidden" name="folio" id="cs_folio_hidden">
+          <input type="hidden" name="id" id="cs_id_hidden">
 
-              <div class="col-md-4">
-                <strong>Tipo:</strong><br>                                
-                <span id="cs_tipo_asignacion"></span>
+          <div class="card border-success mb-3">
+            <div class="card-header bg-success text-white">
+              <i class="bi bi-pencil-square me-2"></i>Datos editables de la Constancia
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" for="cs_tipo_asignacion">Tipo</label>
+                  <select class="form-select" name="tipo_asignacion" id="cs_tipo_asignacion">
+                    <option value="ASIGNACION">ASIGNACIÓN</option>
+                    <option value="RECTIFICACION">RECTIFICACIÓN</option>
+                    <option value="REPOSICION">REPOSICIÓN</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" for="cs_numero_asignado">Número Asignado <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control mayusculas" name="numero_asignado" id="cs_numero_asignado" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" for="cs_referencia_anterior">Referencia Anterior</label>
+                  <input type="text" class="form-control mayusculas" name="referencia_anterior" id="cs_referencia_anterior">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_direccion_constancia">Dirección</label>
+                  <input type="text" class="form-control mayusculas" name="direccion_constancia" id="cs_direccion_constancia">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_colonia_constancia">Colonia</label>
+                  <input type="text" class="form-control mayusculas" name="colonia_constancia" id="cs_colonia_constancia">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_entre_calle1">Entre Calle 1</label>
+                  <input type="text" class="form-control mayusculas" name="entre_calle1" id="cs_entre_calle1">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_entre_calle2">Entre Calle 2</label>
+                  <input type="text" class="form-control mayusculas" name="entre_calle2" id="cs_entre_calle2">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_cuenta_catastral">Cuenta Catastral</label>
+                  <input type="text" class="form-control" name="cuenta_catastral_constancia" id="cs_cuenta_catastral" inputmode="numeric">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_superficie_constancia">Superficie</label>
+                  <input type="text" class="form-control mayusculas" name="superficie_constancia" id="cs_superficie_constancia">
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold" for="cs_manzana">Manzana</label>
+                  <input type="text" class="form-control mayusculas" name="manzana" id="cs_manzana">
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold" for="cs_lote">Lote</label>
+                  <input type="text" class="form-control mayusculas" name="lote" id="cs_lote">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="cs_fecha_constancia">Fecha de Expedición</label>
+                  <input type="date" class="form-control" name="fecha_constancia" id="cs_fecha_constancia">
+                </div>
               </div>
-
-              <div class="col-md-4">
-                <strong>Número Asignado:</strong><br>
-                <span id="cs_numero_asignado"></span>
-              </div>
-
-              <div class="col-md-4">
-                <strong>Referencia Anterior:</strong><br>
-                <span id="cs_referencia_anterior"></span>
-              </div>
-
-              <div class="col-md-6">
-                <strong>Entre Calles:</strong><br>
-                <span id="cs_entre_calle1"></span> y <span id="cs_entre_calle2"></span>
-              </div>
-
-              <div class="col-md-6">
-                <strong>Cuenta Catastral:</strong><br>
-                <span id="cs_cuenta_catastral"></span>
-              </div>
-
-              <div class="col-md-3">
-                <strong>Manzana:</strong><br>
-                <span id="cs_manzana"></span>
-              </div>
-
-              <div class="col-md-3">
-                <strong>Lote:</strong><br>
-                <span id="cs_lote"></span>
-              </div>
-
-              <div class="col-md-6">
-                <strong>Fecha de Expedición:</strong><br>
-                <span id="cs_fecha_constancia"></span>
-              </div>
-
+              <small class="text-muted d-block mt-3">
+                Los campos de texto aceptan acentos, comas, puntos y demás símbolos.
+              </small>
             </div>
           </div>
-        </div>
+        </form>
 
         <!-- CROQUIS -->
         <div class="card border-dark">
@@ -722,8 +802,12 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <i class="bi bi-x-lg me-1"></i>Cerrar
         </button>
 
-        <button id="btnImprimirConstanciaSec" class="btn btn-success">
-          <i class="bi bi-printer me-1"></i>Imprimir Constancia
+        <button type="submit" form="formConstanciaSec" class="btn btn-outline-success">
+          <i class="bi bi-save me-1"></i>Guardar cambios
+        </button>
+
+        <button type="button" id="btnImprimirConstanciaSec" class="btn btn-success">
+          <i class="bi bi-printer me-1"></i>Guardar e imprimir
         </button>
       </div>
 
@@ -907,8 +991,8 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <label class="form-label">Nombre del Propietario <span class="text-danger">*</span></label>
           <div class="input-group">
             <!-- solo mayusclas y numeros  -->
-              <input type="text" class="form-control" name="propietario" id="propietario_input" required placeholder="SOLO LETRAS Y NÚMEROS MAYÚSCULAS"
-                oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')" style="text-transform:uppercase;"> 
+              <input type="text" class="form-control" name="propietario" id="propietario_input" required placeholder="NOMBRE DEL PROPIETARIO"
+                oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase;">
 
               <button type="button" class="btn btn-outline-secondary" id="btnBuscarTramiteAnterior" title="Buscar trámite anterior del mismo propietario">
                   <i class="bi bi-search"></i> Buscar anterior
@@ -1000,6 +1084,72 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         </div>
       </div>
 
+      <!-- TRÁMITES ADICIONALES -->
+      <section class="border rounded p-3 mb-4" style="background:#f8f9fa;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="m-0" style="color:#7b0f2b;"><i class="bi bi-list-check me-2"></i>Trámites adicionales</h5>
+          <span class="badge bg-secondary">Máximo 3</span>
+        </div>
+        <p class="text-muted small mb-3">Marque hasta tres tipos de trámite. Los campos correspondientes aparecerán debajo.</p>
+        <div class="row g-2 mb-3">
+          <?php foreach($tiposList as $tipoAdicional): ?>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-check border rounded p-2 h-100 bg-white" style="cursor:pointer;">
+              <input class="form-check-input ms-0 me-2 tramite-adicional-check" type="checkbox"
+                value="<?= (int)$tipoAdicional['id'] ?>"
+                data-nombre="<?= htmlspecialchars($tipoAdicional['nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                onchange="actualizarTramitesAdicionales(this)">
+              <span class="form-check-label"><?= htmlspecialchars($tipoAdicional['nombre']) ?></span>
+            </label>
+          </div>
+          <?php endforeach; ?>
+        </div>
+        <div id="ta-limite-aviso" class="alert alert-warning py-2 d-none" role="alert"></div>
+
+        <!-- Un solo card para los datos de todos los trámites seleccionados -->
+        <div id="ta-datos-seleccionados" class="border rounded bg-white mb-2 flex-wrap" style="display:none;">
+        <div id="ta1_campos" class="ta-campos p-3 border-end flex-fill" style="display:none;flex:1 1 280px;">
+          <input type="hidden" name="ta1_tipo_tramite_id" id="ta1_tipo_tramite_id">
+          <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2">
+            <h6 class="text-primary mb-0 pt-1"><i class="bi bi-pencil-square me-1"></i>Datos — <span id="ta1_titulo">Trámite adicional 1</span></h6>
+            <div>
+              <div class="d-flex align-items-start gap-2">
+                <label class="form-label small fw-bold mb-0 mt-1" for="ta1_cantidad">Cantidad</label>
+                <div><input type="number" class="form-control form-control-sm" style="width:90px;" name="ta1_cantidad" id="ta1_cantidad" value="1" min="1" max="50"><small class="text-muted d-block mt-1">Cuántos trámites de este tipo se requieren</small></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="ta2_campos" class="ta-campos p-3 border-end flex-fill" style="display:none;flex:1 1 280px;">
+          <input type="hidden" name="ta2_tipo_tramite_id" id="ta2_tipo_tramite_id">
+          <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2">
+            <h6 class="text-primary mb-0 pt-1"><i class="bi bi-pencil-square me-1"></i>Datos — <span id="ta2_titulo">Trámite adicional 2</span></h6>
+            <div>
+              <div class="d-flex align-items-start gap-2">
+                <label class="form-label small fw-bold mb-0 mt-1" for="ta2_cantidad">Cantidad</label>
+                <div><input type="number" class="form-control form-control-sm" style="width:90px;" name="ta2_cantidad" id="ta2_cantidad" value="1" min="1" max="50"><small class="text-muted d-block mt-1">Cuántos trámites de este tipo se requieren</small></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="ta3_campos" class="ta-campos p-3 flex-fill" style="display:none;flex:1 1 280px;">
+          <input type="hidden" name="ta3_tipo_tramite_id" id="ta3_tipo_tramite_id">
+          <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2">
+            <h6 class="text-primary mb-0 pt-1"><i class="bi bi-pencil-square me-1"></i>Datos — <span id="ta3_titulo">Trámite adicional 3</span></h6>
+            <div>
+              <div class="d-flex align-items-start gap-2">
+                <label class="form-label small fw-bold mb-0 mt-1" for="ta3_cantidad">Cantidad</label>
+                <div><input type="number" class="form-control form-control-sm" style="width:90px;" name="ta3_cantidad" id="ta3_cantidad" value="1" min="1" max="50"><small class="text-muted d-block mt-1">Cuántos trámites de este tipo se requieren</small></div>
+              </div>
+            </div>
+          </div>
+        </div>
+     </div>
+        <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Los trámites adicionales usarán los datos del trámite principal.</small>
+      </section>
+
       <div class="row mb-3">
         <div class="col-md-6">
           <label class="form-label">Fecha de Ingreso <span class="text-danger">*</span></label>
@@ -1013,8 +1163,8 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
 
       <div class="mb-3">
         <label class="form-label">Nombre del Solicitante <span class="text-danger">*</span></label>
-        <input type="text" name="solicitante" class="form-control" required placeholder="SOLO LETRAS Y NÚMEROS MAYÚSCULAS"
-          oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')" style="text-transform:uppercase;">
+        <input type="text" name="solicitante" class="form-control" required placeholder="NOMBRE DEL SOLICITANTE"
+          oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase;">
       </div>
       <div class="row">
         <div class="col-md-6 mb-3">
@@ -1110,135 +1260,6 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
       </section>
 
       <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i><strong>NOTA:</strong> Para recoger su trámite, deberá presentar esta papeleta original.</div>
-
-      <!-- ================================================================
-           TRÁMITES ADICIONALES (hasta 3)
-           ================================================================ -->
-      <div class="card border-primary mb-4">
-        <div class="card-header bg-primary text-white">
-          <i class="bi bi-list-plus me-2"></i>Trámites Adicionales
-          <span class="badge bg-light text-dark ms-2">Opcional — hasta 3</span>
-        </div>
-        <div class="card-body">
-
-          <div class="row g-2 mb-3">
-            <div class="col-md-4">
-              <label class="form-label fw-semibold small"><i class="bi bi-1-circle me-1"></i>Trámite adicional 1</label>
-              <select id="ta1_select" class="form-select form-select-sm" onchange="mostrarCamposTA('ta1', this.value)">
-                <option value="">— Sin trámite adicional —</option>
-                <?php foreach($tiposList as $tp): ?>
-                <option value="<?= $tp['id'] ?>"><?= htmlspecialchars($tp['nombre']) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold small"><i class="bi bi-2-circle me-1"></i>Trámite adicional 2</label>
-              <select id="ta2_select" class="form-select form-select-sm" onchange="mostrarCamposTA('ta2', this.value)">
-                <option value="">— Sin trámite adicional —</option>
-                <?php foreach($tiposList as $tp): ?>
-                <option value="<?= $tp['id'] ?>"><?= htmlspecialchars($tp['nombre']) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold small"><i class="bi bi-3-circle me-1"></i>Trámite adicional 3</label>
-              <select id="ta3_select" class="form-select form-select-sm" onchange="mostrarCamposTA('ta3', this.value)">
-                <option value="">— Sin trámite adicional —</option>
-                <?php foreach($tiposList as $tp): ?>
-                <option value="<?= $tp['id'] ?>"><?= htmlspecialchars($tp['nombre']) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-          </div>
-
-          <!-- Campos dinámicos para cada trámite adicional -->
-          <div id="ta1_campos" class="ta-campos border rounded p-3 mb-2" style="display:none;">
-            <h6 class="text-primary mb-2"><i class="bi bi-pencil-square me-1"></i>Datos — Trámite adicional 1</h6>
-            <input type="hidden" name="ta1_tipo_tramite_id" id="ta1_tipo_tramite_id">
-            <div class="row g-2">
-              <div class="col-md-3">
-                <label class="form-label small fw-bold">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" name="ta1_cantidad" id="ta1_cantidad" value="1" min="1" max="50">
-                <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
-              </div>
-              <div class="col-md-5">
-<label class="form-label small">Nombre del Propietario</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta1_propietario" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Nombre del Solicitante</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta1_solicitante" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Teléfono</label>
-                <input type="text" class="form-control form-control-sm" name="ta1_telefono" maxlength="10" placeholder="4491234567" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Correo Electrónico (opcional)</label>
-                <input type="email" class="form-control form-control-sm" name="ta1_correo" placeholder="ejemplo@correo.com">
-              </div>
-            </div>
-          </div>
-
-          <div id="ta2_campos" class="ta-campos border rounded p-3 mb-2" style="display:none;">
-            <h6 class="text-primary mb-2"><i class="bi bi-pencil-square me-1"></i>Datos — Trámite adicional 2</h6>
-            <input type="hidden" name="ta2_tipo_tramite_id" id="ta2_tipo_tramite_id">
-            <div class="row g-2">
-              <div class="col-md-3">
-                <label class="form-label small fw-bold">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" name="ta2_cantidad" id="ta2_cantidad" value="1" min="1" max="50">
-                <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
-              </div>
-              <div class="col-md-5">
-<label class="form-label small">Nombre del Propietario</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta2_propietario" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Nombre del Solicitante</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta2_solicitante" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Teléfono</label>
-                <input type="text" class="form-control form-control-sm" name="ta2_telefono" maxlength="10" placeholder="4491234567" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Correo Electrónico (opcional)</label>
-                <input type="email" class="form-control form-control-sm" name="ta2_correo" placeholder="ejemplo@correo.com">
-              </div>
-            </div>
-          </div>
-
-          <div id="ta3_campos" class="ta-campos border rounded p-3 mb-2" style="display:none;">
-            <h6 class="text-primary mb-2"><i class="bi bi-pencil-square me-1"></i>Datos — Trámite adicional 3</h6>
-            <input type="hidden" name="ta3_tipo_tramite_id" id="ta3_tipo_tramite_id">
-            <div class="row g-2">
-              <div class="col-md-3">
-                <label class="form-label small fw-bold">Cantidad</label>
-                <input type="number" class="form-control form-control-sm" name="ta3_cantidad" id="ta3_cantidad" value="1" min="1" max="50">
-                <small class="text-muted">Cuántos trámites de este tipo se requieren</small>
-              </div>
-              <div class="col-md-5">
-<label class="form-label small">Nombre del Propietario</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta3_propietario" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Nombre del Solicitante</label>
-                <input type="text" class="form-control form-control-sm mayusculas" name="ta3_solicitante" placeholder="Igual al principal o modificar" oninput="this.value=this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ0-9\s]/g,'')">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Teléfono</label>
-                <input type="text" class="form-control form-control-sm" name="ta3_telefono" maxlength="10" placeholder="4491234567" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small">Correo Electrónico (opcional)</label>
-                <input type="email" class="form-control form-control-sm" name="ta3_correo" placeholder="ejemplo@correo.com">
-              </div>
-            </div>
-          </div>
-
-          <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Si un trámite adicional tiene los mismos datos que el trámite principal, puede dejarlos vacíos y se heredarán automáticamente.</small>
-        </div>
-      </div>
 
       <div class="text-end">
         <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save me-2"></i>Guardar Trámite</button>
@@ -1531,11 +1552,14 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                     <td><?php echo $tr['fecha_aprobacion'] ? date('d/m/Y', strtotime($tr['fecha_aprobacion'])) : '—'; ?></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-success btn-constancia-sec"
+                            data-id="<?php echo (int)$tr['id']; ?>"
                             data-folio="<?php echo $folio_ing; ?>"
                             data-folio-salida-numero="<?php echo $tr['folio_salida_numero'] ?? ''; ?>"
                             data-folio-salida-anio="<?php echo $tr['folio_salida_anio'] ?? ''; ?>"
                             data-propietario="<?php echo htmlspecialchars($tr['propietario']); ?>"
                             data-direccion="<?php echo htmlspecialchars($tr['direccion'] ?? ''); ?>"
+                            data-colonia="<?php echo htmlspecialchars($tr['colonia'] ?? ''); ?>"
+                            data-numero="<?php echo htmlspecialchars($tr['numero'] ?? ''); ?>"
                             data-localidad="<?php echo htmlspecialchars($tr['localidad'] ?? ''); ?>"
                             data-tipo-asignacion="<?php echo htmlspecialchars($tr['tipo_asignacion'] ?? 'ASIGNACION'); ?>"
                             data-numero-asignado="<?php echo htmlspecialchars($tr['numero_asignado'] ?? ''); ?>"
@@ -1546,6 +1570,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                             data-lote="<?php echo htmlspecialchars($tr['lote'] ?? ''); ?>"
                             data-fecha-constancia="<?php echo htmlspecialchars($tr['fecha_constancia'] ?? date('Y-m-d')); ?>"
                             data-cuenta-catastral="<?php echo htmlspecialchars($tr['cuenta_catastral'] ?? ''); ?>"
+                            data-superficie="<?php echo htmlspecialchars($tr['superficie'] ?? ''); ?>"
                             data-croquis="<?php echo htmlspecialchars($tr['croquis_archivo'] ?? ''); ?>"
                             data-bs-toggle="modal" data-bs-target="#modalConstanciaSec"
                             title="Reimprimir constancia">
