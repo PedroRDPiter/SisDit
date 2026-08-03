@@ -1,29 +1,37 @@
 <?php
 require_once "php/db.php";
 
-$cp = $_GET['cp'] ?? '';
+header('Content-Type: application/json; charset=utf-8');
 
-if (empty($cp)) {
+$cp = isset($_GET['cp']) ? preg_replace('/\D/', '', $_GET['cp']) : '';
+
+if (strlen($cp) !== 5) {
     echo json_encode([]);
     exit;
 }
 
 $stmt = $conn->prepare("
-    SELECT c.nombre
-    FROM colonias c
-    JOIN codigos_postales cp ON c.cp_id = cp.id
-    WHERE cp.cp = ? AND c.activo = 1
-    ORDER BY c.nombre
+    SELECT DISTINCT asentamiento
+    FROM codigos_postales
+    WHERE codigo_postal = ?
+    ORDER BY asentamiento
 ");
+
+if (!$stmt) {
+    http_response_code(500);
+    echo json_encode([]);
+    exit;
+}
+
 $stmt->bind_param("s", $cp);
 $stmt->execute();
 $result = $stmt->get_result();
 
 $colonias = [];
 while ($row = $result->fetch_assoc()) {
-    $colonias[] = $row['nombre'];
+    $colonias[] = $row['asentamiento'];
 }
 
-echo json_encode($colonias);
+echo json_encode($colonias, JSON_UNESCAPED_UNICODE);
 $stmt->close();
 ?>

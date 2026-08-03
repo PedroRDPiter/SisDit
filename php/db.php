@@ -20,7 +20,7 @@ error_reporting(E_ALL);
 $host = "localhost";
 $user = "root";
 $pass = "";
-$db   = "sistema";
+$db   = "sistema_recovery";
 
 try {
     $conn = new mysqli($host, $user, $pass, $db);

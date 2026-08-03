@@ -211,3 +211,84 @@ Stack trace:
   thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
 [15-Jul-2026 08:56:44 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
 [15-Jul-2026 08:56:52 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:00:22 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:00:30 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:02:00 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:02:04 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:03:44 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:11:49 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 11:14:47 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 11:15:36 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 11:39:56 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:04:27 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:04:38 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:04:58 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:05:37 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:06:22 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:07:13 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:07:38 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:08:25 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:15:04 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 14:15:08 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 14:15:16 America/Mexico_City] Excepción en conexión DB: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión
+[30-Jul-2026 14:15:48 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:23:04 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:23:21 America/Mexico_City] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'sistema.usuarios' doesn't exist in engine in C:\xampp\htdocs\SisDiT\php\login.php:37
+Stack trace:
+#0 C:\xampp\htdocs\SisDiT\php\login.php(37): mysqli->prepare('SELECT id, nomb...')
+#1 {main}
+  thrown in C:\xampp\htdocs\SisDiT\php\login.php on line 37
+[30-Jul-2026 14:43:52 America/Mexico_City] Error en registrarLog: Duplicate entry '2194' for key 'PRIMARY'
+[30-Jul-2026 14:47:52 America/Mexico_City] Error en registrarLog: Duplicate entry '2195' for key 'PRIMARY'

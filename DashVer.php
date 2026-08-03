@@ -619,6 +619,7 @@ window.onpopstate = function () {
                     data-propietario="<?= htmlspecialchars($t['propietario']) ?>"
                     data-direccion="<?= htmlspecialchars($t['direccion']) ?>"
                     data-colonia="<?= htmlspecialchars($t['colonia'] ?? '') ?>"
+                    data-cp="<?= htmlspecialchars($t['cp'] ?? '') ?>"
                     data-localidad="<?= htmlspecialchars($t['localidad']) ?>"
                     data-tramites="<?= htmlspecialchars($t['tipo_tramite_nombre'] ?? 'Sin tipo') ?>"
                     data-fecha="<?= date('d/m/Y', strtotime($t['fecha_ingreso'])) ?>"
@@ -658,6 +659,7 @@ window.onpopstate = function () {
                     data-propietario="<?= htmlspecialchars($t['propietario']) ?>"
                     data-direccion="<?= htmlspecialchars($t['direccion']) ?>"
                     data-colonia="<?= htmlspecialchars($t['colonia'] ?? '') ?>"
+                    data-cp="<?= htmlspecialchars($t['cp'] ?? '') ?>"
                     data-localidad="<?= htmlspecialchars($t['localidad']) ?>"
                     data-numero-asignado="<?= htmlspecialchars($t['numero_asignado'] ?? '') ?>"
                     data-tipo-asignacion="<?= htmlspecialchars($t['tipo_asignacion'] ?? 'Asignacion') ?>"
@@ -799,6 +801,7 @@ window.onpopstate = function () {
             <p><strong>Propietario:</strong> <span id="m_propietario"></span></p>
             <p><strong>Dirección:</strong> <span id="m_direccion"></span></p>
             <p><strong>Colonia:</strong> <span id="m_colonia"></span></p>
+            <p><strong>Código postal:</strong> <span id="m_cp"></span></p>
             <p><strong>Localidad:</strong> <span id="m_localidad"></span></p>
             <p><strong>Teléfono:</strong> <span id="m_telefono"></span></p>
             <p><strong>Correo:</strong> <span id="m_correo"></span></p>
@@ -1126,97 +1129,92 @@ window.onpopstate = function () {
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <!-- Tipo de asignacion -->
+                <!-- Tipo de asignación -->
                 <div class="col-md-4">
-                    <label class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
-                    <select class="form-select" name="tipo_asignacion" id="c_tipo_asignacion" required>
-                        <option value="ASIGNACION">ASIGNACIÓN</option>
-                        <option value="RECTIFICACION">RECTIFICACIÓN</option>
-                        <option value="REPOSICION">REPOSICIÓN</option>
-                    </select>
+                  <label class="form-label fw-bold" for="c_tipo_asignacion">Tipo <span class="text-danger">*</span></label>
+                  <select class="form-select" name="tipo_asignacion" id="c_tipo_asignacion" required>
+                    <option value="ASIGNACION">ASIGNACIÓN</option>
+                    <option value="RECTIFICACION">RECTIFICACIÓN</option>
+                    <option value="REPOSICION">REPOSICIÓN</option>
+                  </select>
                 </div>
-                <div class="col-md-8">
-                    <label class="form-label small mt-1">Dirección<span class="text-danger">*</span></label>
-                    <input type="text" class="form-control input-mayusculas" name="direccion_constancia" id="c_direccion_constancia"
-                           value="" required>
-                    
-                    <label class="form-label small mt-1">Colonia <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control input-mayusculas" name="colonia_constancia" id="c_colonia_constancia"
-                           value="" required>
-                              <label class="form-label fw-bold">Número Asignado <span class="text-danger">*</span></label>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-bold" for="c_numero_asignado">Número asignado <span class="text-danger">*</span></label>
                   <input type="text" class="form-control input-mayusculas" name="numero_asignado" id="c_numero_asignado" 
                          placeholder="Ej: 103" required>
                 </div>
-                
-                <!-- Numero asignado -->
+
                 <div class="col-md-4">
-               
-                </div>
-                
-                <!-- Referencia anterior -->
-                <div class="col-md-4">
-                  <label class="form-label fw-bold">Referencia Anterior</label>
+                  <label class="form-label fw-bold" for="c_referencia_anterior">Referencia anterior</label>
                   <input type="text" class="form-control input-mayusculas" name="referencia_anterior" id="c_referencia_anterior" 
                          placeholder="Opcional">
                   <small class="text-muted">Solo si aplica</small>
                 </div>
-                
-                <!-- Entre calles -->
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">Entre Calles <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-mayusculas" name="entre_calle1" id="c_entre_calle1" 
-                         placeholder="Ej: NIÑOS HÉROES Y JUÁREZ" required>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold invisible">Entre Calles (continuación) <span class="text-danger invisible">*</span></label>
-                  <input type="text" class="form-control input-mayusculas" name="entre_calle2" id="c_entre_calle2" 
-                         placeholder="Ej: INDEPENDENCIA Y HIDALGO">
-                </div>
-                </div>
-              </div>
 
-              <div class="row g-3">
-                <!-- Cuenta catastral (solo numeros) -->
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Cuenta Catastral <span class="text-danger">*</span></label>
+                  <label class="form-label fw-bold" for="c_direccion_constancia">Dirección <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control input-mayusculas" name="direccion_constancia" id="c_direccion_constancia"
+                         required>
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label fw-bold" for="c_cp">Código postal</label>
+                  <input type="text" class="form-control" name="cp" id="c_cp" maxlength="5" inputmode="numeric"
+                         placeholder="20400" autocomplete="postal-code">
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-bold" for="c_colonia_constancia">Colonia <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control input-mayusculas" name="colonia_constancia"
+                         id="c_colonia_constancia" list="c_colonias_lista"
+                         placeholder="Selecciona o escribe una colonia" autocomplete="off" required>
+                  <datalist id="c_colonias_lista"></datalist>
+                  <small class="text-muted" id="c_colonia_ayuda">Escribe un código postal para obtener sugerencias o captura la colonia manualmente.</small>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold" for="c_entre_calle1">Entre calle 1 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control input-mayusculas" name="entre_calle1" id="c_entre_calle1" 
+                         placeholder="Ej: NIÑOS HÉROES" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold" for="c_entre_calle2">Entre calle 2</label>
+                  <input type="text" class="form-control input-mayusculas" name="entre_calle2" id="c_entre_calle2" 
+                         placeholder="Ej: INDEPENDENCIA">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold" for="c_cuenta_catastral">Cuenta catastral <span class="text-danger">*</span></label>
                   <input type="text" class="form-control input-solo-numeros" name="cuenta_catastral_constancia" id="c_cuenta_catastral" 
                          placeholder="Ej: 70104010022000" pattern="[0-9]+" 
-                         title="Solo numeros" required>
+                         title="Solo números" required>
                 </div>
+
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Superficie (m²) <span class="text-danger">*</span></label>
+                  <label class="form-label fw-bold" for="c_superficie_constancia">Superficie (m²) <span class="text-danger">*</span></label>
                   <input type="text" class="form-control input-solo-numeros" name="superficie_constancia" id="c_superficie_constancia" 
-                         placeholder="Ej: 250" pattern="[0-9]+" title="Solo numeros">
+                         placeholder="Ej: 250" pattern="[0-9]+" title="Solo números" required>
                 </div>
-                
-                <!-- Manzana -->
+
                 <div class="col-md-3">
-                  <label class="form-label fw-bold">Manzana</label>
+                  <label class="form-label fw-bold" for="c_manzana">Manzana</label>
                   <input type="text" class="form-control input-mayusculas" name="manzana" id="c_manzana" 
                          placeholder="Opcional">
                 </div>
-                
-                
-                <!-- Lote -->
+
                 <div class="col-md-3">
-                  <label class="form-label fw-bold">Lote</label>
+                  <label class="form-label fw-bold" for="c_lote">Lote</label>
                   <input type="text" class="form-control input-mayusculas" name="lote" id="c_lote"
                          placeholder="Opcional">
                 </div>
 
-                 <!-- Fecha de constancia -->
-                 <div class="col-md-6">
-                   <label class="form-label fw-bold">Fecha de Expedición <span class="text-danger">*</span></label>
-                   <input type="date" class="form-control" name="fecha_constancia" id="c_fecha_constancia"
-                          value="<?= date('Y-m-d') ?>" required>
-                 </div>
-                 <!-- Cantidad -->
-                 <div class="col-md-6">
-                   <label class="form-label fw-bold">Cantidad <span class="text-danger">*</span></label>
-                   <input type="number" class="form-control" name="cantidad" id="c_cantidad"
-                          min="1" value="1" required>
-                 </div>
-                   
+                <div class="col-md-6">
+                  <label class="form-label fw-bold" for="c_fecha_constancia">Fecha de expedición <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="fecha_constancia" id="c_fecha_constancia"
+                         value="<?= date('Y-m-d') ?>" required>
+                </div>
               </div>
             </div>
           </div>
@@ -1262,7 +1260,6 @@ window.onpopstate = function () {
                 </div>
                 <div class="text-muted small mt-1">
                     El texto se muestra solamente cuando el poligono esta seleccionado y se imprime en el croquis guardado.
-                    en datos de la constaancia de dashver, acomoda 
                 </div>
                 <hr class="my-3">
                 <label class="form-label small fw-semibold" for="ver_texto_libre">Textbox / referencia</label>
@@ -1480,6 +1477,85 @@ function guardarConfigConstanciaVer() {
   });
 }
 
+function agregarOpcionColoniaConstancia(valor) {
+    const input = document.getElementById('c_colonia_constancia');
+    const lista = document.getElementById('c_colonias_lista');
+    const colonia = (valor || '').trim().toUpperCase();
+    if (!input || !lista || !colonia) return;
+
+    const existe = Array.from(lista.options).some(option => option.value.toUpperCase() === colonia);
+    if (!existe) {
+        const option = document.createElement('option');
+        option.value = colonia;
+        lista.appendChild(option);
+    }
+    input.value = colonia;
+}
+
+let cColoniasSolicitud = 0;
+
+async function cargarColoniasConstancia(cp, coloniaSeleccionada = '') {
+    const input = document.getElementById('c_colonia_constancia');
+    const lista = document.getElementById('c_colonias_lista');
+    const ayuda = document.getElementById('c_colonia_ayuda');
+    const codigoPostal = (cp || '').replace(/\D/g, '').slice(0, 5);
+    const coloniaActual = (coloniaSeleccionada || '').trim().toUpperCase();
+    const solicitudActual = ++cColoniasSolicitud;
+
+    lista.innerHTML = '';
+
+    if (codigoPostal.length !== 5) {
+        agregarOpcionColoniaConstancia(coloniaActual);
+        ayuda.textContent = 'Escribe un código postal para obtener sugerencias o captura la colonia manualmente.';
+        return;
+    }
+
+    ayuda.textContent = 'Cargando colonias...';
+
+    try {
+        const response = await fetch('get_colonias.php?cp=' + encodeURIComponent(codigoPostal), {
+            credentials: 'same-origin'
+        });
+        if (!response.ok) throw new Error('No se pudieron consultar las colonias.');
+
+        const colonias = await response.json();
+        if (solicitudActual !== cColoniasSolicitud) return;
+        lista.innerHTML = '';
+
+        colonias.forEach(colonia => {
+            const valor = String(colonia).trim().toUpperCase();
+            if (!valor) return;
+            const option = document.createElement('option');
+            option.value = valor;
+            lista.appendChild(option);
+        });
+
+        agregarOpcionColoniaConstancia(coloniaActual);
+        ayuda.textContent = colonias.length
+            ? 'Selecciona una sugerencia o escribe otra colonia manualmente.'
+            : 'No se encontraron sugerencias; escribe la colonia manualmente.';
+    } catch (error) {
+        if (solicitudActual !== cColoniasSolicitud) return;
+        console.error('Error cargando colonias:', error);
+        lista.innerHTML = '';
+        agregarOpcionColoniaConstancia(coloniaActual);
+        ayuda.textContent = 'No fue posible cargar las sugerencias; puedes escribir la colonia manualmente.';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cpInput = document.getElementById('c_cp');
+    if (!cpInput) return;
+
+    cpInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 5);
+        if (this.value.length === 5) {
+            document.getElementById('c_colonia_constancia').value = '';
+        }
+        cargarColoniasConstancia(this.value);
+    });
+});
+
     // Función para abrir modal de constancia
     function abrirModalConstancia(btn) {
     const folio = btn.getAttribute('data-folio');
@@ -1493,7 +1569,10 @@ function guardarConfigConstanciaVer() {
     document.getElementById('c_folio').textContent = folio;
     document.getElementById('c_propietario').textContent = btn.getAttribute('data-propietario') || '';
     document.getElementById('c_direccion').textContent = btn.getAttribute('data-direccion') || '';
-    document.getElementById('c_colonia_constancia').value = btn.getAttribute('data-colonia') || '';
+    const cp = btn.getAttribute('data-cp') || '';
+    const colonia = btn.getAttribute('data-colonia') || '';
+    document.getElementById('c_cp').value = cp;
+    cargarColoniasConstancia(cp, colonia);
     document.getElementById('c_localidad').textContent = btn.getAttribute('data-localidad') || '';
     document.getElementById('c_folio_hidden').value = folio;
     document.getElementById('c_numero_asignado').value = btn.getAttribute('data-numero-asignado') || '';
@@ -1562,14 +1641,13 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('c_folio').textContent = folio;
             document.getElementById('c_propietario').textContent = propietario;
             document.getElementById('c_direccion').textContent = direccion;
-            document.getElementById('c_colonia_constancia').value = (document.getElementById('m_colonia') ? document.getElementById('m_colonia').textContent.trim() : '');
+            const colonia = document.getElementById('m_colonia') ? document.getElementById('m_colonia').textContent.trim() : '';
+            const cp = document.getElementById('m_cp') ? document.getElementById('m_cp').textContent.trim() : '';
+            document.getElementById('c_cp').value = cp;
+            cargarColoniasConstancia(cp, colonia);
             document.getElementById('c_localidad').textContent = localidad;
             document.getElementById('c_folio_hidden').value = folio;
             document.getElementById('c_direccion_constancia').value = direccion;
-            // Si por alguna razón el modal detalle no tiene colonia, intentar leer data-colonia del botón original (no es habitual)
-            const posibleCol = (event && event.relatedTarget) ? (event.relatedTarget.getAttribute('data-colonia') || '') : '';
-            if (!document.getElementById('c_colonia_constancia').value && posibleCol) document.getElementById('c_colonia_constancia').value = posibleCol;
-
             // Mostrar modal
             const modalConstancia = new bootstrap.Modal(document.getElementById('modalConstancia'));
             modalConstancia.show();
@@ -1634,6 +1712,10 @@ function cargarDatosAnterioresVer() {
       if (c.manzana)             document.getElementById('c_manzana').value               = c.manzana;
       if (c.lote)                document.getElementById('c_lote').value                  = c.lote;
       if (t.cuenta_catastral)    document.getElementById('c_cuenta_catastral').value      = t.cuenta_catastral;
+      if (t.superficie)          document.getElementById('c_superficie_constancia').value = t.superficie;
+      if (t.direccion)           document.getElementById('c_direccion_constancia').value  = t.direccion;
+      document.getElementById('c_cp').value = t.cp || '';
+      cargarColoniasConstancia(t.cp || '', t.colonia || '');
 
       // Cargar croquis si existe en el trámite anterior
       const croquis       = (t.archivos && t.archivos.croquis_archivo) ? t.archivos.croquis_archivo : '';
@@ -1761,7 +1843,10 @@ function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
     const getVal = (key) => tramite ? tramite[key] : (buttonFallback ? buttonFallback.getAttribute('data-' + key.replace(/_/g, '-')) : '');
 
     document.getElementById('m_propietario').textContent = getVal('propietario') || '';
-    // ... (puedes expandir aquí para poblar más campos del formulario según IDs m_*)
+    document.getElementById('m_direccion').textContent = getVal('direccion') || '';
+    document.getElementById('m_colonia').textContent = getVal('colonia') || '';
+    document.getElementById('m_cp').textContent = getVal('cp') || '';
+    document.getElementById('m_localidad').textContent = getVal('localidad') || '';
 
     // Ejemplo: poblar estatus si existe
     const estatusSelect = document.getElementById('m_estatus');

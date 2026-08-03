@@ -62,6 +62,7 @@ $direccion_constancia = mb_strtoupper(trim(isset($_POST['direccion_constancia'])
 // El formulario usa nombre colonia_constancia; aceptar ambos nombres por compatibilidad
 $colonia_input = isset($_POST['colonia_constancia']) ? $_POST['colonia_constancia'] : (isset($_POST['colonia']) ? $_POST['colonia'] : '');
 $colonia = mb_strtoupper(trim($colonia_input), 'UTF-8');
+$cp_constancia       = isset($_POST['cp']) ? preg_replace('/\D/', '', trim($_POST['cp'])) : null;
 $numero_asignado     = trim(isset($_POST['numero_asignado']) ? $_POST['numero_asignado'] : '');
 $tipo_asignacion     = trim(isset($_POST['tipo_asignacion']) ? $_POST['tipo_asignacion'] : 'Asignacion');
 $referencia_anterior = trim(isset($_POST['referencia_anterior']) ? $_POST['referencia_anterior'] : '');
@@ -85,6 +86,10 @@ if ($solo_constancia) {
     }
     if (empty($numero_asignado)) {
         echo json_encode(['success' => false, 'message' => 'El numero asignado es obligatorio.']);
+        exit;
+    }
+    if ($cp_constancia !== null && $cp_constancia !== '' && strlen($cp_constancia) !== 5) {
+        echo json_encode(['success' => false, 'message' => 'El código postal debe contener 5 dígitos.']);
         exit;
     }
 } else {
@@ -172,6 +177,7 @@ try {
          $sql = "UPDATE tramites SET
                  direccion           = ?,
                  colonia             = ?,
+                 cp                  = COALESCE(?, cp),
                  numero_asignado     = ?,
                  tipo_asignacion     = ?,
                  referencia_anterior = ?,
@@ -187,9 +193,10 @@ try {
         $stmtUp = $conn->prepare($sql);
         if (!$stmtUp) throw new Exception("Error prepare UPDATE: " . $conn->error);
 
-         $stmtUp->bind_param("ssssssssssssi",
+         $stmtUp->bind_param("sssssssssssssi",
              $direccion_constancia,
              $colonia,
+             $cp_constancia,
              $numero_asignado,
              $tipo_asignacion,
              $referencia_anterior,
