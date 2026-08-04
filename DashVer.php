@@ -1220,21 +1220,22 @@ window.onpopstate = function () {
           </div>
 
           <!-- ── CROQUIS ── -->
-    <div class="card-header bg-secondary text-white d-flex align-items-center gap-2 mt-3">
-        <i class="bi bi-map-fill"></i>
-        <span class="fw-bold">Croquis del Predio</span>
-        <span class="badge bg-warning text-dark ms-1">Requerido para imprimir</span>
-    </div>
-    <div class="card-body">
-        <div id="ver_alerta_croquis" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <span>Sin croquis. Selecciona o dibuja un poligono en el mapa y guardalo para poder imprimir.</span>
-        </div>
-        <div id="ver_ok_croquis" class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Croquis guardado correctamente.</span>
-        </div>
-        <div class="row g-3 align-items-start">
+          <div class="card border-secondary mt-3">
+            <div class="card-header bg-secondary text-white d-flex align-items-center gap-2">
+              <i class="bi bi-map-fill"></i>
+              <span class="fw-bold">Croquis del Predio</span>
+              <span class="badge bg-warning text-dark ms-1">Requerido para imprimir</span>
+            </div>
+            <div class="card-body">
+              <div id="ver_alerta_croquis" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Sin croquis. Selecciona o dibuja un poligono en el mapa y guardalo para poder imprimir.</span>
+              </div>
+              <div id="ver_ok_croquis" class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>Croquis guardado correctamente.</span>
+              </div>
+              <div class="row g-3 align-items-start">
             <div class="col-lg-8">
                 <div id="ver_mapa_croquis" aria-label="Mapa para croquis del predio"></div>
                 <div class="croquis-selected-info text-muted mt-2" id="ver_croquis_info">
@@ -1292,7 +1293,7 @@ window.onpopstate = function () {
                 </div>
                 <div class="d-grid gap-2 mt-3">
                     <button type="button" class="btn btn-sm btn-secondary" id="ver_btn_subir" onclick="ver_guardarCroquisMapa()">
-                        <i class="bi bi-cloud-upload me-1"></i>Guardar croquis
+                        <i class="bi bi-cloud-upload me-1"></i>Guardar datos del predio seleccionado
                     </button>
                 </div>
                 <div id="ver_msg_croquis" class="small fw-semibold mt-2"></div>
@@ -1303,6 +1304,9 @@ window.onpopstate = function () {
                     <img id="ver_prev_img" src="" style="display:none;width:100%;max-height:160px;object-fit:contain;">
                 </div>
             </div>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
       <div class="modal-footer">

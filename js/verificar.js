@@ -2028,7 +2028,7 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
     updateLabel(texto);
     const utm = getFeatureCenterUtm(feature);
     const numero = getFeatureNumber(feature);
-    setInfo('Poligono seleccionado (' + selectedFeature.get('croquis_source') + ')' + (numero ? ' | Numero: ' + numero : '') + (utm ? ' | UTM X: ' + utm.x + ' Y: ' + utm.y : '') + (texto ? ' | Con texto guardado' : ''));
+    setInfo('Predio seleccionado (' + selectedFeature.get('croquis_source') + ')' + (numero ? ' | Clave: ' + numero : '') + (utm ? ' | UTM X: ' + utm.x + ' Y: ' + utm.y : '') + (texto ? ' | Con datos guardados' : ''));
   }
 
   function loadStoredPolygonData(feature) {
@@ -2777,7 +2777,8 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
         .then(function(data) {
           if (btn) btn.disabled = false;
           if (data.success) {
-            if (msg) { msg.textContent = 'Croquis guardado. Ya puedes imprimir.'; msg.style.color = '#198754'; }
+            const predioGuardado = data.predio ? ' Predio: ' + data.predio + '.' : '';
+            if (msg) { msg.textContent = 'Croquis guardado para el predio seleccionado.' + predioGuardado + ' Ya puedes imprimir.'; msg.style.color = '#198754'; }
             ver_mostrarEstado(true, data.url || data.archivo || null);
             ver_mostrarPreviewCroquis(data.url || data.archivo || '');
           } else if (msg) {

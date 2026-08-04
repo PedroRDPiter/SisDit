@@ -27,24 +27,28 @@ if ($cuenta === '' || strlen($cuenta) > 50) {
 
 $stmt = $conn->prepare("
     SELECT
-        id,
-        tramite_id,
-        feature_uid,
-        numero_poligono,
-        origen,
-        cuenta_catastral_origen,
-        texto_poligono,
-        geojson,
-        utm_vertices_json,
-        utm_centro_x,
-        utm_centro_y,
-        label_lng,
-        label_lat,
-        croquis_archivo,
-        updated_at
-    FROM croquis_poligono_detalles
-    WHERE (cuenta_catastral_origen = ? OR numero_poligono = ?) AND activo = 1
-    ORDER BY updated_at DESC, id DESC
+        d.id,
+        d.tramite_id,
+        d.feature_uid,
+        d.numero_poligono,
+        d.origen,
+        d.cuenta_catastral_origen,
+        d.texto_poligono,
+        d.geojson,
+        d.utm_vertices_json,
+        d.utm_centro_x,
+        d.utm_centro_y,
+        d.label_lng,
+        d.label_lat,
+        d.croquis_archivo,
+        d.updated_at,
+        t.estatus,
+        tt.nombre AS tipo_tramite
+    FROM croquis_poligono_detalles d
+    INNER JOIN tramites t ON t.id = d.tramite_id
+    LEFT JOIN tipos_tramite tt ON tt.id = t.tipo_tramite_id
+    WHERE (d.cuenta_catastral_origen = ? OR d.numero_poligono = ?) AND d.activo = 1
+    ORDER BY d.seleccionado DESC, d.updated_at DESC, d.id DESC
     LIMIT 1
 ");
 
@@ -81,6 +85,8 @@ echo json_encode([
         'label_lng' => $row['label_lng'],
         'label_lat' => $row['label_lat'],
         'croquis_archivo' => $row['croquis_archivo'],
+        'estatus' => $row['estatus'],
+        'tipo_tramite' => $row['tipo_tramite'],
         'updated_at' => $row['updated_at']
     ]
 ]);

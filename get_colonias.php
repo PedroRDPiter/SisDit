@@ -10,28 +10,26 @@ if (strlen($cp) !== 5) {
     exit;
 }
 
-$stmt = $conn->prepare("
-    SELECT DISTINCT asentamiento
-    FROM codigos_postales
-    WHERE codigo_postal = ?
-    ORDER BY asentamiento
-");
+try {
+    $stmt = $conn->prepare("
+        SELECT DISTINCT asentamiento
+        FROM codigos_postales
+        WHERE codigo_postal = ?
+        ORDER BY asentamiento
+    ");
+    $stmt->bind_param("s", $cp);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-if (!$stmt) {
+    $colonias = [];
+    while ($row = $result->fetch_assoc()) {
+        $colonias[] = $row['asentamiento'];
+    }
+
+    echo json_encode($colonias, JSON_UNESCAPED_UNICODE);
+    $stmt->close();
+} catch (Throwable $error) {
+    error_log('Error al consultar colonias: ' . $error->getMessage());
     http_response_code(500);
     echo json_encode([]);
-    exit;
 }
-
-$stmt->bind_param("s", $cp);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$colonias = [];
-while ($row = $result->fetch_assoc()) {
-    $colonias[] = $row['asentamiento'];
-}
-
-echo json_encode($colonias, JSON_UNESCAPED_UNICODE);
-$stmt->close();
-?>

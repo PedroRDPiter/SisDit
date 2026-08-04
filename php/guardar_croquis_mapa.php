@@ -71,6 +71,63 @@ if ($poligonos_detalle !== '') {
         exit;
     }
 }
+
+$texto = isset($_POST['texto']) ? trim($_POST['texto']) : '';
+$origen = isset($_POST['origen']) ? trim($_POST['origen']) : 'seleccionado';
+$cuenta = isset($_POST['cuenta_catastral_origen']) ? trim($_POST['cuenta_catastral_origen']) : '';
+$utm_x = isset($_POST['utm_centro_x']) && $_POST['utm_centro_x'] !== '' ? (float)$_POST['utm_centro_x'] : null;
+$utm_y = isset($_POST['utm_centro_y']) && $_POST['utm_centro_y'] !== '' ? (float)$_POST['utm_centro_y'] : null;
+
+// La identidad del predio debe salir del poligono que el usuario dejo
+// seleccionado. Los campos generales del POST se conservan como respaldo para
+// croquis antiguos, pero no deben asociar por error los datos a otro predio.
+$detalle_seleccionado = null;
+foreach ($detalles_decoded as $detalle_candidato) {
+    if (is_array($detalle_candidato) && !empty($detalle_candidato['seleccionado'])) {
+        $detalle_seleccionado = $detalle_candidato;
+        break;
+    }
+}
+
+if (!empty($detalles_decoded) && $detalle_seleccionado === null) {
+    echo json_encode(['success' => false, 'message' => 'No se identifico el predio seleccionado']);
+    exit;
+}
+
+if ($detalle_seleccionado !== null) {
+    $cuenta_seleccionada = isset($detalle_seleccionado['cuenta_catastral_origen'])
+        ? trim((string)$detalle_seleccionado['cuenta_catastral_origen'])
+        : '';
+    if ($cuenta_seleccionada === '' && isset($detalle_seleccionado['numero_poligono'])) {
+        $cuenta_seleccionada = trim((string)$detalle_seleccionado['numero_poligono']);
+    }
+    if ($cuenta_seleccionada !== '') {
+        $cuenta = substr($cuenta_seleccionada, 0, 50);
+    }
+    if (isset($detalle_seleccionado['origen'])) {
+        $origen = substr(trim((string)$detalle_seleccionado['origen']), 0, 40);
+    }
+    if (array_key_exists('texto_poligono', $detalle_seleccionado)) {
+        $texto = trim((string)$detalle_seleccionado['texto_poligono']);
+    }
+    if (isset($detalle_seleccionado['utm_vertices'])) {
+        $utm_vertices = json_encode($detalle_seleccionado['utm_vertices'], JSON_UNESCAPED_UNICODE);
+    }
+    if (isset($detalle_seleccionado['utm_centro_x']) && $detalle_seleccionado['utm_centro_x'] !== '') {
+        $utm_x = (float)$detalle_seleccionado['utm_centro_x'];
+    }
+    if (isset($detalle_seleccionado['utm_centro_y']) && $detalle_seleccionado['utm_centro_y'] !== '') {
+        $utm_y = (float)$detalle_seleccionado['utm_centro_y'];
+    }
+}
+
+$cuenta = substr($cuenta, 0, 50);
+$origen = substr($origen !== '' ? $origen : 'seleccionado', 0, 40);
+
+if (in_array($origen, ['catastro', 'catastro-copia'], true) && $cuenta === '') {
+    echo json_encode(['success' => false, 'message' => 'El predio seleccionado no tiene una clave catastral valida']);
+    exit;
+}
 if ($utm_vertices !== '' && json_decode($utm_vertices, true) === null) {
     echo json_encode(['success' => false, 'message' => 'Coordenadas UTM invalidas']);
     exit;
@@ -108,11 +165,6 @@ if (!move_uploaded_file($tmp, "../" . $relative_path)) {
     exit;
 }
 
-$texto = isset($_POST['texto']) ? trim($_POST['texto']) : '';
-$origen = isset($_POST['origen']) ? trim($_POST['origen']) : 'seleccionado';
-$cuenta = isset($_POST['cuenta_catastral_origen']) ? trim($_POST['cuenta_catastral_origen']) : '';
-$utm_x = isset($_POST['utm_centro_x']) && $_POST['utm_centro_x'] !== '' ? (float)$_POST['utm_centro_x'] : null;
-$utm_y = isset($_POST['utm_centro_y']) && $_POST['utm_centro_y'] !== '' ? (float)$_POST['utm_centro_y'] : null;
 $usuario_id = (int)$_SESSION['id'];
 
 try {
@@ -218,6 +270,9 @@ try {
         $numero_poligono = isset($detalle['numero_poligono']) ? substr(trim((string)$detalle['numero_poligono']), 0, 80) : '';
         $detalle_origen = isset($detalle['origen']) ? substr(trim((string)$detalle['origen']), 0, 40) : $origen;
         $detalle_cuenta = isset($detalle['cuenta_catastral_origen']) ? substr(trim((string)$detalle['cuenta_catastral_origen']), 0, 50) : '';
+        if ($detalle_cuenta === '' && isset($detalle['numero_poligono'])) {
+            $detalle_cuenta = substr(trim((string)$detalle['numero_poligono']), 0, 50);
+        }
         $detalle_texto = isset($detalle['texto_poligono']) ? trim((string)$detalle['texto_poligono']) : '';
         $detalle_geojson = isset($detalle['geojson']) ? json_encode($detalle['geojson'], JSON_UNESCAPED_UNICODE) : '';
         $detalle_utm = isset($detalle['utm_vertices']) ? json_encode($detalle['utm_vertices'], JSON_UNESCAPED_UNICODE) : null;
@@ -253,7 +308,8 @@ try {
     $stmtDetalle->close();
 
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-    $det = "Croquis de mapa guardado para tramite ID: {$tramite_id} | Archivo: {$relative_path}";
+    $predio_log = $cuenta !== '' ? $cuenta : 'sin-clave (dibujado)';
+    $det = "Croquis de mapa guardado para tramite ID: {$tramite_id} | Predio: {$predio_log} | Archivo: {$relative_path}";
     $stmtLog = $conn->prepare("INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, detalles, ip_address) VALUES (?, 'Croquis mapa', 'croquis_poligonos', ?, ?)");
     if ($stmtLog) {
         $stmtLog->bind_param("iss", $usuario_id, $det, $ip);
@@ -266,6 +322,7 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Croquis guardado correctamente',
+        'predio' => $cuenta,
         'archivo' => $relative_path,
         'url' => $relative_path
     ]);

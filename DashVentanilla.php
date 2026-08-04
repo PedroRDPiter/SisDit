@@ -318,6 +318,13 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
 .tramite-selector-card:hover{border-color:var(--vino)!important;
   box-shadow:0 4px 16px rgba(123,15,43,.15);transform:translateY(-2px);}
 #mapa{height:380px;border-radius:12px;}
+.predio-dato-guardado{
+  background:#7b0f2b;
+  border:1px solid #fff;
+  color:#fff;
+  font-weight:700;
+  box-shadow:0 2px 7px rgba(0,0,0,.28);
+}
 /* Corregir overlay transparente en el hero */
 .hero {
     position: relative;
@@ -944,7 +951,6 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
       Todos los requisitos deberán entregarse en <strong>copia</strong>. Si el trámite será realizado por un tercero, presente <strong>carta poder</strong>.
     </div>
   </div>
-
   <!-- PASO 2: Formulario -->
   <div id="paso2-formulario" style="display:none;">
     <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">

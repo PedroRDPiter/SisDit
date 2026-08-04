@@ -44,6 +44,82 @@ const layerControl = L.control.layers(baseLayers, overlays, {
 let selectedPolygon = null;
 // Variable para almacenar la capa GeoJSON
 let parcelasLayer = null;
+let predioConsultaToken = 0;
+
+function escaparHtmlPredio(valor) {
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function limpiarEtiquetaPredio(layer) {
+  if (layer && layer._sisditSavedTooltip) {
+    layer.unbindTooltip();
+    layer._sisditSavedTooltip = false;
+  }
+}
+
+function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
+  const cuenta = String(cuentaCatastral || '').trim();
+  const token = ++predioConsultaToken;
+
+  limpiarEtiquetaPredio(layer);
+  if (!cuenta) return;
+  layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-muted">Consultando datos guardados...</span>').openPopup();
+
+  fetch('php/obtener_datos_poligono_croquis.php?cuenta=' + encodeURIComponent(cuenta), {
+    credentials: 'same-origin',
+    cache: 'no-store'
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (token !== predioConsultaToken || layer !== selectedPolygon) return;
+
+      if (!data.success || !data.poligono) {
+        layer.setStyle(selectedStyle);
+        layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-muted">Sin datos guardados</span>').openPopup();
+        return;
+      }
+
+      const predio = data.poligono;
+      const texto = String(predio.texto || '').trim();
+      const semaforo = obtenerSemaforoEstatus(predio.estatus);
+      const utm = predio.utm_centro_x && predio.utm_centro_y
+        ? escaparHtmlPredio(predio.utm_centro_x) + ', ' + escaparHtmlPredio(predio.utm_centro_y)
+        : 'No disponible';
+      const detalleHtml =
+        '<strong>Clave:</strong> ' + escaparHtmlPredio(cuenta) + '<br>' +
+        '<strong>Número:</strong> ' + (texto ? escaparHtmlPredio(texto) : 'Sin número') + '<br>' +
+        '<strong>Tipo de trámite:</strong> ' + escaparHtmlPredio(predio.tipo_tramite || 'No disponible') + '<br>' +
+        '<strong>Centro UTM:</strong> ' + utm + '<br>' +
+        '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
+        '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
+        (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '');
+
+      layer._sisditStatusStyle = semaforo.estilo;
+      layer._sisditStatus = predio.estatus;
+      layer.setStyle(semaforo.estilo);
+      layer.bindPopup('<div style="min-width:220px"><strong>Datos guardados del predio</strong><hr class="my-1">' + detalleHtml + '</div>').openPopup();
+
+      if (texto) {
+        layer.bindTooltip(escaparHtmlPredio(texto), {
+          permanent: true,
+          direction: 'center',
+          className: 'predio-dato-guardado'
+        }).openTooltip();
+        layer._sisditSavedTooltip = true;
+      }
+    })
+    .catch(error => {
+      if (token !== predioConsultaToken || layer !== selectedPolygon) return;
+      console.warn('No se pudieron cargar los datos guardados del predio:', error);
+      layer.setStyle(selectedStyle);
+      layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-danger">No fue posible consultar el estatus.</span>').openPopup();
+    });
+}
 
 // Estilos para polígonos normales y seleccionados
 const normalStyle = {
@@ -62,6 +138,96 @@ const selectedStyle = {
   fillOpacity: 0.5
 };
 
+function obtenerSemaforoEstatus(estatus) {
+  const valor = String(estatus || '').trim().toLocaleLowerCase('es-MX');
+
+  if (valor === 'en revisión' || valor === 'en revision') {
+    return {
+      etiqueta: 'En revisión',
+      color: '#dc3545',
+      estilo: { color: '#842029', weight: 4, opacity: 1, fillColor: '#dc3545', fillOpacity: 0.58 }
+    };
+  }
+  if (valor === 'aprobado por verificador') {
+    return {
+      etiqueta: 'Aprobado por Verificador',
+      color: '#ffc107',
+      estilo: { color: '#856404', weight: 4, opacity: 1, fillColor: '#ffc107', fillOpacity: 0.62 }
+    };
+  }
+  if (valor === 'aprobado') {
+    return {
+      etiqueta: 'Aprobado',
+      color: '#198754',
+      estilo: { color: '#0f5132', weight: 4, opacity: 1, fillColor: '#198754', fillOpacity: 0.58 }
+    };
+  }
+
+  return {
+    etiqueta: estatus || 'Sin estatus',
+    color: '#6c757d',
+    estilo: selectedStyle
+  };
+}
+
+function cargarSemaforoPredios() {
+  if (!parcelasLayer) return;
+
+  fetch('php/obtener_estatus_predios.php', {
+    credentials: 'same-origin',
+    cache: 'no-store'
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success || !data.predios) return;
+
+      actualizarConteosSemaforo(data.resumen_tramites || {});
+
+      parcelasLayer.eachLayer(layer => {
+        const clave = String(layer.feature?.properties?.CVE_CAT_OR || '').trim();
+        const registro = data.predios[clave];
+        if (!registro) return;
+
+        const semaforo = obtenerSemaforoEstatus(registro.estatus);
+        layer._sisditStatusStyle = semaforo.estilo;
+        layer._sisditStatus = registro.estatus;
+        layer.setStyle(semaforo.estilo);
+      });
+    })
+    .catch(error => console.warn('No se pudo cargar el semáforo de predios:', error));
+}
+
+function actualizarConteosSemaforo(resumen) {
+  const asignaciones = {
+    'conteo-estatus-revision': resumen['En revisión'] || 0,
+    'conteo-estatus-verificador': resumen['Aprobado por Verificador'] || 0,
+    'conteo-estatus-aprobado': resumen['Aprobado'] || 0
+  };
+
+  Object.keys(asignaciones).forEach(id => {
+    const elemento = document.getElementById(id);
+    if (elemento) elemento.textContent = asignaciones[id];
+  });
+}
+
+function restaurarEstiloPredio(layer) {
+  if (layer) layer.setStyle(layer._sisditStatusStyle || normalStyle);
+}
+
+const leyendaSemaforo = L.control({ position: 'bottomright' });
+leyendaSemaforo.onAdd = function() {
+  const div = L.DomUtil.create('div');
+  div.style.cssText = 'background:#fff;padding:8px 10px;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:12px;line-height:1.65';
+  div.innerHTML =
+    '<strong>Estatus del predio</strong><br>' +
+    '<span style="color:#dc3545">●</span> En revisión (<strong id="conteo-estatus-revision">0</strong>)<br>' +
+    '<span style="color:#ffc107">●</span> Aprobado por Verificador (<strong id="conteo-estatus-verificador">0</strong>)<br>' +
+    '<span style="color:#198754">●</span> Aprobado (<strong id="conteo-estatus-aprobado">0</strong>)';
+  L.DomEvent.disableClickPropagation(div);
+  return div;
+};
+leyendaSemaforo.addTo(map);
+
 // Función para buscar y resaltar un polígono por cuenta catastral
 function buscarYResaltarPoligono(cuentaCatastral) {
   if (!parcelasLayer) return false;
@@ -73,7 +239,8 @@ function buscarYResaltarPoligono(cuentaCatastral) {
 
       // Resetear el estilo del polígono anteriormente seleccionado
       if (selectedPolygon && selectedPolygon !== layer) {
-        selectedPolygon.setStyle(normalStyle);
+        limpiarEtiquetaPredio(selectedPolygon);
+        restaurarEstiloPredio(selectedPolygon);
       }
 
       // Aplicar estilo de selección al polígono encontrado
@@ -105,6 +272,8 @@ function buscarYResaltarPoligono(cuentaCatastral) {
       utmXInput.value = utmX;
       utmYInput.value = utmY;
 
+      mostrarDatosGuardadosPredio(layer, cuentaCatastral);
+
       encontrado = true;
       return false; // Salir del eachLayer
     }
@@ -131,7 +300,8 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
           layer.on('click', function(e) {
             // Resetear el estilo del polígono anteriormente seleccionado
             if (selectedPolygon && selectedPolygon !== layer) {
-              selectedPolygon.setStyle(normalStyle);
+              limpiarEtiquetaPredio(selectedPolygon);
+              restaurarEstiloPredio(selectedPolygon);
             }
 
             // Aplicar estilo de selección al polígono actual
@@ -167,6 +337,7 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
             // Llenar automáticamente la cuenta catastral
             const cuentaCatastral = feature.properties.CVE_CAT_OR || '';
             document.getElementById('cuenta_catastral').value = cuentaCatastral;
+            mostrarDatosGuardadosPredio(layer, cuentaCatastral);
           });
         }
       }
@@ -175,6 +346,7 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
     // Agregar a overlays
     overlays["Poligonos"] = parcelasLayer;
     layerControl.addOverlay(parcelasLayer, "Poligonos");
+    cargarSemaforoPredios();
   })
   .catch(error => console.error('Error cargando GeoJSON de parcelas:', error));
 
