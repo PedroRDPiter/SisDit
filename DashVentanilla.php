@@ -146,7 +146,8 @@ $seg_res = $stmtSeg->get_result();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sis Dit</title>
+<meta name="theme-color" content="#4b0e22">
+<title>Ventanilla | SisDiT</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
@@ -348,8 +349,9 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 </style>
+<link rel="stylesheet" href="./css/dashboard-modern.css?v=20260804">
 </head>
-<body>
+<body class="dashboard-shell dashboard-ventanilla">
 
 <!-- NAVBAR MÓVIL -->
 <nav class="navbar navbar-dark bg-dark d-lg-none">
@@ -387,7 +389,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
     <?php endif; ?>
   </a>
   <a href="#tramite"><i class="bi bi-plus-circle me-2"></i>Nuevo Trámite</a>
-  <a class="nav-link text-white" href="#mapa"><i class="bi bi-map me-2"></i> Mapa</a>
+  <a class="nav-link text-white" href="#mapaa"><i class="bi bi-map me-2"></i> Mapa</a>
   <a href="#correccion"><i class="bi bi-pencil-square me-2"></i>En Corrección
     <?php if($total_correccion>0): ?>
     <span class="badge bg-warning text-dark ms-1"><?= $total_correccion ?></span>
@@ -409,9 +411,15 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
 
 <!-- HERO -->
 <section class="hero" id="inicio">
-  <h1>Panel de Ventanilla</h1>
+  <div class="dashboard-eyebrow">SisDiT · Operación y atención</div>
+  <h1><i class="bi bi-person-workspace me-2"></i>Panel de Ventanilla</h1>
   <p>Bienvenido, <strong><?= htmlspecialchars(isset($_SESSION['usuario']) ? $_SESSION['usuario'] : '') ?></strong>.
      Registra nuevos trámites, atiende correcciones y da seguimiento a todos los expedientes.</p>
+  <div class="dashboard-hero-actions" aria-label="Accesos rápidos">
+    <a class="dashboard-hero-action" href="#tramite"><i class="bi bi-plus-circle"></i>Nuevo trámite</a>
+    <a class="dashboard-hero-action" href="#seguimiento"><i class="bi bi-search"></i>Buscar expediente</a>
+    <a class="dashboard-hero-action" href="#mapaa"><i class="bi bi-map"></i>Consultar mapa</a>
+  </div>
 </section>
 
 <!-- ESTADÍSTICAS -->
@@ -2096,6 +2104,28 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
 </div>
 
 <!-- SCRIPTS -->
+<?php
+$chart_aprobados = [];
+$chart_revision = [];
+$chart_rechazados = [];
+for ($mes_chart = 1; $mes_chart <= 12; $mes_chart++) {
+    $dato_chart = $datos_mes[$mes_chart] ?? ['aprobados' => 0, 'en_revision' => 0, 'rechazados' => 0];
+    $chart_aprobados[] = (int)$dato_chart['aprobados'];
+    $chart_revision[] = (int)$dato_chart['en_revision'];
+    $chart_rechazados[] = (int)$dato_chart['rechazados'];
+}
+?>
+<script>
+window.DASH_VENTANILLA_CONFIG = <?= json_encode([
+  'anioReporte' => (int)$anio_filtro,
+  'usuario' => (string)($_SESSION['usuario'] ?? ''),
+  'reporte' => [
+    'aprobados' => $chart_aprobados,
+    'revision' => $chart_revision,
+    'rechazados' => $chart_rechazados
+  ]
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -2105,6 +2135,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 <script src="js/dashVentanilla.js"></script>
+<script src="js/dashboard-ui.js?v=20260804"></script>
 
 </body>
 </html>

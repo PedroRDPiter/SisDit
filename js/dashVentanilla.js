@@ -7,6 +7,75 @@ const map = L.map('mapa', { zoomControl: true, scrollWheelZoom: true, tap: true 
 let marker = null;
 const utmXInput = document.getElementById('lat');
 const utmYInput = document.getElementById('lng');
+const dashVentanillaConfig = window.DASH_VENTANILLA_CONFIG || {};
+
+function mostrarCoordenadasMapa(lat, lng) {
+  const utmCoords = proj4('EPSG:4326', 'EPSG:32613', [Number(lng), Number(lat)]);
+  const utmX = Number(utmCoords[0]).toFixed(2);
+  const utmY = Number(utmCoords[1]).toFixed(2);
+  const display = document.getElementById('coords-display');
+  const texto = document.getElementById('coords-texto');
+
+  if (utmXInput) utmXInput.value = utmX;
+  if (utmYInput) utmYInput.value = utmY;
+  if (display) display.classList.remove('d-none');
+  if (texto) {
+    texto.textContent = `UTM X: ${utmX} | UTM Y: ${utmY} | Lat: ${Number(lat).toFixed(5)}, Lon: ${Number(lng).toFixed(5)}`;
+  }
+
+  return { utmX, utmY };
+}
+
+function centrarMapa() {
+  map.setView(CENTRO_MUNICIPIO, 14, { animate: true });
+  setTimeout(() => map.invalidateSize(), 150);
+}
+
+function obtenerUbicacion() {
+  if (!navigator.geolocation) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Ubicación no disponible',
+      text: 'Este navegador no permite consultar la ubicación.',
+      confirmButtonColor: '#721832'
+    });
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(function(posicion) {
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const punto = [lat, lng];
+
+    map.setView(punto, 18, { animate: true });
+    if (marker) {
+      marker.setLatLng(punto);
+    } else {
+      marker = L.marker(punto).addTo(map);
+    }
+    mostrarCoordenadasMapa(lat, lng);
+    marker.bindPopup('<strong>Mi ubicación actual</strong><br>Precisión aproximada: ' + Math.round(posicion.coords.accuracy) + ' m').openPopup();
+  }, function(error) {
+    const mensajes = {
+      1: 'Permite el acceso a tu ubicación desde la configuración del navegador.',
+      2: 'No fue posible determinar tu ubicación actual.',
+      3: 'La consulta de ubicación tardó demasiado tiempo.'
+    };
+    Swal.fire({
+      icon: 'warning',
+      title: 'No se pudo obtener la ubicación',
+      text: mensajes[error.code] || 'Intenta nuevamente.',
+      confirmButtonColor: '#721832'
+    });
+  }, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 30000
+  });
+}
+
+window.centrarMapa = centrarMapa;
+window.obtenerUbicacion = obtenerUbicacion;
 
 // Definir capas base
 const openStreetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1063,9 +1132,10 @@ function _abrirNotifFD(data) {
 // ── GRÁFICA REPORTE VENTANILLA ──
 (function() {
   var labels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var datosApr = datosApr;
-  var datosRev = datosRev;
-  var datosRec = datosRec;
+  var reporteConfig = dashVentanillaConfig.reporte || {};
+  var datosApr = reporteConfig.aprobados || [];
+  var datosRev = reporteConfig.revision || [];
+  var datosRec = reporteConfig.rechazados || [];
   var canvas = document.getElementById('chartReporteMesSec');
   if (canvas && typeof Chart !== 'undefined') {
     new Chart(canvas, {
@@ -1089,7 +1159,13 @@ function imprimirReporteSec() {
   if (!t1) { alert('No hay datos para imprimir.'); return; }
   var tabla1 = t1.outerHTML;
   var tabla2 = t2 ? '<h3 style="margin-top:24px;color:#7b0f2b;">Por Tipo de Trámite</h3>' + t2.outerHTML : '';
+  var anioFiltro = dashVentanillaConfig.anioReporte || new Date().getFullYear();
+  var usuarioSesion = dashVentanillaConfig.usuario || 'Usuario';
   var w = window.open('', '_blank');
+  if (!w) {
+    Swal.fire({icon:'warning', title:'Ventana bloqueada', text:'Permite las ventanas emergentes para imprimir el reporte.'});
+    return;
+  }
   w.document.write(
     '<html><head><title>Reporte ' + anioFiltro + '</title><style>' +
     'body{font-family:Arial,sans-serif;padding:20px;color:#222;}' +

@@ -110,7 +110,8 @@ $resultado = $stmt->get_result();
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Sis Dit</title>
+<meta name="theme-color" content="#4b0e22">
+<title>Verificación | SisDiT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- BOOTSTRAP 5 -->
@@ -345,9 +346,10 @@ window.onpopstate = function () {
   pointer-events: none;
 }
 </style>
+<link rel="stylesheet" href="./css/dashboard-modern.css?v=20260804">
 </head>
 
-<body>
+<body class="dashboard-shell dashboard-verificador">
 <!-- NAVBAR MÓVIL -->
 <nav class="navbar navbar-dark bg-dark d-lg-none">
     <div class="container-fluid">
@@ -383,8 +385,13 @@ window.onpopstate = function () {
 
 <!-- ENCABEZADO -->
 <section class="hero" id="inicio">
+    <div class="dashboard-eyebrow">SisDiT · Revisión técnica</div>
     <h1><i class="bi bi-clipboard-check"></i> Panel de Verificador</h1>
     <p>Bienvenido <?php echo $_SESSION['usuario'] ?? ''; ?>. Revisa, aprueba y gestiona los trámites georreferenciados.</p>
+    <div class="dashboard-hero-actions" aria-label="Accesos rápidos">
+        <a class="dashboard-hero-action" href="#seguimiento"><i class="bi bi-clipboard2-check"></i>Revisar trámites</a>
+        <a class="dashboard-hero-action" href="#config-constancia"><i class="bi bi-file-earmark-text"></i>Formato de constancia</a>
+    </div>
 </section>
 
 <!-- ESTADÍSTICAS RÁPIDAS -->
@@ -1974,5 +1981,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script src="js/dashboard-ui.js?v=20260804"></script>
 </body>
 </html>
