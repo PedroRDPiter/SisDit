@@ -268,7 +268,7 @@ window.onpopstate = function () {
             <li class="nav-item"><a class="nav-link" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a></li>
             <li class="nav-item"><a class="nav-link" href="#tramites-aprobados"><i class="bi bi-printer"></i> Constancias</a></li>
             <li class="nav-item"><a class="nav-link" href="Dash.php">Ver Trámites</a></li>
-            <li class="nav-item"><a class="nav-link text-danger" href="logout.php">Cerrar sesión</a></li>
+            <li class="nav-item"><a class="nav-link text-danger" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>">Cerrar sesión</a></li>
         </ul>
     </div>
 </nav>
@@ -289,7 +289,7 @@ window.onpopstate = function () {
     <a class="nav-link text-white" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a>
     <a class="nav-link text-white" href="#tramites-aprobados"><i class="bi bi-printer"></i> Constancias</a>
     <a class="nav-link text-white border-top mt-2 pt-2" href="Dash.php">Ver Trámites</a>
-    <a class="nav-link text-danger mt-auto" href="logout.php">Cerrar sesión</a>
+    <a class="nav-link text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>">Cerrar sesión</a>
 </div>
 
 <!-- CONTENIDO -->

@@ -6,7 +6,6 @@
 // acceso.php, los valida y redirige según el rol
 // =====================================================
 
-session_start();
 require "db.php";
 require "funciones_seguridad.php";
 
@@ -26,6 +25,11 @@ if (!validarCSRF()) {
 // Limpiar el correo de caracteres raros
 $correo   = limpiarInput($_POST['correo']);
 $password = trim($_POST['password']);
+$limitKey = ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . '|' . strtolower($correo);
+if (consumirLimite('login', $limitKey, 8, 900) > 0) {
+    header("Location: ../acceso.php?error=" . urlencode('Demasiados intentos. Espera 15 minutos.'));
+    exit();
+}
 
 // Verificar formato de email antes de consultar la BD
 if (!validarEmail($correo)) {
@@ -44,12 +48,14 @@ if ($resultado->num_rows == 1) {
 
     // Verificar que la cuenta esté activa (el admin puede desactivar usuarios)
     if ($datos['activo'] != 1) {
-        header("Location: ../acceso.php?error=usuario_inactivo");
+        header("Location: ../acceso.php?error=credenciales_invalidas");
         exit();
     }
 
     // Verificar contraseña con password_verify (la contraseña está hasheada en BD)
     if (password_verify($password, $datos['password'])) {
+        session_regenerate_id(true);
+        limpiarLimite('login', $limitKey);
 
         // Guardar datos del usuario en sesión
         $_SESSION['usuario']          = $datos['nombre'] . ' ' . $datos['apellidos'];
@@ -95,14 +101,14 @@ if ($resultado->num_rows == 1) {
     } else {
         // Contraseña incorrecta — registramos el intento fallido
         registrarLog($conn, 0, 'Intento de login fallido', 'usuarios', null, "Email: $correo");
-        header("Location: ../acceso.php?error=password_incorrecto");
+        header("Location: ../acceso.php?error=credenciales_invalidas");
         exit();
     }
 
 } else {
     // Correo no encontrado en BD — también lo registramos
     registrarLog($conn, 0, 'Intento de login - usuario no existe', 'usuarios', null, "Email: $correo");
-    header("Location: ../acceso.php?error=usuario_no_encontrado");
+    header("Location: ../acceso.php?error=credenciales_invalidas");
     exit();
 }
 

@@ -9,7 +9,6 @@ require "db.php";
 require "funciones_seguridad.php";
 error_reporting(0);
 ini_set('display_errors', 0);
-session_start();
 
 if (!validarCSRF()) {
     header("Location: ../acceso.php?error=" . urlencode("Token de seguridad invalido"));
@@ -35,8 +34,8 @@ try {
     if (!soloLetras($nombre) || !soloLetras($apellidos))
         throw new Exception("Nombre y apellidos solo deben contener letras");
     // Validación de contraseña
-    if (strlen($password) != 8)
-        throw new Exception("La contraseña debe tener exactamente 8 caracteres");
+    if (strlen($password) < 12)
+        throw new Exception("La contraseña debe tener al menos 12 caracteres");
     if (!preg_match('/[A-Z]/', $password))
         throw new Exception("La contraseña debe contener al menos una letra mayúscula");
     if (!preg_match('/[a-z]/', $password))

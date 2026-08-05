@@ -1,0 +1,15 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:\.git|\.kilo)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:logs)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:sistema\.sql|temp_.*\.php|describe_tramites\.php|migrate_.*\.php|limpiar_geojson\.php|Agregar-SisDit\.bat)$ - [F,L,NC]
+    RewriteRule ^php/(?:migrate_.*\.php)$ - [F,L,NC]
+</IfModule>
+
+<FilesMatch "(?i)(?:^\.|\.(?:sql|log|ini|env|bak|dist|sh|bat))$">
+    Require all denied
+</FilesMatch>
+
+ServerSignature Off

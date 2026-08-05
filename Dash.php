@@ -610,7 +610,7 @@ window.onpopstate = function () {
             <?php if(isset($_SESSION['rol']) && $_SESSION['rol'] === 'Administrador'): ?>
             <li class="nav-item"><a class="nav-link" href="DashAdmin.php"><i class="bi bi-shield-lock me-2"></i> Panel de administración</a></li>
             <?php endif; ?>
-            <li class="nav-item"><a class="nav-link text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a></li>
+            <li class="nav-item"><a class="nav-link text-danger" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a></li>
         </ul>
     </div>
 </nav>
@@ -626,7 +626,7 @@ window.onpopstate = function () {
     <?php if(isset($_SESSION['rol']) && $_SESSION['rol'] === 'Administrador'): ?>
     <a class="nav-link text-white border-top mt-2 pt-2" href="DashAdmin.php"><i class="bi bi-shield-lock me-2"></i> Panel de administración</a>
     <?php endif; ?>
-    <a class="nav-link text-danger mt-auto" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
+    <a class="nav-link text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
 </div>
 
 <!-- CONTENIDO -->

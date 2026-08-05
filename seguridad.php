@@ -8,13 +8,8 @@
 // =====================================================
 
 // Cookies de sesión solo accesibles por HTTP (no por JS)
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_strict_mode', 1);
-ini_set('session.cookie_samesite', 'Strict');
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/php/sesion.php';
+iniciarSesionSegura();
 
 // Headers para evitar que el navegador cachee páginas privadas
 // Sin esto, el botón "Atrás" podría mostrar páginas después de logout
@@ -26,6 +21,11 @@ header("Expires: 0");
 // Headers de seguridad adicionales
 header("X-Content-Type-Options: nosniff");   // Evitar MIME sniffing
 header("X-Frame-Options: SAMEORIGIN");       // Evitar clickjacking
+header("Referrer-Policy: same-origin");
+header("Permissions-Policy: camera=(), microphone=(), geolocation=(self)");
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+}
 header("X-XSS-Protection: 1; mode=block");  // Protección XSS básica
 
 // Si no hay sesión activa, destruir todo y mandar al login

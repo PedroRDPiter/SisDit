@@ -1,6 +1,7 @@
 <?php
 require "seguridad.php";
 require_once "php/db.php";
+require_once "php/funciones_seguridad.php";
 
 if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Administrador'])) {
     header("Location: acceso.php?error=no_autorizado");
@@ -9,6 +10,10 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Administrador'])) 
 
 $mensaje = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
+    if (!validarCSRF()) {
+        http_response_code(403);
+        exit('Token de seguridad invalido');
+    }
     $file = $_FILES['archivo']['tmp_name'];
     $tipo = $_POST['tipo_import'];
 
@@ -84,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
         <div class="alert alert-info"><?php echo $mensaje; ?></div>
     <?php endif; ?>
     <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generarCSRF(), ENT_QUOTES, 'UTF-8') ?>">
         <div class="mb-3">
             <label for="tipo_import" class="form-label">Tipo de importación</label>
             <select name="tipo_import" id="tipo_import" class="form-select" required>

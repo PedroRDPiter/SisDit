@@ -1,5 +1,6 @@
 <?php
-require 'C:/xampp/htdocs/desarrollo/php/db.php';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require __DIR__ . '/php/db.php';
 
 echo "=== SHOW INDEX FOR folio columns ===\n";
 $r = $conn->query("SHOW INDEX FROM tramites WHERE Key_name LIKE '%folio%'");

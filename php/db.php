@@ -11,16 +11,16 @@
 date_default_timezone_set('America/Mexico_City');
 
 // En producción cambiar a 0 para no mostrar errores al usuario
-// ini_set('display_errors', 0);
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', '../logs/php_errors.log');
+ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 error_reporting(E_ALL);
 
 // Credenciales de la base de datos
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "sistema_recovery";
+$host = getenv('SISDIT_DB_HOST') ?: 'localhost';
+$user = getenv('SISDIT_DB_USER') ?: 'root'; // Compatibilidad local; configurar usuario limitado en produccion.
+$pass = getenv('SISDIT_DB_PASS') ?: '';
+$db   = getenv('SISDIT_DB_NAME') ?: 'sistema_recovery';
 
 try {
     $conn = new mysqli($host, $user, $pass, $db);

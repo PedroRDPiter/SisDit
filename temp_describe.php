@@ -1,5 +1,6 @@
 <?php
-require 'C:/xampp/htdocs/desarrollo/php/db.php';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require __DIR__ . '/php/db.php';
 $r = $conn->query('SELECT COUNT(*) as total, SUM(tramite_principal_id IS NOT NULL) as con_principal FROM tramites');
 $row = $r->fetch_assoc();
 echo 'Total tramites: ' . $row['total'] . ' | Con tramite_principal_id (hijos): ' . ($row['con_principal'] ?? 0) . PHP_EOL;

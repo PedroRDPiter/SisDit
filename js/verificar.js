@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
        document.getElementById('c_manzana').value             = (btn.dataset.manzana || '').toUpperCase();
        document.getElementById('c_lote').value                = (btn.dataset.lote || '').toUpperCase();
        document.getElementById('c_fecha_constancia').value    = btn.dataset.fechaConstancia || new Date().toISOString().split('T')[0];
-       document.getElementById('c_cantidad').value            = btn.dataset.cantidad || 1;
+       const cantidadInput = document.getElementById('c_cantidad');
+       if (cantidadInput) cantidadInput.value = btn.dataset.cantidad || 1;
 
       // Estado del croquis
       const croquis = btn.dataset.croquis || '';
@@ -777,6 +778,7 @@ function ver_subirCroquis() {
       const fd = new FormData();
       if (idSub) fd.append('id', idSub);
       fd.append('folio', folio);
+      fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
       fd.append('croquis', resizedBlob, 'croquis.jpg'); // Nombre fijo
 
       return fetch('php/guardar_croquis.php', { method: 'POST', body: fd, credentials: 'same-origin' });
@@ -1580,6 +1582,7 @@ function ver_guardarCroquisMapa() {
 
         if (verCroquisCurrentTramiteId) fd.append('id', verCroquisCurrentTramiteId);
         fd.append('folio', verCroquisCurrentFolio);
+        fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
         fd.append('texto', texto);
         fd.append('origen', verCroquisSelectedLayer._croquisSource || 'seleccionado');
         fd.append('cuenta_catastral_origen', verCroquisSelectedLayer.feature?.properties?.CVE_CAT_OR || '');
@@ -2760,6 +2763,7 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
 
           if (currentTramiteId) fd.append('id', currentTramiteId);
           fd.append('folio', currentFolio);
+          fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
           fd.append('texto', texto);
           fd.append('origen', selectedFeature.get('croquis_source') || 'seleccionado');
           fd.append('cuenta_catastral_origen', getFeatureNumber(selectedFeature));
@@ -2811,4 +2815,7 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
   window.ver_prepararCroquisMapa = prepareMap;
   window.ver_guardarCroquisMapa = saveMapCroquis;
   window.ver_initCroquisMapa = initOpenLayersCroquis;
+  window.ver_actualizarTamanoCroquis = function() {
+    if (map) map.updateSize();
+  };
 })();

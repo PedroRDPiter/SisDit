@@ -18,6 +18,11 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     echo json_encode(['success' => false, 'message' => 'Sin permisos']);
     exit;
 }
+if (!validarCSRF()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Token de seguridad invalido']);
+    exit;
+}
 
 $id_post = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 $folio   = isset($_POST['folio']) ? trim($_POST['folio']) : '';

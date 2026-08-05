@@ -1,5 +1,6 @@
 <?php
-require 'php/db.php';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require __DIR__ . '/db.php';
 $cols=[];
 $res=$conn->query('SHOW COLUMNS FROM tramites');
 while($r=$res->fetch_assoc())$cols[]=$r['Field'];

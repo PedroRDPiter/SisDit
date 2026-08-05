@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/php/sesion.php';
+iniciarSesionSegura();
 
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -39,6 +40,7 @@ if (isset($_GET['error'])) {
         'email_invalido' => ['Correo inválido', 'Ingresa una dirección de correo electrónico válida.'],
         'usuario_no_encontrado' => ['Cuenta no encontrada', 'No existe una cuenta con ese correo. Verifica tus datos o solicita una cuenta.'],
         'password_incorrecto' => ['Contraseña incorrecta', 'La contraseña ingresada no coincide con la cuenta.'],
+        'credenciales_invalidas' => ['Credenciales inválidas', 'El correo o la contraseña no son correctos.'],
         'password_invalida' => ['Contraseña inválida', 'La contraseña no cumple los requisitos de seguridad.'],
         'usuario_inactivo' => ['Cuenta inactiva', 'Tu cuenta aún no está activa. Contacta al administrador.'],
         'cuenta_inactiva' => ['Cuenta pendiente', 'Tu cuenta está pendiente de activación por el administrador.'],
@@ -79,8 +81,7 @@ if (isset($_GET['error'])) {
     $alerta = ['tipo' => $tipo, 'titulo' => $titulo, 'mensaje' => $mensaje];
 }
 
-$enlaceRecuperacion = $_SESSION['recuperar_enlace_mostrar'] ?? null;
-unset($_SESSION['recuperar_enlace_mostrar']);
+$enlaceRecuperacion = null;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -935,13 +936,13 @@ unset($_SESSION['recuperar_enlace_mostrar']);
                         <div class="campo">
                             <label for="reg_password">Contraseña</label>
                             <div class="campo-control campo-password">
-                                <input type="password" name="password" id="reg_password" placeholder="8 caracteres exactos"
-                                       minlength="8" maxlength="8" autocomplete="new-password" required>
+                                <input type="password" name="password" id="reg_password" placeholder="12 caracteres o más"
+                                       minlength="12" maxlength="128" autocomplete="new-password" required>
                                 <button class="mostrar-password" type="button" data-password="reg_password"
                                         aria-label="Mostrar contraseña">Mostrar</button>
                             </div>
                             <ul class="reglas-password" id="reglasPassword" aria-live="polite">
-                                <li data-regla="longitud">8 caracteres exactos</li>
+                                <li data-regla="longitud">12 caracteres o más</li>
                                 <li data-regla="mayuscula">Una mayúscula</li>
                                 <li data-regla="minuscula">Una minúscula</li>
                                 <li data-regla="numero">Un número</li>
@@ -1034,7 +1035,7 @@ unset($_SESSION['recuperar_enlace_mostrar']);
 
         const passwordRegistro = document.getElementById('reg_password');
         const reglas = {
-            longitud: valor => valor.length === 8,
+            longitud: valor => valor.length >= 12,
             mayuscula: valor => /[A-Z]/.test(valor),
             minuscula: valor => /[a-z]/.test(valor),
             numero: valor => /[0-9]/.test(valor),
@@ -1102,7 +1103,20 @@ unset($_SESSION['recuperar_enlace_mostrar']);
 
         document.getElementById('cancelarRecuperacion').addEventListener('click', () => dialogo.close());
         document.getElementById('confirmarRecuperacion').addEventListener('click', () => {
-            window.location.href = `php/recuperar.php?correo=${encodeURIComponent(document.getElementById('login_correo').value)}`;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'php/recuperar.php';
+            const fields = {
+                correo: document.getElementById('login_correo').value,
+                csrf_token: <?= json_encode($_SESSION['csrf_token']) ?>
+            };
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden'; input.name = name; input.value = value;
+                form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
         });
 
         dialogo.addEventListener('click', event => {

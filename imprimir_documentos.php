@@ -201,7 +201,7 @@ $back = esAdministrador() ? 'DashAdmin.php' : (esVentanilla() ? 'DashVentanilla.
 <div class="sidebar position-fixed d-none d-lg-flex flex-column p-3">
   <h5 class="text-white text-center mb-4">Menú</h5>
   <a class="nav-link text-white" href="<?= $back ?>"><i class="bi bi-arrow-left me-2"></i> Volver al Panel</a>
-  <a class="nav-link text-danger mt-auto" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
+  <a class="nav-link text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
 </div>
 
 <!-- CONTENIDO -->

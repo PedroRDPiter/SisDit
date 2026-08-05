@@ -26,6 +26,11 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     echo json_encode(array('success'=>false,'message'=>'Sin permisos'));
     exit;
 }
+if (!validarCSRF()) {
+    http_response_code(403);
+    echo json_encode(array('success'=>false,'message'=>'Token de seguridad invalido'));
+    exit;
+}
 
 // Identificación: preferir id del subtrámite (cada subtrámite tiene su propio croquis).
 $id_post = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -72,15 +77,12 @@ if (!isset($_FILES['croquis']) || $_FILES['croquis']['error'] !== UPLOAD_ERR_OK)
     exit;
 }
 
-$ext = strtolower(pathinfo($_FILES['croquis']['name'], PATHINFO_EXTENSION));
-if (!in_array($ext, array('jpg','jpeg','png','webp'))) {
-    echo json_encode(array('success'=>false,'message'=>'Solo se permiten imagenes JPG, PNG o WEBP'));
+$validacion = validarArchivo($_FILES['croquis'], array('jpg','jpeg','png','webp'));
+if (!$validacion['valido']) {
+    echo json_encode(array('success'=>false,'message'=>$validacion['mensaje']));
     exit;
 }
-if ($_FILES['croquis']['size'] > 10485760) { // 10MB
-    echo json_encode(array('success'=>false,'message'=>'La imagen no debe superar 10MB'));
-    exit;
-}
+$ext = $validacion['extension'];
 
 // Usar el ID del trámite para organizar los archivos en lugar del folio
 $carpeta = "../.private/{$tramite_id}/croquis/";

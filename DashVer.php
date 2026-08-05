@@ -365,7 +365,7 @@ window.onpopstate = function () {
             <li class="nav-item"><a class="nav-link" href="#seguimiento"><i class="bi bi-search me-2"></i> Seguimiento</a></li>
             <li class="nav-item"><a class="nav-link" href="#config-constancia"><i class="bi bi-file-earmark-text me-2"></i> Formato Constancia</a></li>
             <li class="nav-item"><a class="nav-link btn-secondary" href="http://10.1.85.9:3344/" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-2"></i> Control de Oficios</a></li>
-            <li class="nav-item"><a class="nav-link text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a></li>
+            <li class="nav-item"><a class="nav-link text-danger" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a></li>
         </ul>
     </div>
 </nav>
@@ -377,7 +377,7 @@ window.onpopstate = function () {
     <a class="nav-link text-white" href="#seguimiento"><i class="bi bi-search me-2"></i> Seguimiento</a>
     <a class="nav-link text-white" href="#config-constancia"><i class="bi bi-file-earmark-text me-2"></i> Formato Constancia</a>
     <a class="nav-link text-white btn-secondary" href="http://10.1.85.9:3344/" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-2"></i> Control de Oficios</a>
-    <a class="nav-link text-danger mt-auto" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
+    <a class="nav-link text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión</a>
 </div>
 
 <!-- CONTENIDO -->
@@ -504,7 +504,7 @@ window.onpopstate = function () {
     <div class="col-md-3">
         <label class="form-label">Fecha de ingreso</label>
         <input type="date" name="fecha" class="form-control"
-               value="<?= $_GET['fecha'] ?? '' ?>">
+               value="<?= htmlspecialchars($_GET['fecha'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
     </div>
 
     <!-- TRÁMITE -->
@@ -1105,126 +1105,87 @@ window.onpopstate = function () {
             </div>
           </div>
           
-          <!-- Buscar número oficial anterior -->
-          <div class="card border-info mb-3">
-            <div class="card-header bg-info text-white py-2">
-              <i class="bi bi-search me-2"></i>Cargar datos de número oficial anterior <small class="fw-normal">(opcional)</small>
-            </div>
-            <div class="card-body py-3">
-              <div class="row g-2 align-items-end">
-                <div class="col-md-5">
-                  <label class="form-label small fw-semibold mb-1">Folio de salida anterior</label>
-                  <input type="text" class="form-control form-control-sm" id="c_buscar_folio" placeholder="Ej: 001/2026">
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label small fw-semibold mb-1">O nombre del propietario</label>
-                  <input type="text" class="form-control form-control-sm" id="c_buscar_propietario" placeholder="Ej: JUAN PÉREZ">
-                </div>
-                <div class="col-md-2">
-                  <button type="button" class="btn btn-info btn-sm w-100 text-white" onclick="cargarDatosAnterioresVer()">
-                    <i class="bi bi-search me-1"></i>Buscar
-                  </button>
-                </div>
-              </div>
-              <div id="c_msg_busqueda" class="small mt-2" style="display:none;"></div>
-            </div>
-          </div>
+          <nav class="constancia-steps mb-4" aria-label="Progreso de asignación de número">
+            <button type="button" class="constancia-step active" data-wizard-go="1"><span>1</span><strong>Número oficial</strong><small>Tipo y número</small></button>
+            <button type="button" class="constancia-step" data-wizard-go="2"><span>2</span><strong>Ubicación</strong><small>Predio y catastro</small></button>
+            <button type="button" class="constancia-step" data-wizard-go="3"><span>3</span><strong>Croquis</strong><small>Mapa y revisión</small></button>
+          </nav>
 
-          <div class="card border-success">
-            <div class="card-header bg-success text-white">
-              <i class="bi bi-file-earmark-text me-2"></i>Datos de la Constancia
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <!-- Tipo de asignación -->
-                <div class="col-md-4">
-                  <label class="form-label fw-bold" for="c_tipo_asignacion">Tipo <span class="text-danger">*</span></label>
-                  <select class="form-select" name="tipo_asignacion" id="c_tipo_asignacion" required>
-                    <option value="ASIGNACION">ASIGNACIÓN</option>
-                    <option value="RECTIFICACION">RECTIFICACIÓN</option>
-                    <option value="REPOSICION">REPOSICIÓN</option>
+          <div class="constancia-wizard-panel" data-wizard-step="1">
+            <div class="row g-3">
+              <div class="col-xl-8">
+                <div class="wizard-section-card">
+                  <div class="wizard-section-heading"><span class="wizard-section-icon"><i class="bi bi-house-door"></i></span><div><h6>¿Qué trámite estás realizando?</h6><p>Selecciona una opción para orientar el resto de la captura.</p></div></div>
+                  <select class="visually-hidden" name="tipo_asignacion" id="c_tipo_asignacion" required aria-label="Tipo de asignación">
+                    <option value="ASIGNACION">ASIGNACIÓN</option><option value="RECTIFICACION">RECTIFICACIÓN</option><option value="REPOSICION">REPOSICIÓN</option>
                   </select>
+                  <div class="assignment-choices" role="radiogroup" aria-label="Tipo de asignación">
+                    <button type="button" class="assignment-choice active" data-assignment="ASIGNACION"><i class="bi bi-plus-circle"></i><strong>Asignación</strong><small>Registrar un número oficial.</small></button>
+                    <button type="button" class="assignment-choice" data-assignment="RECTIFICACION"><i class="bi bi-pencil-square"></i><strong>Rectificación</strong><small>Corregir información previa.</small></button>
+                    <button type="button" class="assignment-choice" data-assignment="REPOSICION"><i class="bi bi-arrow-repeat"></i><strong>Reposición</strong><small>Reponer una constancia existente.</small></button>
+                  </div>
+                  <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold" for="c_numero_asignado">Número asignado <span class="text-danger">*</span></label>
+                      <div class="input-group"><span class="input-group-text"><i class="bi bi-hash"></i></span><input type="text" class="form-control input-mayusculas" name="numero_asignado" id="c_numero_asignado" placeholder="Ej: 103" required></div>
+                      <small class="text-muted">Escribe el número exactamente como aparecerá en la constancia.</small>
+                    </div>
+                    <div class="col-md-6" id="c_referencia_wrap">
+                      <label class="form-label fw-bold" for="c_referencia_anterior">Referencia anterior</label>
+                      <input type="text" class="form-control input-mayusculas" name="referencia_anterior" id="c_referencia_anterior" placeholder="Ej: 101 o folio anterior">
+                      <small class="text-muted" id="c_referencia_help">Úsala cuando exista un antecedente.</small>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="col-md-4">
-                  <label class="form-label fw-bold" for="c_numero_asignado">Número asignado <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-mayusculas" name="numero_asignado" id="c_numero_asignado" 
-                         placeholder="Ej: 103" required>
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold" for="c_referencia_anterior">Referencia anterior</label>
-                  <input type="text" class="form-control input-mayusculas" name="referencia_anterior" id="c_referencia_anterior" 
-                         placeholder="Opcional">
-                  <small class="text-muted">Solo si aplica</small>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold" for="c_direccion_constancia">Dirección <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-mayusculas" name="direccion_constancia" id="c_direccion_constancia"
-                         required>
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label fw-bold" for="c_cp">Código postal</label>
-                  <input type="text" class="form-control" name="cp" id="c_cp" maxlength="5" inputmode="numeric"
-                         placeholder="20400" autocomplete="postal-code">
-                </div>
-
-                <div class="col-md-4">
-                  <label class="form-label fw-bold" for="c_colonia_constancia">Colonia <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-mayusculas" name="colonia_constancia"
-                         id="c_colonia_constancia" list="c_colonias_lista"
-                         placeholder="Selecciona o escribe una colonia" autocomplete="off" required>
-                  <datalist id="c_colonias_lista"></datalist>
-                  <small class="text-muted" id="c_colonia_ayuda">Escribe un código postal para obtener sugerencias o captura la colonia manualmente.</small>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold" for="c_entre_calle1">Entre calle 1 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-mayusculas" name="entre_calle1" id="c_entre_calle1" 
-                         placeholder="Ej: NIÑOS HÉROES" required>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold" for="c_entre_calle2">Entre calle 2</label>
-                  <input type="text" class="form-control input-mayusculas" name="entre_calle2" id="c_entre_calle2" 
-                         placeholder="Ej: INDEPENDENCIA">
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold" for="c_cuenta_catastral">Cuenta catastral <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-solo-numeros" name="cuenta_catastral_constancia" id="c_cuenta_catastral" 
-                         placeholder="Ej: 70104010022000" pattern="[0-9]+" 
-                         title="Solo números" required>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold" for="c_superficie_constancia">Superficie (m²) <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control input-solo-numeros" name="superficie_constancia" id="c_superficie_constancia" 
-                         placeholder="Ej: 250" pattern="[0-9]+" title="Solo números" required>
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label fw-bold" for="c_manzana">Manzana</label>
-                  <input type="text" class="form-control input-mayusculas" name="manzana" id="c_manzana" 
-                         placeholder="Opcional">
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label fw-bold" for="c_lote">Lote</label>
-                  <input type="text" class="form-control input-mayusculas" name="lote" id="c_lote"
-                         placeholder="Opcional">
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold" for="c_fecha_constancia">Fecha de expedición <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" name="fecha_constancia" id="c_fecha_constancia"
-                         value="<?= date('Y-m-d') ?>" required>
-                </div>
+                <details class="previous-record-box mt-3">
+                  <summary><span><i class="bi bi-clock-history me-2"></i>Usar datos de un trámite anterior</span><small>Opcional</small></summary>
+                  <div class="p-3 pt-2">
+                    <p class="small text-muted mb-3">Busca por folio de salida o propietario. Revisa el resultado antes de continuar.</p>
+                    <div class="row g-2 align-items-end">
+                      <div class="col-md-5"><label class="form-label small fw-semibold mb-1">Folio de salida anterior</label><input type="text" class="form-control form-control-sm" id="c_buscar_folio" placeholder="Ej: 001/2026"></div>
+                      <div class="col-md-5"><label class="form-label small fw-semibold mb-1">O nombre del propietario</label><input type="text" class="form-control form-control-sm" id="c_buscar_propietario" placeholder="Ej: JUAN PÉREZ"></div>
+                      <div class="col-md-2"><button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="cargarDatosAnterioresVer()"><i class="bi bi-search me-1"></i>Buscar</button></div>
+                    </div>
+                    <div id="c_msg_busqueda" class="small mt-2" style="display:none;"></div>
+                  </div>
+                </details>
+              </div>
+              <div class="col-xl-4">
+                <aside class="constancia-live-summary">
+                  <div class="small text-uppercase fw-bold text-muted mb-2">Vista previa</div>
+                  <p id="constancia-resumen-texto">Se generará una asignación de número oficial.</p>
+                  <hr>
+                  <div class="small fw-bold mb-2">Requisitos</div>
+                  <ul class="constancia-checklist">
+                    <li id="check-numero"><i class="bi bi-circle"></i>Número capturado</li>
+                    <li id="check-ubicacion"><i class="bi bi-circle"></i>Ubicación completa</li>
+                    <li id="check-croquis"><i class="bi bi-circle"></i>Croquis guardado</li>
+                  </ul>
+                </aside>
               </div>
             </div>
           </div>
+
+          <div class="constancia-wizard-panel d-none" data-wizard-step="2">
+            <div class="wizard-section-card">
+              <div class="wizard-section-heading"><span class="wizard-section-icon"><i class="bi bi-geo-alt"></i></span><div><h6>Ubicación e identificación del predio</h6><p>Confirma los datos que aparecerán en la constancia.</p></div></div>
+              <div class="row g-3">
+                <div class="col-md-6"><label class="form-label fw-bold" for="c_direccion_constancia">Dirección <span class="text-danger">*</span></label><input type="text" class="form-control input-mayusculas" name="direccion_constancia" id="c_direccion_constancia" required></div>
+                <div class="col-md-2"><label class="form-label fw-bold" for="c_cp">Código postal</label><input type="text" class="form-control" name="cp" id="c_cp" maxlength="5" inputmode="numeric" placeholder="20400" autocomplete="postal-code"></div>
+                <div class="col-md-4"><label class="form-label fw-bold" for="c_colonia_constancia">Colonia <span class="text-danger">*</span></label><input type="text" class="form-control input-mayusculas" name="colonia_constancia" id="c_colonia_constancia" list="c_colonias_lista" placeholder="Selecciona o escribe" autocomplete="off" required><datalist id="c_colonias_lista"></datalist><small class="text-muted" id="c_colonia_ayuda">El código postal carga sugerencias.</small></div>
+                <div class="col-md-6"><label class="form-label fw-bold" for="c_entre_calle1">Entre calle 1 <span class="text-danger">*</span></label><input type="text" class="form-control input-mayusculas" name="entre_calle1" id="c_entre_calle1" placeholder="Ej: NIÑOS HÉROES" required></div>
+                <div class="col-md-6"><label class="form-label fw-bold" for="c_entre_calle2">Entre calle 2</label><input type="text" class="form-control input-mayusculas" name="entre_calle2" id="c_entre_calle2" placeholder="Ej: INDEPENDENCIA"></div>
+                <div class="col-md-6"><label class="form-label fw-bold" for="c_cuenta_catastral">Cuenta catastral <span class="text-danger">*</span></label><input type="text" class="form-control input-solo-numeros" name="cuenta_catastral_constancia" id="c_cuenta_catastral" placeholder="Ej: 70104010022000" pattern="[0-9]+" title="Solo números" required></div>
+                <div class="col-md-6"><label class="form-label fw-bold" for="c_superficie_constancia">Superficie (m²) <span class="text-danger">*</span></label><input type="text" class="form-control" name="superficie_constancia" id="c_superficie_constancia" placeholder="Ej: 250.50" inputmode="decimal" required></div>
+                <div class="col-md-3"><label class="form-label fw-bold" for="c_manzana">Manzana</label><input type="text" class="form-control input-mayusculas" name="manzana" id="c_manzana" placeholder="Opcional"></div>
+                <div class="col-md-3"><label class="form-label fw-bold" for="c_lote">Lote</label><input type="text" class="form-control input-mayusculas" name="lote" id="c_lote" placeholder="Opcional"></div>
+                <div class="col-md-6"><label class="form-label fw-bold" for="c_fecha_constancia">Fecha de expedición <span class="text-danger">*</span></label><input type="date" class="form-control" name="fecha_constancia" id="c_fecha_constancia" value="<?= date('Y-m-d') ?>" required></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="constancia-wizard-panel d-none" data-wizard-step="3">
 
           <!-- ── CROQUIS ── -->
           <div class="card border-secondary mt-3">
@@ -1234,11 +1195,11 @@ window.onpopstate = function () {
               <span class="badge bg-warning text-dark ms-1">Requerido para imprimir</span>
             </div>
             <div class="card-body">
-              <div id="ver_alerta_croquis" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
+              <div id="ver_alerta_croquis" class="alert alert-warning align-items-center gap-2 py-2 mb-3" style="display:none;">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <span>Sin croquis. Selecciona o dibuja un poligono en el mapa y guardalo para poder imprimir.</span>
               </div>
-              <div id="ver_ok_croquis" class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" style="display:none;">
+              <div id="ver_ok_croquis" class="alert alert-success align-items-center gap-2 py-2 mb-3" style="display:none;">
                 <i class="bi bi-check-circle-fill"></i>
                 <span>Croquis guardado correctamente.</span>
               </div>
@@ -1314,17 +1275,24 @@ window.onpopstate = function () {
               </div>
             </div>
           </div>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="bi bi-x-lg me-1"></i> Cerrar
         </button>
-        <button type="button" id="btnSoloImprimir" class="btn btn-primary">
+        <button type="button" id="constancia_btn_anterior" class="btn btn-outline-secondary d-none">
+          <i class="bi bi-arrow-left me-1"></i> Anterior
+        </button>
+        <button type="button" id="constancia_btn_siguiente" class="btn btn-primary">
+          Siguiente <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+        <button type="button" id="btnSoloImprimir" class="btn btn-outline-primary d-none">
           <i class="bi bi-printer me-1"></i> Imprimir
         </button>
-        <button type="submit" form="formConstancia" class="btn btn-success">
-          <i class="bi bi-save me-1"></i> Guardar
+        <button type="submit" id="constancia_btn_guardar" form="formConstancia" class="btn btn-success d-none">
+          <i class="bi bi-save me-1"></i> Guardar constancia
         </button>
       </div>
     </div>
@@ -1398,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let errorMsg = '';
     let errorTitle = 'Error';
     
-    switch('<?= $_GET['error'] ?>') {
+    switch(<?= json_encode((string)($_GET['error'] ?? '')) ?>) {
     case 'csrf':
         errorMsg = 'Error de seguridad. Por favor intenta de nuevo.';
         errorTitle = 'Error de Seguridad';
@@ -1412,7 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorTitle = 'Archivo No Válido';
         break;
     default:
-        errorMsg = '<?= htmlspecialchars($_GET['error'] ?? '') ?>';
+        errorMsg = <?= json_encode((string)($_GET['error'] ?? '')) ?>;
     }
     
     Swal.fire({
@@ -1428,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let successMsg = '';
     let successTitle = '¡Éxito!';
     
-    switch('<?= $_GET['success'] ?>') {
+    switch(<?= json_encode((string)($_GET['success'] ?? '')) ?>) {
       case 'tramite_actualizado':
         successMsg = 'El trámite ha sido actualizado correctamente.';
         successTitle = '¡Trámite Actualizado!';
@@ -1630,6 +1598,8 @@ document.addEventListener('DOMContentLoaded', function() {
         prevImg.style.display = 'none';
         prevPh.style.display = 'flex';
     }
+    // Mantener sincronizada la bandera usada por el botón de impresión.
+    window._ver_croquis_ok = Boolean(croquis && croquis.trim());
     
     modalConstancia.show();
 }
@@ -1749,6 +1719,7 @@ function cargarDatosAnterioresVer() {
         if (idActual) fd.append('id_destino', idActual);
         fd.append('folio_destino',   folioActual);
         fd.append('croquis_archivo', croquis);
+        fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
         fetch('php/asignar_croquis.php', { method: 'POST', body: fd, credentials: 'same-origin' })
           .then(r => r.json())
           .then(res => {
@@ -1951,36 +1922,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Configurar botón de imprimir en modal de constancia - SIN ALERTA, usa validación nativa
-    const btnImprimirConstancia = document.getElementById('btnSoloImprimir');
-    if (btnImprimirConstancia) {
-        const nuevoBoton = btnImprimirConstancia.cloneNode(true);
-        btnImprimirConstancia.parentNode.replaceChild(nuevoBoton, btnImprimirConstancia);
-        
-        nuevoBoton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Obtener el formulario
-            const form = document.getElementById('formConstancia');
-            
-            // Verificar si el formulario es válido usando la validación nativa del navegador
-            if (form.checkValidity()) {
-                // Si es válido, redirigir a imprimir (por id del subtrámite)
-                const idSub = document.getElementById('c_id').value;
-                const folio = document.getElementById('c_folio_hidden').value;
-                const url = idSub
-                    ? 'constancia_numero.php?id=' + encodeURIComponent(idSub) + '&imprimir=1'
-                    : 'constancia_numero.php?folio=' + encodeURIComponent(folio) + '&imprimir=1';
-                window.location.href = url;
-            } else {
-                // Si no es válido, mostrar los mensajes de validación nativos del navegador
-                form.reportValidity();
-            }
-        });
-    }
 });
 </script>
+<script src="js/constancia-wizard.js?v=20260805"></script>
 <script src="js/dashboard-ui.js?v=20260804"></script>
 </body>
 </html>

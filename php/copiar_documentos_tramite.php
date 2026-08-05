@@ -6,12 +6,19 @@
 // =====================================================
 session_start();
 require_once "db.php";
+require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json');
 
 // Verificar autenticación
 if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);
+    exit;
+}
+
+if (!esPersonalAutorizado() || !validarCSRF()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
     exit;
 }
 

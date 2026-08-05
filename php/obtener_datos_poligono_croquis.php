@@ -43,6 +43,7 @@ $stmt = $conn->prepare("
         d.croquis_archivo,
         d.updated_at,
         t.estatus,
+        t.tipo_tramite_id,
         tt.nombre AS tipo_tramite
     FROM croquis_poligono_detalles d
     INNER JOIN tramites t ON t.id = d.tramite_id
@@ -64,7 +65,41 @@ $row = $res->fetch_assoc();
 $stmt->close();
 
 if (!$row) {
-    echo json_encode(['success' => true, 'poligono' => null]);
+    $fallback = $conn->prepare("
+        SELECT t.id AS tramite_id, t.estatus, t.numero_asignado, t.tipo_tramite_id,
+               t.folio_numero, t.folio_anio, t.updated_at,
+               tt.nombre AS tipo_tramite
+        FROM tramites t
+        LEFT JOIN tipos_tramite tt ON tt.id = t.tipo_tramite_id
+        WHERE t.cuenta_catastral = ?
+        ORDER BY t.updated_at DESC, t.id DESC
+        LIMIT 1
+    ");
+    $fallback->bind_param("s", $cuenta);
+    $fallback->execute();
+    $tramite = $fallback->get_result()->fetch_assoc();
+    $fallback->close();
+    if (!$tramite) {
+        echo json_encode(['success' => true, 'poligono' => null]);
+        exit;
+    }
+    $texto = trim((string)($tramite['numero_asignado'] ?? ''));
+    if ($texto === '') {
+        $texto = str_pad((string)$tramite['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_anio'];
+    }
+    echo json_encode([
+        'success' => true,
+        'poligono' => [
+            'tramite_id' => (int)$tramite['tramite_id'],
+            'texto' => $texto,
+            'utm_centro_x' => null,
+            'utm_centro_y' => null,
+            'estatus' => $tramite['estatus'],
+            'tipo_tramite_id' => (int)$tramite['tipo_tramite_id'],
+            'tipo_tramite' => $tramite['tipo_tramite'],
+            'updated_at' => $tramite['updated_at']
+        ]
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -86,6 +121,7 @@ echo json_encode([
         'label_lat' => $row['label_lat'],
         'croquis_archivo' => $row['croquis_archivo'],
         'estatus' => $row['estatus'],
+        'tipo_tramite_id' => (int)$row['tipo_tramite_id'],
         'tipo_tramite' => $row['tipo_tramite'],
         'updated_at' => $row['updated_at']
     ]

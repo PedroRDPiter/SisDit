@@ -285,9 +285,9 @@ try {
         if (!isset($_FILES[$fKey]) || $_FILES[$fKey]['error'] !== UPLOAD_ERR_OK) continue;
         if (empty($_FILES[$fKey]['name'])) continue;
 
-        $ext = strtolower(pathinfo($_FILES[$fKey]['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg', 'jpeg', 'png'])) continue;
-        if ($_FILES[$fKey]['size'] > 5242880) continue;
+        $validacion = validarArchivo($_FILES[$fKey], ['jpg', 'jpeg', 'png']);
+        if (!$validacion['valido']) continue;
+        $ext = $validacion['extension'];
 
         $n = $fKey . '_' . uniqid() . '_' . time() . '.' . $ext;
         if (move_uploaded_file($_FILES[$fKey]['tmp_name'], $carpeta . $n)) {
@@ -316,9 +316,9 @@ try {
         if (!isset($_FILES[$inputName]) || $_FILES[$inputName]['error'] !== UPLOAD_ERR_OK) continue;
         if (empty($_FILES[$inputName]['name'])) continue;
 
-        $ext = strtolower(pathinfo($_FILES[$inputName]['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'pdf'])) continue;
-        if ($_FILES[$inputName]['size'] > 10485760) continue;
+        $validacion = validarArchivo($_FILES[$inputName], ['jpg', 'jpeg', 'png', 'pdf']);
+        if (!$validacion['valido']) continue;
+        $ext = $validacion['extension'];
 
         $n = $info['prefijo'] . '_' . uniqid() . '_' . time() . '.' . $ext;
         if (move_uploaded_file($_FILES[$inputName]['tmp_name'], $carpeta . $n)) {

@@ -1,0 +1,18 @@
+# Datos y archivos generados en ejecucion
+/.private/*
+!/.private/.htaccess
+/uploads/*
+!/uploads/.htaccess
+/logs/
+/*.log
+/*.sql
+
+# Configuracion local y secretos
+/.env
+/.env.*
+!/.env.example
+
+# Archivos temporales de mantenimiento
+/temp_*.php
+/*migrate*.php
+/php/*migrate*.php

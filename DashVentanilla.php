@@ -374,7 +374,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
       <li class="nav-item"><a class="nav-link" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a></li>
       <li class="nav-item"><a class="nav-link" href="#config-constancia"><i class="bi bi-file-earmark-text me-1"></i> Formato Constancia</a></li>
       <li class="nav-item"><a class="nav-link btn-secondary" href="http://10.1.85.9:3344/" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-1"></i> Control de Oficios</a></li>
-      <li class="nav-item"><a class="nav-link text-danger" href="logout.php">Cerrar sesión</a></li>
+      <li class="nav-item"><a class="nav-link text-danger" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>">Cerrar sesión</a></li>
     </ul>
   </div>
 </nav>
@@ -403,7 +403,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
   <a href="#config-constancia"><i class="bi bi-file-earmark-text me-2"></i>Formato Constancia</a>
   <a href="http://10.1.85.9:3344/" class="btn-secondary" target="_blank" rel="noopener noreferrer" title="Control de Oficios"><i class="bi bi-box-arrow-up-right me-2"></i>Control de Oficios</a>
 
-  <a href="logout.php" class="text-danger mt-auto"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
+  <a href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>" class="text-danger mt-auto"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
 </div>
 
 <!-- CONTENIDO -->
@@ -2134,7 +2134,7 @@ window.DASH_VENTANILLA_CONFIG = <?= json_encode([
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
-<script src="js/dashVentanilla.js"></script>
+<script src="js/dashVentanilla.js?v=20260805-2"></script>
 <script src="js/dashboard-ui.js?v=20260804"></script>
 
 </body>

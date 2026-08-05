@@ -5,9 +5,14 @@
 // También registra el logout en los logs de actividad.
 // =====================================================
 
-session_start();
 require_once "php/db.php";
 require_once "php/funciones_seguridad.php";
+
+$csrf = (string) ($_GET['csrf_token'] ?? '');
+if ($csrf === '' || !isset($_SESSION['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], $csrf)) {
+    http_response_code(403);
+    exit('Solicitud invalida');
+}
 
 // Registrar el logout en los logs antes de destruir la sesión
 if (isset($_SESSION['id'])) {

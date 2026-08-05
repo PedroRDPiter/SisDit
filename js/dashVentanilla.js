@@ -113,6 +113,7 @@ const layerControl = L.control.layers(baseLayers, overlays, {
 let selectedPolygon = null;
 // Variable para almacenar la capa GeoJSON
 let parcelasLayer = null;
+const capasPredios = [];
 let predioConsultaToken = 0;
 
 function escaparHtmlPredio(valor) {
@@ -130,6 +131,40 @@ function limpiarEtiquetaPredio(layer) {
     layer._sisditSavedTooltip = false;
   }
 }
+
+function verConstanciaPredio(tramiteId, tipoTramiteId) {
+  const id = Number(tramiteId) || 0;
+  const tipoId = Number(tipoTramiteId) || 0;
+
+  if (!id) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Trámite no disponible',
+      text: 'No se encontró el trámite relacionado con este predio.',
+      confirmButtonColor: '#721832'
+    });
+    return;
+  }
+
+  if (tipoId === 1) {
+    window.open('constancia_numero.php?id=' + encodeURIComponent(id), '_blank', 'noopener');
+    return;
+  }
+
+  Swal.fire({
+    icon: 'info',
+    title: 'Próximamente',
+    text: 'La constancia para este tipo de trámite estará disponible próximamente.',
+    confirmButtonColor: '#721832'
+  });
+}
+
+document.addEventListener('click', function(event) {
+  const button = event.target.closest('.btn-ver-constancia-predio');
+  if (!button) return;
+  event.preventDefault();
+  verConstanciaPredio(button.dataset.tramiteId, button.dataset.tipoTramiteId);
+});
 
 function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
   const cuenta = String(cuentaCatastral || '').trim();
@@ -156,6 +191,8 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
       const predio = data.poligono;
       const texto = String(predio.texto || '').trim();
       const semaforo = obtenerSemaforoEstatus(predio.estatus);
+      const tramiteId = Number(predio.tramite_id) || 0;
+      const tipoTramiteId = Number(predio.tipo_tramite_id) || 0;
       const utm = predio.utm_centro_x && predio.utm_centro_y
         ? escaparHtmlPredio(predio.utm_centro_x) + ', ' + escaparHtmlPredio(predio.utm_centro_y)
         : 'No disponible';
@@ -166,7 +203,8 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
         '<strong>Centro UTM:</strong> ' + utm + '<br>' +
         '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
         '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
-        (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '');
+        (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '') +
+        (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '');
 
       layer._sisditStatusStyle = semaforo.estilo;
       layer._sisditStatus = predio.estatus;
@@ -208,13 +246,20 @@ const selectedStyle = {
 };
 
 function obtenerSemaforoEstatus(estatus) {
-  const valor = String(estatus || '').trim().toLocaleLowerCase('es-MX');
+  const valor = obtenerClaveFiltroEstatus(estatus);
 
-  if (valor === 'en revisión' || valor === 'en revision') {
+  if (valor === 'cancelado') {
     return {
-      etiqueta: 'En revisión',
+      etiqueta: 'Cancelado',
       color: '#dc3545',
       estilo: { color: '#842029', weight: 4, opacity: 1, fillColor: '#dc3545', fillOpacity: 0.58 }
+    };
+  }
+  if (valor === 'en revision') {
+    return {
+      etiqueta: 'En revisión',
+      color: '#fd7e14',
+      estilo: { color: '#984c0c', weight: 4, opacity: 1, fillColor: '#fd7e14', fillOpacity: 0.62 }
     };
   }
   if (valor === 'aprobado por verificador') {
@@ -239,6 +284,51 @@ function obtenerSemaforoEstatus(estatus) {
   };
 }
 
+function normalizarEstatusPredio(estatus) {
+  return String(estatus || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-MX');
+}
+
+function obtenerClaveFiltroEstatus(estatus) {
+  const valor = normalizarEstatusPredio(estatus);
+  // En la base histórica este estado también se registra como "Rechazado".
+  return valor === 'rechazado' ? 'cancelado' : valor;
+}
+
+const filtrosEstatusPredio = new Set([
+  'cancelado',
+  'en revision',
+  'aprobado por verificador',
+  'aprobado'
+]);
+
+function aplicarFiltrosEstatusPredios() {
+  if (!parcelasLayer) return;
+
+  capasPredios.forEach(layer => {
+    const estatus = obtenerClaveFiltroEstatus(layer._sisditStatus);
+    const tieneFiltro = ['cancelado', 'en revision', 'aprobado por verificador', 'aprobado'].includes(estatus);
+    const visible = !tieneFiltro || filtrosEstatusPredio.has(estatus);
+    const estaEnCapa = parcelasLayer.hasLayer(layer);
+
+    if (visible && !estaEnCapa) parcelasLayer.addLayer(layer);
+    if (!visible && estaEnCapa) {
+      if (selectedPolygon === layer) {
+        limpiarEtiquetaPredio(layer);
+        selectedPolygon = null;
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+      }
+      parcelasLayer.removeLayer(layer);
+    }
+  });
+}
+
 function cargarSemaforoPredios() {
   if (!parcelasLayer) return;
 
@@ -252,7 +342,7 @@ function cargarSemaforoPredios() {
 
       actualizarConteosSemaforo(data.resumen_tramites || {});
 
-      parcelasLayer.eachLayer(layer => {
+      capasPredios.forEach(layer => {
         const clave = String(layer.feature?.properties?.CVE_CAT_OR || '').trim();
         const registro = data.predios[clave];
         if (!registro) return;
@@ -262,12 +352,14 @@ function cargarSemaforoPredios() {
         layer._sisditStatus = registro.estatus;
         layer.setStyle(semaforo.estilo);
       });
+      aplicarFiltrosEstatusPredios();
     })
     .catch(error => console.warn('No se pudo cargar el semáforo de predios:', error));
 }
 
 function actualizarConteosSemaforo(resumen) {
   const asignaciones = {
+    'conteo-estatus-cancelado': (resumen['Cancelado'] || resumen['cancelado'] || 0) + (resumen['Rechazado'] || 0),
     'conteo-estatus-revision': resumen['En revisión'] || 0,
     'conteo-estatus-verificador': resumen['Aprobado por Verificador'] || 0,
     'conteo-estatus-aprobado': resumen['Aprobado'] || 0
@@ -286,13 +378,22 @@ function restaurarEstiloPredio(layer) {
 const leyendaSemaforo = L.control({ position: 'bottomright' });
 leyendaSemaforo.onAdd = function() {
   const div = L.DomUtil.create('div');
-  div.style.cssText = 'background:#fff;padding:8px 10px;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:12px;line-height:1.65';
+  div.style.cssText = 'background:#fff;padding:9px 11px;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:12px;line-height:1.65';
   div.innerHTML =
     '<strong>Estatus del predio</strong><br>' +
-    '<span style="color:#dc3545">●</span> En revisión (<strong id="conteo-estatus-revision">0</strong>)<br>' +
-    '<span style="color:#ffc107">●</span> Aprobado por Verificador (<strong id="conteo-estatus-verificador">0</strong>)<br>' +
-    '<span style="color:#198754">●</span> Aprobado (<strong id="conteo-estatus-aprobado">0</strong>)';
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="cancelado" checked> <span style="color:#dc3545">●</span> Cancelado (<strong id="conteo-estatus-cancelado">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="en revision" checked> <span style="color:#fd7e14">●</span> En revisión (<strong id="conteo-estatus-revision">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="aprobado por verificador" checked> <span style="color:#ffc107">●</span> Aprobado por Verificador (<strong id="conteo-estatus-verificador">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="aprobado" checked> <span style="color:#198754">●</span> Aprobado (<strong id="conteo-estatus-aprobado">0</strong>)</label>';
   L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
+  div.querySelectorAll('.filtro-estatus-predio').forEach(input => {
+    input.addEventListener('change', function() {
+      if (this.checked) filtrosEstatusPredio.add(this.value);
+      else filtrosEstatusPredio.delete(this.value);
+      aplicarFiltrosEstatusPredios();
+    });
+  });
   return div;
 };
 leyendaSemaforo.addTo(map);
@@ -359,6 +460,7 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
     parcelasLayer = L.geoJSON(data, {
       style: normalStyle,
       onEachFeature: function (feature, layer) {
+        capasPredios.push(layer);
         if (feature.properties) {
           let popupContent = `
             <strong>Clave Catastral:</strong> ${feature.properties.CVE_CAT_OR || 'N/A'}<br>
@@ -418,38 +520,6 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
     cargarSemaforoPredios();
   })
   .catch(error => console.error('Error cargando GeoJSON de parcelas:', error));
-
-// Cargar capa de trámites
-fetch('./Geojson/TRAMITES.geojson')
-  .then(response => response.json())
-  .then(data => {
-    tramitesLayer = L.geoJSON(data, {
-      pointToLayer: function(feature, latlng) {
-        const marker = L.marker(latlng);
-        const props = feature.properties;
-        const popupContent = `
-          <div style="max-width: 300px;">
-            <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${props.FOLIO_INGR || 'N/A'}</h6>
-            <strong>Solicitante:</strong> ${props.NOM_SOLI || 'N/A'}<br>
-            <strong>Tipo de Trámite:</strong> ${props.TIP_TRAMIT || 'N/A'}<br>
-            <strong>Ubicación:</strong> ${props.UBICACION || 'N/A'}<br>
-            <strong>Fecha Ingreso:</strong> ${props.FECH_INGRE || 'N/A'}<br>
-            <strong>Estatus:</strong> <span class="badge bg-${props.ESTATUS === 'ENTREGADO' ? 'success' : 'warning'}">${props.ESTATUS || 'N/A'}</span><br>
-            <strong>UTM X:</strong> ${props.X ? props.X.toFixed(2) : 'N/A'}<br>
-            <strong>UTM Y:</strong> ${props.Y ? props.Y.toFixed(2) : 'N/A'}<br>
-            <strong>Contacto:</strong> ${props.CONTACTO || 'N/A'}
-          </div>
-        `;
-        marker.bindPopup(popupContent);
-        return marker;
-      }
-    });
-
-    // Agregar a overlays (inicialmente no visible)
-    overlays["Trámites"] = tramitesLayer;
-    layerControl.addOverlay(tramitesLayer, "Trámites");
-  })
-  .catch(error => console.error('Error cargando TRAMITES.geojson:', error));
 
 // ── MAYÚSCULAS ──
 document.querySelectorAll('.mayusculas').forEach(i=>{
@@ -1262,7 +1332,7 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
     fetch('php/copiar_documentos_tramite.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `folio_origen=${encodeURIComponent(folioOrigen)}&folio_destino=${encodeURIComponent(folioDestino)}`
+        body: `folio_origen=${encodeURIComponent(folioOrigen)}&folio_destino=${encodeURIComponent(folioDestino)}&csrf_token=${encodeURIComponent(document.querySelector('input[name="csrf_token"]')?.value || '')}`
     })
     .then(response => response.json())
     .then(data => {

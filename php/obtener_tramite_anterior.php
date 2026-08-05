@@ -24,9 +24,13 @@ function responder_json($payload, $status_code = 200) {
 
 session_start();
 require_once "db.php";
+require_once "funciones_seguridad.php";
 
 if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     responder_json(['error' => 'No autorizado'], 401);
+}
+if (!esPersonalAutorizado()) {
+    responder_json(['error' => 'Acceso denegado'], 403);
 }
 
 $folio = isset($_GET['folio']) ? trim($_GET['folio']) : '';

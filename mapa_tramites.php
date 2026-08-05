@@ -43,7 +43,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-warning" href="logout.php">
+                        <a class="nav-link text-warning" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>">
                             <i class="bi bi-box-arrow-right me-1"></i> Salir
                         </a>
                     </li>
@@ -83,27 +83,43 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
             attribution: '© OpenStreetMap contributors'
         }).addTo(mapaTramites);
 
-        // Cargar TRAMITES.geojson
-        fetch('./Geojson/TRAMITES.geojson')
-            .then(response => response.json())
+        function escaparHtml(valor) {
+            const div = document.createElement('div');
+            div.textContent = String(valor ?? '');
+            return div.innerHTML;
+        }
+
+        // Cargar los trámites actuales desde la base de datos.
+        fetch('./php/get_tramites_geojson.php', { credentials: 'same-origin', cache: 'no-store' })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
             .then(data => {
                 L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
-                        const marker = L.marker(latlng);
                         const props = feature.properties;
+                        const estado = String(props.ESTATUS || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                        const color = estado === 'en revision' ? '#dc3545'
+                            : (estado === 'aprobado por verificador' ? '#ffc107'
+                            : (estado === 'aprobado' ? '#198754' : '#6c757d'));
+                        const marker = L.circleMarker(latlng, {
+                            radius: 7, color: '#fff', weight: 2,
+                            fillColor: color, fillOpacity: .92
+                        });
                         const popupContent = `
                             <div style="max-width: 300px;">
-                                <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${props.FOLIO_INGR || 'N/A'}</h6>
-                                <strong>Solicitante:</strong> ${props.NOM_SOLI || 'N/A'}<br>
-                                <strong>Tipo de Trámite:</strong> ${props.TIP_TRAMIT || 'N/A'}<br>
-                                <strong>Ubicación:</strong> ${props.UBICACION || 'N/A'}<br>
-                                <strong>Fecha Ingreso:</strong> ${props.FECH_INGRE || 'N/A'}<br>
-                                <strong>Fecha Entrega:</strong> ${props.FECH_ENTRE || 'N/A'}<br>
-                                <strong>Estatus:</strong> <span class="badge bg-${props.ESTATUS === 'ENTREGADO' ? 'success' : 'warning'}">${props.ESTATUS || 'N/A'}</span><br>
-                                <strong>UTM X:</strong> ${props.X ? props.X.toFixed(2) : 'N/A'}<br>
-                                <strong>UTM Y:</strong> ${props.Y ? props.Y.toFixed(2) : 'N/A'}<br>
-                                <strong>Contacto:</strong> ${props.CONTACTO || 'N/A'}<br>
-                                <strong>Número:</strong> ${props.NUMERO || 'N/A'}
+                                <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${escaparHtml(props.FOLIO_INGR || 'N/A')}</h6>
+                                <strong>Solicitante:</strong> ${escaparHtml(props.NOM_SOLI || 'N/A')}<br>
+                                <strong>Tipo de Trámite:</strong> ${escaparHtml(props.TIP_TRAMIT || 'N/A')}<br>
+                                <strong>Ubicación:</strong> ${escaparHtml(props.UBICACION || 'N/A')}<br>
+                                <strong>Fecha Ingreso:</strong> ${escaparHtml(props.FECH_INGRE || 'N/A')}<br>
+                                <strong>Fecha Entrega:</strong> ${escaparHtml(props.FECH_ENTRE || 'N/A')}<br>
+                                <strong>Estatus:</strong> ${escaparHtml(props.ESTATUS || 'N/A')}<br>
+                                <strong>UTM X:</strong> ${Number.isFinite(props.X) ? props.X.toFixed(2) : 'N/A'}<br>
+                                <strong>UTM Y:</strong> ${Number.isFinite(props.Y) ? props.Y.toFixed(2) : 'N/A'}<br>
+                                <strong>Contacto:</strong> ${escaparHtml(props.CONTACTO || 'N/A')}<br>
+                                <strong>Número:</strong> ${escaparHtml(props.NUMERO || 'N/A')}
                             </div>
                         `;
                         marker.bindPopup(popupContent);

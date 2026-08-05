@@ -60,7 +60,29 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
+// Completar el semaforo con los tramites asociados directamente por cuenta
+// catastral, aunque todavia no tengan un croquis guardado.
+$directos = $conn->query("
+    SELECT id, cuenta_catastral, estatus, numero_asignado, updated_at
+    FROM tramites
+    WHERE cuenta_catastral IS NOT NULL AND TRIM(cuenta_catastral) <> ''
+    ORDER BY updated_at DESC, id DESC
+");
+if ($directos) {
+    while ($row = $directos->fetch_assoc()) {
+        $clave = trim((string) $row['cuenta_catastral']);
+        if ($clave === '' || isset($predios[$clave])) continue;
+        $predios[$clave] = [
+            'estatus' => $row['estatus'],
+            'tramite_id' => (int) $row['id'],
+            'texto' => $row['numero_asignado'],
+            'updated_at' => $row['updated_at']
+        ];
+    }
+}
+
 $resumen_tramites = [
+    'Cancelado' => 0,
     'En revisión' => 0,
     'Aprobado por Verificador' => 0,
     'Aprobado' => 0
