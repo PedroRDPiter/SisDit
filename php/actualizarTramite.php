@@ -62,7 +62,10 @@ $direccion_constancia = mb_strtoupper(trim(isset($_POST['direccion_constancia'])
 // El formulario usa nombre colonia_constancia; aceptar ambos nombres por compatibilidad
 $colonia_input = isset($_POST['colonia_constancia']) ? $_POST['colonia_constancia'] : (isset($_POST['colonia']) ? $_POST['colonia'] : '');
 $colonia = mb_strtoupper(trim($colonia_input), 'UTF-8');
-$cp_constancia       = isset($_POST['cp']) ? preg_replace('/\D/', '', trim($_POST['cp'])) : null;
+$cp_constancia = isset($_POST['cp']) ? preg_replace('/\D/', '', trim($_POST['cp'])) : null;
+if ($cp_constancia === '') {
+    $cp_constancia = null;
+}
 $numero_asignado     = trim(isset($_POST['numero_asignado']) ? $_POST['numero_asignado'] : '');
 $tipo_asignacion     = trim(isset($_POST['tipo_asignacion']) ? $_POST['tipo_asignacion'] : 'Asignacion');
 $referencia_anterior = trim(isset($_POST['referencia_anterior']) ? $_POST['referencia_anterior'] : '');
@@ -167,14 +170,14 @@ try {
     }
     $stmtGet->close();
 
-     // ── MODO SOLO CONSTANCIA ───────────────────────────────
-     // Guarda los datos de la constancia de UN solo subtrámite (por id) y le
-     // asigna su propio folio de salida (consecutivo por tipo de trámite y año).
-     if ($solo_constancia) {
-         $uid = (int) $_SESSION['id'];
+    // ── MODO SOLO CONSTANCIA ───────────────────────────────
+    // Guarda los datos de la constancia de UN solo subtrámite (por id) y le
+    // asigna su propio folio de salida (consecutivo por tipo de trámite y año).
+    if ($solo_constancia) {
+        $uid = (int) $_SESSION['id'];
 
-         // Actualizar SOLO la fila de este subtrámite (identificada por id)
-         $sql = "UPDATE tramites SET
+        // Actualizar SOLO la fila de este subtrámite (identificada por id)
+        $sql = "UPDATE tramites SET
                  direccion           = ?,
                  colonia             = ?,
                  cp                  = COALESCE(?, cp),
@@ -193,25 +196,26 @@ try {
         $stmtUp = $conn->prepare($sql);
         if (!$stmtUp) throw new Exception("Error prepare UPDATE: " . $conn->error);
 
-         $stmtUp->bind_param("sssssssssssssi",
-             $direccion_constancia,
-             $colonia,
-             $cp_constancia,
-             $numero_asignado,
-             $tipo_asignacion,
-             $referencia_anterior,
-             $entre_calle1,
-             $entre_calle2,
-             $cuenta_catastral_c,
-             $superficie,
-             $manzana,
-             $lote,
-             $fecha_constancia,
-             $tramite_id
-         );
+        $stmtUp->bind_param(
+            "sssssssssssssi",
+            $direccion_constancia,
+            $colonia,
+            $cp_constancia,
+            $numero_asignado,
+            $tipo_asignacion,
+            $referencia_anterior,
+            $entre_calle1,
+            $entre_calle2,
+            $cuenta_catastral_c,
+            $superficie,
+            $manzana,
+            $lote,
+            $fecha_constancia,
+            $tramite_id
+        );
 
-         if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
-         $stmtUp->close();
+        if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
+        $stmtUp->close();
 
          // -- ASIGNAR FOLIO DE SALIDA DE ESTE SUBTRÁMITE (si aún no tiene) --
          // Consecutivo por tipo de trámite y año; cada subtrámite obtiene uno distinto.

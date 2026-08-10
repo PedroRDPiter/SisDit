@@ -10504,7 +10504,7 @@
                 "UBICACION": "AV. REVOLUCION",
                 "FECH_INGRE": "2026-04-30",
                 "FECH_ENTRE": "2026-05-14",
-                "ESTATUS": "Nuevo",
+                "ESTATUS": "Aprobado",
                 "CONTACTO": "4651243302",
                 "NUMERO": null
             },
@@ -10525,7 +10525,7 @@
                 "UBICACION": "MARIANO JIMENEZ ESQUINA OLIVARES SANTANA S\/N PABELLON DE HIDALGO",
                 "FECH_INGRE": "2026-05-05",
                 "FECH_ENTRE": "2026-05-19",
-                "ESTATUS": "Nuevo",
+                "ESTATUS": "Aprobado",
                 "CONTACTO": "4651091937",
                 "NUMERO": null
             },
@@ -10714,7 +10714,7 @@
                 "UBICACION": "DOLORES HIDALGO S\/N",
                 "FECH_INGRE": "2026-05-12",
                 "FECH_ENTRE": "2026-05-26",
-                "ESTATUS": "Nuevo",
+                "ESTATUS": "Aprobado",
                 "CONTACTO": "4652071937",
                 "NUMERO": null
             },
@@ -10882,7 +10882,7 @@
                 "UBICACION": "PRUEBA",
                 "FECH_INGRE": "2026-07-01",
                 "FECH_ENTRE": "2026-07-15",
-                "ESTATUS": "Nuevo",
+                "ESTATUS": "Aprobado",
                 "CONTACTO": "0000000000",
                 "NUMERO": null
             },

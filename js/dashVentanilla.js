@@ -7,6 +7,75 @@ const map = L.map('mapa', { zoomControl: true, scrollWheelZoom: true, tap: true 
 let marker = null;
 const utmXInput = document.getElementById('lat');
 const utmYInput = document.getElementById('lng');
+const dashVentanillaConfig = window.DASH_VENTANILLA_CONFIG || {};
+
+function mostrarCoordenadasMapa(lat, lng) {
+  const utmCoords = proj4('EPSG:4326', 'EPSG:32613', [Number(lng), Number(lat)]);
+  const utmX = Number(utmCoords[0]).toFixed(2);
+  const utmY = Number(utmCoords[1]).toFixed(2);
+  const display = document.getElementById('coords-display');
+  const texto = document.getElementById('coords-texto');
+
+  if (utmXInput) utmXInput.value = utmX;
+  if (utmYInput) utmYInput.value = utmY;
+  if (display) display.classList.remove('d-none');
+  if (texto) {
+    texto.textContent = `UTM X: ${utmX} | UTM Y: ${utmY} | Lat: ${Number(lat).toFixed(5)}, Lon: ${Number(lng).toFixed(5)}`;
+  }
+
+  return { utmX, utmY };
+}
+
+function centrarMapa() {
+  map.setView(CENTRO_MUNICIPIO, 14, { animate: true });
+  setTimeout(() => map.invalidateSize(), 150);
+}
+
+function obtenerUbicacion() {
+  if (!navigator.geolocation) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Ubicación no disponible',
+      text: 'Este navegador no permite consultar la ubicación.',
+      confirmButtonColor: '#721832'
+    });
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(function(posicion) {
+    const lat = posicion.coords.latitude;
+    const lng = posicion.coords.longitude;
+    const punto = [lat, lng];
+
+    map.setView(punto, 18, { animate: true });
+    if (marker) {
+      marker.setLatLng(punto);
+    } else {
+      marker = L.marker(punto).addTo(map);
+    }
+    mostrarCoordenadasMapa(lat, lng);
+    marker.bindPopup('<strong>Mi ubicación actual</strong><br>Precisión aproximada: ' + Math.round(posicion.coords.accuracy) + ' m').openPopup();
+  }, function(error) {
+    const mensajes = {
+      1: 'Permite el acceso a tu ubicación desde la configuración del navegador.',
+      2: 'No fue posible determinar tu ubicación actual.',
+      3: 'La consulta de ubicación tardó demasiado tiempo.'
+    };
+    Swal.fire({
+      icon: 'warning',
+      title: 'No se pudo obtener la ubicación',
+      text: mensajes[error.code] || 'Intenta nuevamente.',
+      confirmButtonColor: '#721832'
+    });
+  }, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 30000
+  });
+}
+
+window.centrarMapa = centrarMapa;
+window.obtenerUbicacion = obtenerUbicacion;
 
 // Definir capas base
 const openStreetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -44,6 +113,126 @@ const layerControl = L.control.layers(baseLayers, overlays, {
 let selectedPolygon = null;
 // Variable para almacenar la capa GeoJSON
 let parcelasLayer = null;
+const capasPredios = [];
+const capasDibujosCroquis = [];
+const cuentasCatastralesBase = new Set();
+let predioConsultaToken = 0;
+
+function escaparHtmlPredio(valor) {
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function normalizarCuentaCatastral(valor) {
+  return String(valor ?? '').trim().toUpperCase();
+}
+
+function limpiarEtiquetaPredio(layer) {
+  if (layer && layer._sisditSavedTooltip) {
+    layer.unbindTooltip();
+    layer._sisditSavedTooltip = false;
+  }
+}
+
+function verConstanciaPredio(tramiteId, tipoTramiteId) {
+  const id = Number(tramiteId) || 0;
+  const tipoId = Number(tipoTramiteId) || 0;
+
+  if (!id) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Trámite no disponible',
+      text: 'No se encontró el trámite relacionado con este predio.',
+      confirmButtonColor: '#721832'
+    });
+    return;
+  }
+
+  if (tipoId === 1) {
+    window.open('constancia_numero.php?id=' + encodeURIComponent(id), '_blank', 'noopener');
+    return;
+  }
+
+  Swal.fire({
+    icon: 'info',
+    title: 'Próximamente',
+    text: 'La constancia para este tipo de trámite estará disponible próximamente.',
+    confirmButtonColor: '#721832'
+  });
+}
+
+document.addEventListener('click', function(event) {
+  const button = event.target.closest('.btn-ver-constancia-predio');
+  if (!button) return;
+  event.preventDefault();
+  verConstanciaPredio(button.dataset.tramiteId, button.dataset.tipoTramiteId);
+});
+
+function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
+  const cuenta = String(cuentaCatastral || '').trim();
+  const token = ++predioConsultaToken;
+
+  limpiarEtiquetaPredio(layer);
+  if (!cuenta) return;
+  layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-muted">Consultando datos guardados...</span>').openPopup();
+
+  fetch('php/obtener_datos_poligono_croquis.php?cuenta=' + encodeURIComponent(cuenta), {
+    credentials: 'same-origin',
+    cache: 'no-store'
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (token !== predioConsultaToken || layer !== selectedPolygon) return;
+
+      if (!data.success || !data.poligono) {
+        layer.setStyle(selectedStyle);
+        layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-muted">Sin datos guardados</span>').openPopup();
+        return;
+      }
+
+      const predio = data.poligono;
+      const texto = String(predio.texto || '').trim();
+      const semaforo = obtenerSemaforoEstatus(predio.estatus);
+      const tramiteId = Number(predio.tramite_id) || 0;
+      const tipoTramiteId = Number(predio.tipo_tramite_id) || 0;
+      const utm = predio.utm_centro_x && predio.utm_centro_y
+        ? escaparHtmlPredio(predio.utm_centro_x) + ', ' + escaparHtmlPredio(predio.utm_centro_y)
+        : 'No disponible';
+      const detalleHtml =
+        '<strong>Clave:</strong> ' + escaparHtmlPredio(cuenta) + '<br>' +
+        '<strong>Número:</strong> ' + (texto ? escaparHtmlPredio(texto) : 'Sin número') + '<br>' +
+        '<strong>Tipo de trámite:</strong> ' + escaparHtmlPredio(predio.tipo_tramite || 'No disponible') + '<br>' +
+        '<strong>Centro UTM:</strong> ' + utm + '<br>' +
+        '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
+        '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
+        (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '') +
+        (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '');
+
+      layer._sisditStatusStyle = semaforo.estilo;
+      layer._sisditStatus = predio.estatus;
+      layer.setStyle(semaforo.estilo);
+      layer.bindPopup('<div style="min-width:220px"><strong>Datos guardados del predio</strong><hr class="my-1">' + detalleHtml + '</div>').openPopup();
+
+      if (texto) {
+        layer.bindTooltip(escaparHtmlPredio(texto), {
+          permanent: true,
+          direction: 'center',
+          className: 'predio-dato-guardado'
+        }).openTooltip();
+        layer._sisditSavedTooltip = true;
+      }
+    })
+    .catch(error => {
+      if (token !== predioConsultaToken || layer !== selectedPolygon) return;
+      console.warn('No se pudieron cargar los datos guardados del predio:', error);
+      layer.setStyle(selectedStyle);
+      layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-danger">No fue posible consultar el estatus.</span>').openPopup();
+    });
+}
 
 // Estilos para polígonos normales y seleccionados
 const normalStyle = {
@@ -62,6 +251,159 @@ const selectedStyle = {
   fillOpacity: 0.5
 };
 
+function obtenerSemaforoEstatus(estatus) {
+  const valor = obtenerClaveFiltroEstatus(estatus);
+
+  if (valor === 'cancelado') {
+    return {
+      etiqueta: 'Cancelado',
+      color: '#dc3545',
+      estilo: { color: '#842029', weight: 4, opacity: 1, fillColor: '#dc3545', fillOpacity: 0.58 }
+    };
+  }
+  if (valor === 'en revision') {
+    return {
+      etiqueta: 'En revisión',
+      color: '#fd7e14',
+      estilo: { color: '#984c0c', weight: 4, opacity: 1, fillColor: '#fd7e14', fillOpacity: 0.62 }
+    };
+  }
+  if (valor === 'aprobado por verificador') {
+    return {
+      etiqueta: 'Aprobado por Verificador',
+      color: '#ffc107',
+      estilo: { color: '#856404', weight: 4, opacity: 1, fillColor: '#ffc107', fillOpacity: 0.62 }
+    };
+  }
+  if (valor === 'aprobado') {
+    return {
+      etiqueta: 'Aprobado',
+      color: '#198754',
+      estilo: { color: '#0f5132', weight: 4, opacity: 1, fillColor: '#198754', fillOpacity: 0.58 }
+    };
+  }
+
+  return {
+    etiqueta: estatus || 'Sin estatus',
+    color: '#6c757d',
+    estilo: selectedStyle
+  };
+}
+
+function normalizarEstatusPredio(estatus) {
+  return String(estatus || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-MX');
+}
+
+function obtenerClaveFiltroEstatus(estatus) {
+  const valor = normalizarEstatusPredio(estatus);
+  // En la base histórica este estado también se registra como "Rechazado".
+  return valor === 'rechazado' ? 'cancelado' : valor;
+}
+
+const filtrosEstatusPredio = new Set([
+  'cancelado',
+  'en revision',
+  'aprobado por verificador',
+  'aprobado'
+]);
+
+function aplicarFiltrosEstatusPredios() {
+  if (!parcelasLayer) return;
+
+  capasPredios.concat(capasDibujosCroquis).forEach(layer => {
+    const estatus = obtenerClaveFiltroEstatus(layer._sisditStatus);
+    const tieneFiltro = ['cancelado', 'en revision', 'aprobado por verificador', 'aprobado'].includes(estatus);
+    const visible = !tieneFiltro || filtrosEstatusPredio.has(estatus);
+    const estaEnCapa = parcelasLayer.hasLayer(layer);
+
+    if (visible && !estaEnCapa) parcelasLayer.addLayer(layer);
+    if (!visible && estaEnCapa) {
+      if (selectedPolygon === layer) {
+        limpiarEtiquetaPredio(layer);
+        selectedPolygon = null;
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+      }
+      parcelasLayer.removeLayer(layer);
+    }
+  });
+}
+
+function cargarSemaforoPredios() {
+  if (!parcelasLayer) return;
+
+  fetch('php/obtener_estatus_predios.php', {
+    credentials: 'same-origin',
+    cache: 'no-store'
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success || !data.predios) return;
+
+      actualizarConteosSemaforo(data.resumen_tramites || {});
+
+      capasPredios.forEach(layer => {
+        const clave = String(layer.feature?.properties?.CVE_CAT_OR || '').trim();
+        const registro = data.predios[clave];
+        if (!registro) return;
+
+        const semaforo = obtenerSemaforoEstatus(registro.estatus);
+        layer._sisditStatusStyle = semaforo.estilo;
+        layer._sisditStatus = registro.estatus;
+        layer.setStyle(semaforo.estilo);
+      });
+      aplicarFiltrosEstatusPredios();
+    })
+    .catch(error => console.warn('No se pudo cargar el semáforo de predios:', error));
+}
+
+function actualizarConteosSemaforo(resumen) {
+  const asignaciones = {
+    'conteo-estatus-cancelado': (resumen['Cancelado'] || resumen['cancelado'] || 0) + (resumen['Rechazado'] || 0),
+    'conteo-estatus-revision': resumen['En revisión'] || 0,
+    'conteo-estatus-verificador': resumen['Aprobado por Verificador'] || 0,
+    'conteo-estatus-aprobado': resumen['Aprobado'] || 0
+  };
+
+  Object.keys(asignaciones).forEach(id => {
+    const elemento = document.getElementById(id);
+    if (elemento) elemento.textContent = asignaciones[id];
+  });
+}
+
+function restaurarEstiloPredio(layer) {
+  if (layer) layer.setStyle(layer._sisditStatusStyle || normalStyle);
+}
+
+const leyendaSemaforo = L.control({ position: 'bottomright' });
+leyendaSemaforo.onAdd = function() {
+  const div = L.DomUtil.create('div');
+  div.style.cssText = 'background:#fff;padding:9px 11px;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.3);font-size:12px;line-height:1.65';
+  div.innerHTML =
+    '<strong>Estatus del predio</strong><br>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="cancelado" checked> <span style="color:#dc3545">●</span> Cancelado (<strong id="conteo-estatus-cancelado">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="en revision" checked> <span style="color:#fd7e14">●</span> En revisión (<strong id="conteo-estatus-revision">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="aprobado por verificador" checked> <span style="color:#ffc107">●</span> Aprobado por Verificador (<strong id="conteo-estatus-verificador">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="aprobado" checked> <span style="color:#198754">●</span> Aprobado (<strong id="conteo-estatus-aprobado">0</strong>)</label>';
+  L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
+  div.querySelectorAll('.filtro-estatus-predio').forEach(input => {
+    input.addEventListener('change', function() {
+      if (this.checked) filtrosEstatusPredio.add(this.value);
+      else filtrosEstatusPredio.delete(this.value);
+      aplicarFiltrosEstatusPredios();
+    });
+  });
+  return div;
+};
+leyendaSemaforo.addTo(map);
+
 // Función para buscar y resaltar un polígono por cuenta catastral
 function buscarYResaltarPoligono(cuentaCatastral) {
   if (!parcelasLayer) return false;
@@ -73,7 +415,8 @@ function buscarYResaltarPoligono(cuentaCatastral) {
 
       // Resetear el estilo del polígono anteriormente seleccionado
       if (selectedPolygon && selectedPolygon !== layer) {
-        selectedPolygon.setStyle(normalStyle);
+        limpiarEtiquetaPredio(selectedPolygon);
+        restaurarEstiloPredio(selectedPolygon);
       }
 
       // Aplicar estilo de selección al polígono encontrado
@@ -105,6 +448,8 @@ function buscarYResaltarPoligono(cuentaCatastral) {
       utmXInput.value = utmX;
       utmYInput.value = utmY;
 
+      mostrarDatosGuardadosPredio(layer, cuentaCatastral);
+
       encontrado = true;
       return false; // Salir del eachLayer
     }
@@ -114,14 +459,17 @@ function buscarYResaltarPoligono(cuentaCatastral) {
 }
 
 // Cargar poligonos de TRAMITES_reprojected.geojson
-fetch('./Geojson/TRAMITES_reprojected.geojson')
+const cargaParcelasPromise = fetch('./Geojson/TRAMITES_reprojected.geojson')
   .then(response => response.json())
   .then(data => {
 
     parcelasLayer = L.geoJSON(data, {
       style: normalStyle,
       onEachFeature: function (feature, layer) {
+        capasPredios.push(layer);
         if (feature.properties) {
+          const cuentaBase = normalizarCuentaCatastral(feature.properties.CVE_CAT_OR);
+          if (cuentaBase) cuentasCatastralesBase.add(cuentaBase);
           let popupContent = `
             <strong>Clave Catastral:</strong> ${feature.properties.CVE_CAT_OR || 'N/A'}<br>
           `;
@@ -131,7 +479,8 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
           layer.on('click', function(e) {
             // Resetear el estilo del polígono anteriormente seleccionado
             if (selectedPolygon && selectedPolygon !== layer) {
-              selectedPolygon.setStyle(normalStyle);
+              limpiarEtiquetaPredio(selectedPolygon);
+              restaurarEstiloPredio(selectedPolygon);
             }
 
             // Aplicar estilo de selección al polígono actual
@@ -167,48 +516,99 @@ fetch('./Geojson/TRAMITES_reprojected.geojson')
             // Llenar automáticamente la cuenta catastral
             const cuentaCatastral = feature.properties.CVE_CAT_OR || '';
             document.getElementById('cuenta_catastral').value = cuentaCatastral;
+            mostrarDatosGuardadosPredio(layer, cuentaCatastral);
           });
         }
       }
     }).addTo(map);
 
     // Agregar a overlays
-    overlays["Poligonos"] = parcelasLayer;
-    layerControl.addOverlay(parcelasLayer, "Poligonos");
+    overlays["Predios y verificación"] = parcelasLayer;
+    layerControl.addOverlay(parcelasLayer, "Predios y verificación");
+    cargarSemaforoPredios();
   })
   .catch(error => console.error('Error cargando GeoJSON de parcelas:', error));
 
-// Cargar capa de trámites
-fetch('./Geojson/TRAMITES.geojson')
-  .then(response => response.json())
+function estiloDibujoCroquis(feature) {
+  const origen = normalizarEstatusPredio(feature?.properties?.origen);
+  if (origen === 'subdivision') {
+    return { color: '#6f42c1', weight: 4, opacity: 1, fillColor: '#6f42c1', fillOpacity: 0.16, dashArray: '8 5' };
+  }
+  if (origen === 'catastro-copia') {
+    return { color: '#0f766e', weight: 4, opacity: 1, fillColor: '#14b8a6', fillOpacity: 0.12, dashArray: '5 5' };
+  }
+  return { color: '#0d6efd', weight: 4, opacity: 1, fillColor: '#0d6efd', fillOpacity: 0.14, dashArray: '10 5' };
+}
+
+// Integrar en la misma capa solo los dibujos cuya cuenta existe en el catastro base.
+cargaParcelasPromise
+  .then(() => fetch('php/obtener_dibujos_croquis.php', { credentials: 'same-origin', cache: 'no-store' }))
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  })
   .then(data => {
-    tramitesLayer = L.geoJSON(data, {
-      pointToLayer: function(feature, latlng) {
-        const marker = L.marker(latlng);
-        const props = feature.properties;
-        const popupContent = `
-          <div style="max-width: 300px;">
-            <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${props.FOLIO_INGR || 'N/A'}</h6>
-            <strong>Solicitante:</strong> ${props.NOM_SOLI || 'N/A'}<br>
-            <strong>Tipo de Trámite:</strong> ${props.TIP_TRAMIT || 'N/A'}<br>
-            <strong>Ubicación:</strong> ${props.UBICACION || 'N/A'}<br>
-            <strong>Fecha Ingreso:</strong> ${props.FECH_INGRE || 'N/A'}<br>
-            <strong>Estatus:</strong> <span class="badge bg-${props.ESTATUS === 'ENTREGADO' ? 'success' : 'warning'}">${props.ESTATUS || 'N/A'}</span><br>
-            <strong>UTM X:</strong> ${props.X ? props.X.toFixed(2) : 'N/A'}<br>
-            <strong>UTM Y:</strong> ${props.Y ? props.Y.toFixed(2) : 'N/A'}<br>
-            <strong>Contacto:</strong> ${props.CONTACTO || 'N/A'}
-          </div>
-        `;
-        marker.bindPopup(popupContent);
-        return marker;
+    if (!data.success || !Array.isArray(data.features)) return;
+
+    const featuresCoincidentes = data.features.filter(feature => {
+      const props = feature.properties || {};
+      const cuenta = normalizarCuentaCatastral(props.cuenta_catastral || props.numero_poligono);
+      return cuenta !== '' && cuentasCatastralesBase.has(cuenta);
+    });
+
+    const dibujosCoincidentes = L.geoJSON({ type: 'FeatureCollection', features: featuresCoincidentes }, {
+      style: estiloDibujoCroquis,
+      onEachFeature: function(feature, layer) {
+        const props = feature.properties || {};
+        const tramiteId = Number(props.tramite_id) || 0;
+        const tipoTramiteId = Number(props.tipo_tramite_id) || 0;
+        const texto = String(props.texto || '').trim();
+        const semaforo = obtenerSemaforoEstatus(props.estatus);
+        layer._sisditStatus = props.estatus;
+        layer._sisditStatusStyle = estiloDibujoCroquis(feature);
+        capasDibujosCroquis.push(layer);
+
+        const popup =
+          '<div style="min-width:230px"><strong><i class="bi bi-pencil-square me-1"></i>Dibujo de verificación</strong><hr class="my-1">' +
+          '<strong>Trámite:</strong> ' + escaparHtmlPredio(tramiteId || 'No disponible') + '<br>' +
+          '<strong>Tipo:</strong> ' + escaparHtmlPredio(props.tipo_tramite || 'No disponible') + '<br>' +
+          '<strong>Predio:</strong> ' + escaparHtmlPredio(props.cuenta_catastral || props.numero_poligono || 'No disponible') + '<br>' +
+          '<strong>Dibujo:</strong> ' + escaparHtmlPredio(props.origen || 'Verificación') + '<br>' +
+          (texto ? '<strong>Texto:</strong> ' + escaparHtmlPredio(texto) + '<br>' : '') +
+          '<strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
+          (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '') +
+          '</div>';
+        layer.bindPopup(popup);
+
+        layer.on('click', function() {
+          if (selectedPolygon && selectedPolygon !== layer) {
+            limpiarEtiquetaPredio(selectedPolygon);
+            restaurarEstiloPredio(selectedPolygon);
+          }
+
+          selectedPolygon = layer;
+          const estiloSeleccionado = Object.assign({}, layer._sisditStatusStyle, {
+            weight: 6,
+            fillOpacity: Math.max(Number(layer._sisditStatusStyle.fillOpacity) || 0, 0.28)
+          });
+          layer.setStyle(estiloSeleccionado);
+
+          if (texto) {
+            layer.bindTooltip(escaparHtmlPredio(texto), {
+              permanent: true,
+              direction: 'center',
+              className: 'predio-dato-guardado'
+            }).openTooltip();
+            layer._sisditSavedTooltip = true;
+          }
+        });
       }
     });
 
-    // Agregar a overlays (inicialmente no visible)
-    overlays["Trámites"] = tramitesLayer;
-    layerControl.addOverlay(tramitesLayer, "Trámites");
+    dibujosCoincidentes.eachLayer(layer => parcelasLayer.addLayer(layer));
+    aplicarFiltrosEstatusPredios();
   })
-  .catch(error => console.error('Error cargando TRAMITES.geojson:', error));
+  .catch(error => console.warn('No se pudieron cargar los dibujos de verificación:', error));
 
 // ── MAYÚSCULAS ──
 document.querySelectorAll('.mayusculas').forEach(i=>{
@@ -891,9 +1291,10 @@ function _abrirNotifFD(data) {
 // ── GRÁFICA REPORTE VENTANILLA ──
 (function() {
   var labels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var datosApr = datosApr;
-  var datosRev = datosRev;
-  var datosRec = datosRec;
+  var reporteConfig = dashVentanillaConfig.reporte || {};
+  var datosApr = reporteConfig.aprobados || [];
+  var datosRev = reporteConfig.revision || [];
+  var datosRec = reporteConfig.rechazados || [];
   var canvas = document.getElementById('chartReporteMesSec');
   if (canvas && typeof Chart !== 'undefined') {
     new Chart(canvas, {
@@ -917,7 +1318,13 @@ function imprimirReporteSec() {
   if (!t1) { alert('No hay datos para imprimir.'); return; }
   var tabla1 = t1.outerHTML;
   var tabla2 = t2 ? '<h3 style="margin-top:24px;color:#7b0f2b;">Por Tipo de Trámite</h3>' + t2.outerHTML : '';
+  var anioFiltro = dashVentanillaConfig.anioReporte || new Date().getFullYear();
+  var usuarioSesion = dashVentanillaConfig.usuario || 'Usuario';
   var w = window.open('', '_blank');
+  if (!w) {
+    Swal.fire({icon:'warning', title:'Ventana bloqueada', text:'Permite las ventanas emergentes para imprimir el reporte.'});
+    return;
+  }
   w.document.write(
     '<html><head><title>Reporte ' + anioFiltro + '</title><style>' +
     'body{font-family:Arial,sans-serif;padding:20px;color:#222;}' +
@@ -1014,7 +1421,7 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
     fetch('php/copiar_documentos_tramite.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `folio_origen=${encodeURIComponent(folioOrigen)}&folio_destino=${encodeURIComponent(folioDestino)}`
+        body: `folio_origen=${encodeURIComponent(folioOrigen)}&folio_destino=${encodeURIComponent(folioDestino)}&csrf_token=${encodeURIComponent(document.querySelector('input[name="csrf_token"]')?.value || '')}`
     })
     .then(response => response.json())
     .then(data => {
