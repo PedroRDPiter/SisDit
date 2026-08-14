@@ -2156,7 +2156,11 @@ window.DASH_VENTANILLA_CONFIG = <?= json_encode([
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+<<<<<<< HEAD
 <script src="js/dashVentanilla.js?v=20260811-1"></script>
+=======
+<script src="js/dashVentanilla.js?v=20260805-2"></script>
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 <script src="js/dashboard-ui.js?v=20260804"></script>
 
 </body>

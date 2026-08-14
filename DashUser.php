@@ -134,7 +134,7 @@ body{
 <span class="text-white me-3">
 <?= htmlspecialchars($_SESSION['usuario'] ?? '') ?>
 </span>
-<a href="logout.php" class="btn btn-light btn-sm">Cerrar sesión</a>
+<a href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>" class="btn btn-light btn-sm">Cerrar sesión</a>
 </div>
 </div>
 </nav>

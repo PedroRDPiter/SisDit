@@ -9,7 +9,8 @@
  * Descripción: Formulario para establecer nueva contraseña usando el token
  */
 
-require 'db.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/funciones_seguridad.php';
 
 $mensaje = '';
 $tipo_mensaje = '';
@@ -19,10 +20,11 @@ $token = '';
 // Verificar si hay token en la URL
 if (isset($_GET['token'])) {
     $token = trim($_GET['token']);
+    $tokenHash = hash('sha256', $token);
     
     // Validar token
     $stmt = $conn->prepare("SELECT id, nombre, correo, token_expira FROM usuarios WHERE token_recuperacion = ?");
-    $stmt->bind_param("s", $token);
+    $stmt->bind_param("s", $tokenHash);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -45,13 +47,17 @@ if (isset($_GET['token'])) {
     $token = trim($_POST['token'] ?? '');
     $password = $_POST['password'] ?? '';
     $password_confirm = $_POST['password_confirm'] ?? '';
+    $tokenHash = hash('sha256', $token);
     
     // Validaciones
-    if (empty($token) || empty($password) || empty($password_confirm)) {
+    if (!validarCSRF()) {
+        $mensaje = "La sesión del formulario expiró. Solicita un enlace nuevo.";
+        $tipo_mensaje = "error";
+    } elseif (empty($token) || empty($password) || empty($password_confirm)) {
         $mensaje = "Todos los campos son obligatorios.";
         $tipo_mensaje = "error";
-    } elseif (strlen($password) < 8) {
-        $mensaje = "La contraseña debe tener al menos 8 caracteres.";
+    } elseif (strlen($password) < 12) {
+        $mensaje = "La contraseña debe tener al menos 12 caracteres.";
         $tipo_mensaje = "error";
     } elseif ($password !== $password_confirm) {
         $mensaje = "Las contraseñas no coinciden.";
@@ -59,7 +65,7 @@ if (isset($_GET['token'])) {
     } else {
         // Verificar token
         $stmt = $conn->prepare("SELECT id, token_expira FROM usuarios WHERE token_recuperacion = ?");
-        $stmt->bind_param("s", $token);
+        $stmt->bind_param("s", $tokenHash);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -355,15 +361,16 @@ input[type="password"]:focus {
             
             <form method="POST" action="reset_password.php">
                 <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generarCSRF(), ENT_QUOTES, 'UTF-8') ?>">
                 
                 <div class="form-group">
                     <label for="password">Nueva contraseña</label>
-                    <input type="password" id="password" name="password" placeholder="Ingresa tu nueva contraseña" required minlength="8">
+                    <input type="password" id="password" name="password" placeholder="Ingresa tu nueva contraseña" required minlength="12" maxlength="128">
                 </div>
                 
                 <div class="form-group">
                     <label for="password_confirm">Confirmar contraseña</label>
-                    <input type="password" id="password_confirm" name="password_confirm" placeholder="Confirma tu nueva contraseña" required minlength="8">
+                    <input type="password" id="password_confirm" name="password_confirm" placeholder="Confirma tu nueva contraseña" required minlength="12" maxlength="128">
                 </div>
                 
                 <button type="submit" class="btn">Cambiar Contraseña</button>

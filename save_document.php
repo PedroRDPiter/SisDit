@@ -47,8 +47,8 @@ $allowedMimesByExtension = [
     'jpg' => ['image/jpeg', 'image/pjpeg'],
     'jpeg' => ['image/jpeg', 'image/pjpeg'],
     'png' => ['image/png'],
-    'doc' => ['application/msword', 'application/octet-stream'],
-    'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
+    'doc' => ['application/msword'],
+    'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
 ];
 
 $labelMap = [
@@ -86,7 +86,9 @@ $folio_numero = (int) $partes[0];
 $folio_anio = (int) $partes[1];
 
 function uploadPath($path) {
-    return 'uploads/' . implode('/', array_map('rawurlencode', explode('/', $path)));
+    $path = ltrim(str_replace('\\', '/', $path), '/');
+    $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
+    return str_starts_with($path, 'uploads/') ? $encoded : 'uploads/' . $encoded;
 }
 
 if (!isset($_FILES['documentFile'])) {
@@ -138,7 +140,7 @@ if (!in_array($mimeType, $allowedMimesByExtension[$extension], true)) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id FROM tramites WHERE folio_numero = ? AND folio_anio = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT id, usuario_creador_id, otros_archivos FROM tramites WHERE folio_numero = ? AND folio_anio = ? LIMIT 1");
 $stmt->bind_param('ii', $folio_numero, $folio_anio);
 $stmt->execute();
 $tramite = $stmt->get_result()->fetch_assoc();
@@ -147,6 +149,12 @@ $stmt->close();
 if (!$tramite) {
     http_response_code(404);
     echo json_encode(['success' => false, 'message' => 'Trámite no encontrado']);
+    exit;
+}
+
+if (!puedeAccederTramite($tramite)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
     exit;
 }
 

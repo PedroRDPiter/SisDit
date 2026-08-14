@@ -29,6 +29,11 @@ if (!esAdministrador()) {
     echo json_encode(array('success'=>false,'message'=>'Sin permisos'));
     exit;
 }
+if (!validarCSRF()) {
+    http_response_code(403);
+    echo json_encode(array('success'=>false,'message'=>'Token de seguridad invalido'));
+    exit;
+}
 
 $accion    = isset($_POST['accion'])    ? trim($_POST['accion'])    : '';
 $sol_id    = isset($_POST['sol_id'])    ? (int)$_POST['sol_id']    : 0;

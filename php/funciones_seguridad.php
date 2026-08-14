@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/sesion.php';
+iniciarSesionSegura();
 // =====================================================
 // FUNCIONES DE SEGURIDAD Y VALIDACIÓN
 // Aquí están todas las funciones que se usan en
@@ -91,13 +93,13 @@ function validarArchivo($archivo, $tiposPermitidos = ['pdf', 'jpg', 'jpeg', 'png
     $mimeType = finfo_file($finfo, $archivo['tmp_name']);
     finfo_close($finfo);
 
-    $mimePermitidos = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    $mimePermitidos = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!in_array($mimeType, $mimePermitidos)) {
         return ['valido' => false, 'mensaje' => 'El contenido del archivo no corresponde a un formato permitido'];
     }
 
     // Si es imagen, verificar que realmente sea una imagen válida
-    if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+    if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
         $imageInfo = @getimagesize($archivo['tmp_name']);
         if ($imageInfo === false) {
             return ['valido' => false, 'mensaje' => 'El archivo no es una imagen válida'];
@@ -166,11 +168,40 @@ function registrarLog($conn, $usuario_id, $accion, $tabla = null, $registro_id =
 // =====================================================
 
 // Validar que el token del formulario coincida con el de la sesión
-function validarCSRF() {
-    if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
+function validarCSRF($token = null) {
+    $token = $token ?? ($_POST['csrf_token'] ?? null);
+    if (!is_string($token) || !isset($_SESSION['csrf_token'])) {
         return false;
     }
-    return $_POST['csrf_token'] === $_SESSION['csrf_token'];
+    return hash_equals((string) $_SESSION['csrf_token'], $token);
+}
+
+function consumirLimite(string $accion, string $identificador, int $maximo, int $ventana): int {
+    $clave = hash('sha256', $accion . '|' . $identificador);
+    $ruta = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'sisdit_rate_' . $clave;
+    $ahora = time();
+    $fp = @fopen($ruta, 'c+');
+    if (!$fp || !flock($fp, LOCK_EX)) return 0;
+    $datos = json_decode(stream_get_contents($fp) ?: '[]', true);
+    if (!is_array($datos) || ($datos['inicio'] ?? 0) + $ventana <= $ahora) {
+        $datos = ['inicio' => $ahora, 'intentos' => 0];
+    }
+    if (($datos['intentos'] ?? 0) >= $maximo) {
+        $restante = max(1, ($datos['inicio'] + $ventana) - $ahora);
+        flock($fp, LOCK_UN); fclose($fp);
+        return $restante;
+    }
+    $datos['intentos']++;
+    ftruncate($fp, 0); rewind($fp);
+    fwrite($fp, json_encode($datos)); fflush($fp);
+    flock($fp, LOCK_UN); fclose($fp);
+    return 0;
+}
+
+function limpiarLimite(string $accion, string $identificador): void {
+    $clave = hash('sha256', $accion . '|' . $identificador);
+    $ruta = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'sisdit_rate_' . $clave;
+    if (is_file($ruta)) @unlink($ruta);
 }
 
 // Generar token CSRF (se crea si no existe)
@@ -276,6 +307,16 @@ function validarSoloMayusculas($texto) {
 // y al mostrarlos con escape HTML, no destruyendo el texto ingresado.
 function limpiarMayusculas($texto) {
     return mb_strtoupper(trim($texto), 'UTF-8');
+}
+
+function esPersonalAutorizado(): bool {
+    return isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['Administrador', 'Ventanilla', 'Verificador'], true);
+}
+
+function puedeAccederTramite(array $tramite): bool {
+    if (esPersonalAutorizado()) return true;
+    return isset($_SESSION['id'], $tramite['usuario_creador_id'])
+        && (int) $_SESSION['id'] === (int) $tramite['usuario_creador_id'];
 }
 
 // Cuenta catastral: solo números sin letras ni guiones

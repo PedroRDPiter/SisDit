@@ -43,6 +43,13 @@ if (!$tramite) {
     exit;
 }
 
+require_once 'php/funciones_seguridad.php';
+if (!puedeAccederTramite($tramite)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
+    exit;
+}
+
 $docMap = [
     'ine' => ['label' => 'INE / Identificación', 'campo' => 'ine_archivo'],
     'escritura' => ['label' => 'Escritura / Título', 'campo' => 'escrituras_archivo'],
@@ -61,7 +68,9 @@ $docMap = [
 ];
 
 function uploadPath($path) {
-    return 'uploads/' . implode('/', array_map('rawurlencode', explode('/', $path)));
+    $path = ltrim(str_replace('\\', '/', $path), '/');
+    $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
+    return str_starts_with($path, 'uploads/') ? $encoded : 'uploads/' . $encoded;
 }
 
 $documents = [];

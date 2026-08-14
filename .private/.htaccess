@@ -1,0 +1,4 @@
+Options -Indexes
+RewriteEngine On
+RewriteRule ^(.+)$ ../php/archivo.php?scope=private&path=$1 [QSA,L]
+

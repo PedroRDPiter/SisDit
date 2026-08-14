@@ -118,10 +118,9 @@ try {
         if (!isset($_FILES[$campo]) || $_FILES[$campo]['error'] !== UPLOAD_ERR_OK) continue;
         if (empty($_FILES[$campo]['name'])) continue;
 
-        $ext  = strtolower(pathinfo($_FILES[$campo]['name'], PATHINFO_EXTENSION));
-        $permitidos = ['pdf','jpg','jpeg','png'];
-        if (!in_array($ext, $permitidos)) throw new Exception("Extensión no permitida: $campo ($ext)");
-        if ($_FILES[$campo]['size'] > 5242880) throw new Exception("Archivo demasiado grande: $campo (máx 5MB)");
+        $validacion = validarArchivo($_FILES[$campo], ['pdf','jpg','jpeg','png']);
+        if (!$validacion['valido']) throw new Exception($validacion['mensaje'] . ": $campo");
+        $ext = $validacion['extension'];
 
         $nombre = $campo . '_' . uniqid() . '_' . time() . '.' . $ext;
         if (!move_uploaded_file($_FILES[$campo]['tmp_name'], $carpeta . $nombre))

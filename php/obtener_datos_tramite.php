@@ -38,7 +38,7 @@ $folio_anio = (int) $matches[2];
 // Obtener TODOS los trámites (principal + subtramites) que comparten el mismo folio
 // (después del refactor, los adicionales comparten el folio_numero/folio_anio exacto)
 $sql = "SELECT 
-            t.id, t.folio_numero, t.folio_anio, t.estatus,
+            t.id, t.usuario_creador_id, t.folio_numero, t.folio_anio, t.estatus,
             t.propietario, t.direccion, t.localidad, t.telefono, t.correo,
             t.ine_archivo, t.escrituras_archivo, t.titulo_archivo,
             t.predial_archivo, t.formato_constancia,
@@ -67,6 +67,11 @@ if ($result->num_rows === 0) {
 
 $tramites = [];
 while ($row = $result->fetch_assoc()) {
+    if (!puedeAccederTramite($row)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
+        exit;
+    }
     $tramites[] = $row;
 }
 

@@ -37,6 +37,17 @@ if (!$tramite_id) {
     exit;
 }
 
+$permisoStmt = $conn->prepare("SELECT usuario_creador_id FROM tramites WHERE id = ? LIMIT 1");
+$permisoStmt->bind_param("i", $tramite_id);
+$permisoStmt->execute();
+$tramitePermiso = $permisoStmt->get_result()->fetch_assoc();
+$permisoStmt->close();
+if (!$tramitePermiso || !puedeAccederTramite($tramitePermiso)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Acceso denegado']);
+    exit;
+}
+
 $stmt = $conn->prepare("
     SELECT ta.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
     FROM tramites_adicionales ta

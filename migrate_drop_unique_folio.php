@@ -1,5 +1,6 @@
 <?php
-require 'C:/xampp/htdocs/desarrollo/php/db.php';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require __DIR__ . '/php/db.php';
 
 try {
     // First drop the unique

@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 $geojsonPath = __DIR__ . '/Geojson/TRAMITES_reprojected.geojson';
 if (file_exists($geojsonPath)) {
     $geojson = json_decode(file_get_contents($geojsonPath), true);

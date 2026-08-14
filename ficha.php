@@ -55,6 +55,11 @@ if (!$tramite) {
     exit;
 }
 
+if (!puedeAccederTramite($tramite)) {
+    http_response_code(403);
+    exit('Acceso denegado');
+}
+
 // Obtener trámites adicionales (hijos) en la misma tabla via tramite_principal_id
 $tas = [];
 $resTA = $conn->prepare("

@@ -18,6 +18,11 @@ if (!isset($_SESSION['id'])) {
     echo json_encode(['success' => false, 'message' => 'Sesión expirada']);
     exit;
 }
+if (!esPersonalAutorizado()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
+    exit;
+}
 
 // Obtener estadísticas
 $total_tramites = $conn->query("SELECT COUNT(*) as total FROM tramites")->fetch_assoc()['total'];

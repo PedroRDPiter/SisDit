@@ -25,6 +25,11 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     echo json_encode(['success' => false, 'message' => 'Sin permisos']);
     exit;
 }
+if (!validarCSRF()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Token de seguridad invalido']);
+    exit;
+}
 
 $id_destino     = isset($_POST['id_destino'])     ? (int)$_POST['id_destino']      : 0;
 $folio_destino  = isset($_POST['folio_destino'])  ? trim($_POST['folio_destino'])  : '';
@@ -42,11 +47,24 @@ if (empty($croquis_archivo)) {
     exit;
 }
 
-$ruta = "../" . $croquis_archivo;
-if (!file_exists($ruta)) {
+$appRoot = realpath(__DIR__ . '/..');
+$ruta = $appRoot !== false ? realpath($appRoot . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $croquis_archivo)) : false;
+$privateRoot = realpath(__DIR__ . '/../.private');
+$uploadsRoot = realpath(__DIR__ . '/../uploads');
+$enRaizPermitida = $ruta !== false && (
+    ($privateRoot !== false && str_starts_with($ruta, rtrim($privateRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)) ||
+    ($uploadsRoot !== false && str_starts_with($ruta, rtrim($uploadsRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR))
+);
+if (!$enRaizPermitida || !is_file($ruta)) {
     echo json_encode(['success' => false, 'message' => 'El archivo del croquis no existe']);
     exit;
 }
+$mimeCroquis = (new finfo(FILEINFO_MIME_TYPE))->file($ruta);
+if (!in_array($mimeCroquis, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+    echo json_encode(['success' => false, 'message' => 'El archivo no es una imagen valida']);
+    exit;
+}
+$croquis_archivo = str_replace(DIRECTORY_SEPARATOR, '/', substr($ruta, strlen($appRoot) + 1));
 
 // Actualizar el trámite destino con el mismo nombre de archivo
 if ($id_destino > 0) {

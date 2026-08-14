@@ -114,8 +114,11 @@ let selectedPolygon = null;
 // Variable para almacenar la capa GeoJSON
 let parcelasLayer = null;
 const capasPredios = [];
+<<<<<<< HEAD
 const capasDibujosCroquis = [];
 const cuentasCatastralesBase = new Set();
+=======
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 let predioConsultaToken = 0;
 
 function escaparHtmlPredio(valor) {
@@ -127,10 +130,13 @@ function escaparHtmlPredio(valor) {
     .replace(/'/g, '&#039;');
 }
 
+<<<<<<< HEAD
 function normalizarCuentaCatastral(valor) {
   return String(valor ?? '').trim().toUpperCase();
 }
 
+=======
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 function limpiarEtiquetaPredio(layer) {
   if (layer && layer._sisditSavedTooltip) {
     layer.unbindTooltip();
@@ -138,8 +144,14 @@ function limpiarEtiquetaPredio(layer) {
   }
 }
 
+<<<<<<< HEAD
 function verConstanciaPredio(tramiteId, documentoUrl) {
   const id = Number(tramiteId) || 0;
+=======
+function verConstanciaPredio(tramiteId, tipoTramiteId) {
+  const id = Number(tramiteId) || 0;
+  const tipoId = Number(tipoTramiteId) || 0;
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 
   if (!id) {
     Swal.fire({
@@ -151,16 +163,27 @@ function verConstanciaPredio(tramiteId, documentoUrl) {
     return;
   }
 
+<<<<<<< HEAD
   const url = String(documentoUrl || '').trim();
   if (url) {
     window.open(url, '_blank', 'noopener');
+=======
+  if (tipoId === 1) {
+    window.open('constancia_numero.php?id=' + encodeURIComponent(id), '_blank', 'noopener');
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     return;
   }
 
   Swal.fire({
+<<<<<<< HEAD
     icon: 'warning',
     title: 'Documento no escaneado',
     text: 'No se ha escaneado el documento.',
+=======
+    icon: 'info',
+    title: 'Próximamente',
+    text: 'La constancia para este tipo de trámite estará disponible próximamente.',
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     confirmButtonColor: '#721832'
   });
 }
@@ -169,6 +192,7 @@ document.addEventListener('click', function(event) {
   const button = event.target.closest('.btn-ver-constancia-predio');
   if (!button) return;
   event.preventDefault();
+<<<<<<< HEAD
   verConstanciaPredio(button.dataset.tramiteId, button.dataset.documentoUrl);
 });
 
@@ -183,6 +207,11 @@ function botonDocumentoEscaneadoPredio(tramiteId, estatus, documento) {
     escaparHtmlPredio(etiqueta) + '</button></div>';
 }
 
+=======
+  verConstanciaPredio(button.dataset.tramiteId, button.dataset.tipoTramiteId);
+});
+
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
   const cuenta = String(cuentaCatastral || '').trim();
   const token = ++predioConsultaToken;
@@ -209,6 +238,10 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
       const texto = String(predio.texto || '').trim();
       const semaforo = obtenerSemaforoEstatus(predio.estatus);
       const tramiteId = Number(predio.tramite_id) || 0;
+<<<<<<< HEAD
+=======
+      const tipoTramiteId = Number(predio.tipo_tramite_id) || 0;
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
       const utm = predio.utm_centro_x && predio.utm_centro_y
         ? escaparHtmlPredio(predio.utm_centro_x) + ', ' + escaparHtmlPredio(predio.utm_centro_y)
         : 'No disponible';
@@ -220,7 +253,11 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
         '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
         '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
         (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '') +
+<<<<<<< HEAD
         botonDocumentoEscaneadoPredio(tramiteId, predio.estatus, predio.documento_escaneado);
+=======
+        (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '');
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 
       layer._sisditStatusStyle = semaforo.estilo;
       layer._sisditStatus = predio.estatus;
@@ -324,7 +361,11 @@ const filtrosEstatusPredio = new Set([
 function aplicarFiltrosEstatusPredios() {
   if (!parcelasLayer) return;
 
+<<<<<<< HEAD
   capasPredios.concat(capasDibujosCroquis).forEach(layer => {
+=======
+  capasPredios.forEach(layer => {
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     const estatus = obtenerClaveFiltroEstatus(layer._sisditStatus);
     const tieneFiltro = ['cancelado', 'en revision', 'aprobado por verificador', 'aprobado'].includes(estatus);
     const visible = !tieneFiltro || filtrosEstatusPredio.has(estatus);
@@ -533,12 +574,18 @@ const cargaParcelasPromise = fetch('./Geojson/TRAMITES_reprojected.geojson')
     }).addTo(map);
 
     // Agregar a overlays
+<<<<<<< HEAD
     overlays["Predios y verificación"] = parcelasLayer;
     layerControl.addOverlay(parcelasLayer, "Predios y verificación");
+=======
+    overlays["Poligonos"] = parcelasLayer;
+    layerControl.addOverlay(parcelasLayer, "Poligonos");
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     cargarSemaforoPredios();
   })
   .catch(error => console.error('Error cargando GeoJSON de parcelas:', error));
 
+<<<<<<< HEAD
 function estiloDibujoCroquis(feature) {
   const origen = normalizarEstatusPredio(feature?.properties?.origen);
   if (origen === 'subdivision') {
@@ -619,6 +666,8 @@ cargaParcelasPromise
   })
   .catch(error => console.warn('No se pudieron cargar los dibujos de verificación:', error));
 
+=======
+>>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 // ── MAYÚSCULAS ──
 document.querySelectorAll('.mayusculas').forEach(i=>{
   i.addEventListener('input',function(){

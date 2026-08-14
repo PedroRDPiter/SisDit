@@ -4,8 +4,15 @@
 // Busca predios por su número de cuenta catastral para autocompletar
 // =====================================================
 require_once "db.php";
+require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'No autorizado']);
+    exit;
+}
 
 if(isset($_GET['cuenta'])){
 
