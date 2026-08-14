@@ -126,6 +126,9 @@ if (!$solo_constancia) {
     }
 }
 
+$documento_firmado_guardado = null;
+$transaccion_confirmada = false;
+
 try {
     $conn->begin_transaction();
 
@@ -136,7 +139,7 @@ try {
         SELECT t.id, t.estatus, t.foto1_archivo, t.foto2_archivo,
                t.ine_archivo, t.titulo_archivo, t.predial_archivo,
                t.escrituras_archivo, t.formato_constancia,
-               t.oficio_vobo,
+               t.oficio_vobo, t.otros_archivos,
                t.telefono, t.correo, t.solicitante, t.propietario,
                t.tipo_tramite_id, t.folio_numero, t.folio_anio,
                t.folio_salida_numero, t.folio_salida_anio,
@@ -327,6 +330,69 @@ try {
     }
     unset($info);
 
+    // Documento final firmado por el Director (constancia o licencia).
+    $otros_archivos = json_decode((string)($tramite['otros_archivos'] ?? ''), true);
+    if (!is_array($otros_archivos)) $otros_archivos = [];
+
+    if (isset($_FILES['documento_firmado']) && $_FILES['documento_firmado']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if (!esVentanilla() && !esAdministrador()) {
+            throw new Exception('Sin permisos para cargar el documento firmado.');
+        }
+        if ($estatus !== 'Aprobado') {
+            throw new Exception('El documento firmado solo puede adjuntarse al aprobar el trámite.');
+        }
+
+        $archivoFirmado = $_FILES['documento_firmado'];
+        if ($archivoFirmado['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception('No se pudo recibir el documento firmado.');
+        }
+        if ((int)$archivoFirmado['size'] > 10485760) {
+            throw new Exception('El documento firmado excede el máximo de 10 MB.');
+        }
+
+        $extension = strtolower(pathinfo($archivoFirmado['name'], PATHINFO_EXTENSION));
+        $mimesPermitidos = [
+            'pdf' => ['application/pdf'],
+            'jpg' => ['image/jpeg', 'image/pjpeg'],
+            'jpeg' => ['image/jpeg', 'image/pjpeg'],
+            'png' => ['image/png']
+        ];
+        if (!isset($mimesPermitidos[$extension])) {
+            throw new Exception('El documento firmado debe ser PDF, JPG o PNG.');
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo ? finfo_file($finfo, $archivoFirmado['tmp_name']) : '';
+        if ($finfo) finfo_close($finfo);
+        if (!in_array($mime, $mimesPermitidos[$extension], true)) {
+            throw new Exception('El contenido del documento firmado no corresponde al formato indicado.');
+        }
+
+        $esLicenciaFirmada = (int)$tramite['tipo_tramite_id'] === 7;
+        $tipoDocumentoFirmado = $esLicenciaFirmada ? 'documento_firmado_licencia' : 'documento_firmado_constancia';
+        $etiquetaDocumentoFirmado = $esLicenciaFirmada ? 'Licencia firmada y escaneada' : 'Constancia firmada y escaneada';
+        $nombreFirmado = $tipoDocumentoFirmado . '_' . $tramite_id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
+        $destinoFirmado = $carpeta . $nombreFirmado;
+        if (!move_uploaded_file($archivoFirmado['tmp_name'], $destinoFirmado)) {
+            throw new Exception('No se pudo guardar el documento firmado.');
+        }
+        $documento_firmado_guardado = $destinoFirmado;
+
+        // Sustituir la version firmada anterior del mismo tipo.
+        $otros_archivos = array_values(array_filter($otros_archivos, static function ($documento) use ($tipoDocumentoFirmado) {
+            return !is_array($documento) || ($documento['tipo'] ?? '') !== $tipoDocumentoFirmado;
+        }));
+        $otros_archivos[] = [
+            'tipo' => $tipoDocumentoFirmado,
+            'label' => $etiquetaDocumentoFirmado,
+            'archivo' => $nombreFirmado,
+            'fecha' => date('Y-m-d H:i:s'),
+            'usuario_id' => (int)$_SESSION['id']
+        ];
+    }
+    $otros_archivos_json = json_encode($otros_archivos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($otros_archivos_json === false) throw new Exception('No se pudo registrar el documento firmado.');
+
     // ── Detectar trámite VOBO con oficio_vobo recién subido ──
     $tipo_tramite_id_actual = (int) $tramite['tipo_tramite_id'];
     $oficio_vobo_antes = $tramite['oficio_vobo'];
@@ -398,17 +464,26 @@ try {
     $sql .= " WHERE folio_numero = ? AND folio_anio = ?";
     $params[] = $folio_numero;
     $params[] = $folio_anio;
-    $types   .= "ii";
+    $types .= "ii";
 
     $stmtUp = $conn->prepare($sql);
     if (!$stmtUp) throw new Exception("Error prepare UPDATE: " . $conn->error);
 
     $stmtUp->bind_param($types, ...$params);
     if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
-     $stmtUp->close();
+    $stmtUp->close();
 
-     // -- CREAR REGISTROS ADICIONALES CUANDO SE APRUEBA Y SE ASIGNA NÚMERO --
-     if ($estatus === 'Aprobado' && !empty($numero_asignado)) {
+    // El escaneo pertenece al tramite/poligono seleccionado, no a todo el grupo del folio.
+    if ($documento_firmado_guardado !== null) {
+        $stmtDocumentoFirmado = $conn->prepare("UPDATE tramites SET otros_archivos = ? WHERE id = ?");
+        if (!$stmtDocumentoFirmado) throw new Exception('No se pudo preparar el registro del documento firmado.');
+        $stmtDocumentoFirmado->bind_param('si', $otros_archivos_json, $tramite_id);
+        if (!$stmtDocumentoFirmado->execute()) throw new Exception('No se pudo registrar el documento firmado.');
+        $stmtDocumentoFirmado->close();
+    }
+
+    // -- CREAR REGISTROS ADICIONALES CUANDO SE APRUEBA Y SE ASIGNA NÚMERO --
+    if ($estatus === 'Aprobado' && !empty($numero_asignado)) {
          // Get current cantidad from database to see if we need to create adicionales
          $stmtCurrent = $conn->prepare("SELECT cantidad FROM tramites WHERE folio_numero = ? AND folio_anio = ?");
          $stmtCurrent->bind_param("ii", $folio_numero, $folio_anio);
@@ -566,6 +641,7 @@ try {
     }
 
     $conn->commit();
+    $transaccion_confirmada = true;
 
     // ── Actualizar GeoJSON ──
     $geojsonPath = "../Geojson/TRAMITES.geojson";
@@ -657,6 +733,9 @@ try {
 } catch (Throwable $e) {
     if (isset($conn) && $conn instanceof mysqli) {
         $conn->rollback();
+    }
+    if (!$transaccion_confirmada && !empty($documento_firmado_guardado) && is_file($documento_firmado_guardado)) {
+        unlink($documento_firmado_guardado);
     }
     error_log("[actualizarTramite] " . $e->getMessage());
     http_response_code(500);

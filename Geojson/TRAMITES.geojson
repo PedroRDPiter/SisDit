@@ -10945,7 +10945,7 @@
                 "UBICACION": "VICTORIA",
                 "FECH_INGRE": "2026-07-15",
                 "FECH_ENTRE": "2026-07-29",
-                "ESTATUS": "Nuevo",
+                "ESTATUS": "Aprobado por Verificador",
                 "CONTACTO": "4651190490",
                 "NUMERO": null
             },
@@ -10975,6 +10975,27 @@
                 "coordinates": [
                     2460815.62,
                     776111.06
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "FOLIO_INGR": "707\/2026",
+                "NOM_SOLI": "PRUEBA",
+                "TIP_TRAMIT": "Nuevo Trámite",
+                "UBICACION": "PRUEBA",
+                "FECH_INGRE": "2026-08-10",
+                "FECH_ENTRE": "2026-08-24",
+                "ESTATUS": "Aprobado",
+                "CONTACTO": "0000000000",
+                "NUMERO": null
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2459870.6,
+                    775369.47
                 ]
             }
         }

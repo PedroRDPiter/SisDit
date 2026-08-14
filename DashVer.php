@@ -1341,7 +1341,7 @@ window.onpopstate = function () {
         </a>
         <p class="text-muted mt-3 mb-0" style="font-size:.72rem;">
           <i class="bi bi-info-circle me-1"></i>
-          Si el ciudadano no proporcionó correo o teléfono, ese botón estará deshabilitado.
+          Falta correo o teléfono del ciudadano. 
         </p>
       </div>
       <div class="modal-footer">

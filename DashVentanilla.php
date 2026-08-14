@@ -221,7 +221,8 @@ document.addEventListener('DOMContentLoaded', function() {
 history.pushState(null,null,location.href);
 window.onpopstate=function(){history.go(1);};
 
-// ── Trámites adicionales: mostrar/ocultar campos ──
+// ── Trámites adicionales: mostrar/ocultar campos ──//
+
 function mostrarCamposTA(indice, tipoId) {
   var panel = document.getElementById(indice + '_campos');
   var hidden = document.getElementById(indice + '_tipo_tramite_id');
@@ -260,7 +261,7 @@ function actualizarTramitesAdicionales(checkbox) {
   if (seleccionados.length > 3) {
     checkbox.checked = false;
     if (aviso) {
-      aviso.textContent = 'Solo puede seleccionar un máximo de 3 trámites adicionales.';
+      aviso.textContent = 'Solo puede seleccionar un má-ximo de 3 trámites adicionales.';
       aviso.classList.remove('d-none');
     }
     return;
@@ -558,6 +559,7 @@ if (!empty($av['folio_salida_numero'])) {
             data-propietario="<?= htmlspecialchars($propav) ?>"
             data-direccion="<?= htmlspecialchars($dirav) ?>"
             data-colonia="<?= htmlspecialchars($av['colonia'] ?? '') ?>"
+            data-cp="<?= htmlspecialchars($av['cp'] ?? '') ?>"
             data-numero="<?= htmlspecialchars($num) ?>"
             data-localidad="<?= htmlspecialchars($locav) ?>"
             data-numero-asignado="<?= htmlspecialchars($num_asig) ?>"
@@ -579,6 +581,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           </button><br>
           <?php endif; ?>
           <button class="btn btn-sm btn-success btn-firmar-director"
+            data-id="<?= (int)$av['id'] ?>"
             data-folio="<?= htmlspecialchars($fav) ?>"
             data-folio-salida="<?= htmlspecialchars($folio_salida) ?>"
             data-propietario="<?= htmlspecialchars($propav) ?>"
@@ -614,6 +617,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <?php $csrf_fd = generarCSRF(); ?>
           <input type="hidden" name="csrf_token" value="<?= $csrf_fd ?>">
           <input type="hidden" name="folio" id="fd_folio_hidden">
+          <input type="hidden" name="id" id="fd_tramite_id">
           <input type="hidden" name="verificador_nombre" value="VENTANILLA">
           <input type="hidden" name="tipo_tramite_id" id="fd_tipo_tramite_id">
 
@@ -654,6 +658,15 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             </label>
             <textarea name="observaciones" id="fd_observaciones" class="form-control form-control-sm" rows="3"
               placeholder="Ej: El Director firmó el día de hoy / Rechazado por documentación incompleta..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="fd_documento_firmado" class="form-label fw-semibold">
+              <i class="bi bi-file-earmark-arrow-up me-1"></i>Documento firmado y escaneado
+            </label>
+            <input type="file" name="documento_firmado" id="fd_documento_firmado"
+              class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+            <div class="form-text">Adjunta la constancia o licencia firmada. Formatos permitidos: PDF, JPG o PNG (máximo 10 MB).</div>
           </div>
         </form>
       </div>
@@ -778,7 +791,15 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                   <input type="text" class="form-control mayusculas" name="lote" id="cs_lote">
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold" for="cs_cp">Código Postal (C.P.)</label>
+                  <input type="text" class="form-control" name="cp" id="cs_cp"
+                         inputmode="numeric" maxlength="5" pattern="[0-9]{5}"
+                         title="Ingresa un código postal de 5 dígitos"
+                         oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)">
+                </div>
+
+                <div class="col-md-3">
                   <label class="form-label fw-semibold" for="cs_fecha_constancia">Fecha de Expedición</label>
                   <input type="date" class="form-control" name="fecha_constancia" id="cs_fecha_constancia">
                 </div>
@@ -1573,6 +1594,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                             data-propietario="<?php echo htmlspecialchars($tr['propietario']); ?>"
                             data-direccion="<?php echo htmlspecialchars($tr['direccion'] ?? ''); ?>"
                             data-colonia="<?php echo htmlspecialchars($tr['colonia'] ?? ''); ?>"
+                            data-cp="<?php echo htmlspecialchars($tr['cp'] ?? ''); ?>"
                             data-numero="<?php echo htmlspecialchars($tr['numero'] ?? ''); ?>"
                             data-localidad="<?php echo htmlspecialchars($tr['localidad'] ?? ''); ?>"
                             data-tipo-asignacion="<?php echo htmlspecialchars($tr['tipo_asignacion'] ?? 'ASIGNACION'); ?>"
@@ -2134,7 +2156,7 @@ window.DASH_VENTANILLA_CONFIG = <?= json_encode([
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
-<script src="js/dashVentanilla.js?v=20260805-4"></script>
+<script src="js/dashVentanilla.js?v=20260811-1"></script>
 <script src="js/dashboard-ui.js?v=20260804"></script>
 
 </body>

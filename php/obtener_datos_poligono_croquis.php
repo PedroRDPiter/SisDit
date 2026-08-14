@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once "db.php";
 require_once "funciones_seguridad.php";
+require_once "documento_escaneado.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -44,6 +45,8 @@ $stmt = $conn->prepare("
         d.updated_at,
         t.estatus,
         t.tipo_tramite_id,
+        t.formato_constancia,
+        t.otros_archivos,
         tt.nombre AS tipo_tramite
     FROM croquis_poligono_detalles d
     INNER JOIN tramites t ON t.id = d.tramite_id
@@ -67,6 +70,7 @@ $stmt->close();
 if (!$row) {
     $fallback = $conn->prepare("
         SELECT t.id AS tramite_id, t.estatus, t.numero_asignado, t.tipo_tramite_id,
+               t.formato_constancia, t.otros_archivos,
                t.folio_numero, t.folio_anio, t.updated_at,
                tt.nombre AS tipo_tramite
         FROM tramites t
@@ -87,6 +91,7 @@ if (!$row) {
     if ($texto === '') {
         $texto = str_pad((string)$tramite['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_anio'];
     }
+    $documento = obtenerDocumentoEscaneadoTramite($tramite);
     echo json_encode([
         'success' => true,
         'poligono' => [
@@ -97,12 +102,14 @@ if (!$row) {
             'estatus' => $tramite['estatus'],
             'tipo_tramite_id' => (int)$tramite['tipo_tramite_id'],
             'tipo_tramite' => $tramite['tipo_tramite'],
+            'documento_escaneado' => $documento,
             'updated_at' => $tramite['updated_at']
         ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+$documento = obtenerDocumentoEscaneadoTramite($row);
 echo json_encode([
     'success' => true,
     'poligono' => [
@@ -123,6 +130,7 @@ echo json_encode([
         'estatus' => $row['estatus'],
         'tipo_tramite_id' => (int)$row['tipo_tramite_id'],
         'tipo_tramite' => $row['tipo_tramite'],
+        'documento_escaneado' => $documento,
         'updated_at' => $row['updated_at']
     ]
 ]);

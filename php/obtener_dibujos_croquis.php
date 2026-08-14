@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once 'db.php';
 require_once 'funciones_seguridad.php';
+require_once 'documento_escaneado.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -37,6 +38,8 @@ $sql = "
         d.updated_at,
         t.estatus,
         t.tipo_tramite_id,
+        t.formato_constancia,
+        t.otros_archivos,
         tt.nombre AS tipo_tramite
     FROM croquis_poligono_detalles d
     INNER JOIN tramites t ON t.id = d.tramite_id
@@ -63,6 +66,7 @@ while ($row = $result->fetch_assoc()) {
     $geometryType = $feature['geometry']['type'] ?? '';
     if (!in_array($geometryType, ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'], true)) continue;
 
+    $documento = obtenerDocumentoEscaneadoTramite($row);
     $feature['properties'] = [
         'detalle_id' => (int)$row['id'],
         'tramite_id' => (int)$row['tramite_id'],
@@ -77,6 +81,7 @@ while ($row = $result->fetch_assoc()) {
         'label_lat' => $row['label_lat'] !== null ? (float)$row['label_lat'] : null,
         'seleccionado' => (bool)$row['seleccionado'],
         'estatus' => $row['estatus'],
+        'documento_escaneado' => $documento,
         'updated_at' => $row['updated_at']
     ];
     $features[] = $feature;

@@ -138,9 +138,8 @@ function limpiarEtiquetaPredio(layer) {
   }
 }
 
-function verConstanciaPredio(tramiteId, tipoTramiteId) {
+function verConstanciaPredio(tramiteId, documentoUrl) {
   const id = Number(tramiteId) || 0;
-  const tipoId = Number(tipoTramiteId) || 0;
 
   if (!id) {
     Swal.fire({
@@ -152,15 +151,16 @@ function verConstanciaPredio(tramiteId, tipoTramiteId) {
     return;
   }
 
-  if (tipoId === 1) {
-    window.open('constancia_numero.php?id=' + encodeURIComponent(id), '_blank', 'noopener');
+  const url = String(documentoUrl || '').trim();
+  if (url) {
+    window.open(url, '_blank', 'noopener');
     return;
   }
 
   Swal.fire({
-    icon: 'info',
-    title: 'Próximamente',
-    text: 'La constancia para este tipo de trámite estará disponible próximamente.',
+    icon: 'warning',
+    title: 'Documento no escaneado',
+    text: 'No se ha escaneado el documento.',
     confirmButtonColor: '#721832'
   });
 }
@@ -169,8 +169,19 @@ document.addEventListener('click', function(event) {
   const button = event.target.closest('.btn-ver-constancia-predio');
   if (!button) return;
   event.preventDefault();
-  verConstanciaPredio(button.dataset.tramiteId, button.dataset.tipoTramiteId);
+  verConstanciaPredio(button.dataset.tramiteId, button.dataset.documentoUrl);
 });
+
+function botonDocumentoEscaneadoPredio(tramiteId, estatus, documento) {
+  if (!tramiteId || String(estatus || '').trim().toLowerCase() !== 'aprobado') return '';
+
+  const datos = documento && typeof documento === 'object' ? documento : {};
+  const etiqueta = datos.etiqueta || 'Ver constancia';
+  const url = datos.url || '';
+  return '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' +
+    escaparHtmlPredio(tramiteId) + '" data-documento-url="' + escaparHtmlPredio(url) + '"><i class="bi bi-file-earmark-text me-1"></i>' +
+    escaparHtmlPredio(etiqueta) + '</button></div>';
+}
 
 function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
   const cuenta = String(cuentaCatastral || '').trim();
@@ -198,7 +209,6 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
       const texto = String(predio.texto || '').trim();
       const semaforo = obtenerSemaforoEstatus(predio.estatus);
       const tramiteId = Number(predio.tramite_id) || 0;
-      const tipoTramiteId = Number(predio.tipo_tramite_id) || 0;
       const utm = predio.utm_centro_x && predio.utm_centro_y
         ? escaparHtmlPredio(predio.utm_centro_x) + ', ' + escaparHtmlPredio(predio.utm_centro_y)
         : 'No disponible';
@@ -210,7 +220,7 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
         '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
         '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
         (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '') +
-        (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '');
+        botonDocumentoEscaneadoPredio(tramiteId, predio.estatus, predio.documento_escaneado);
 
       layer._sisditStatusStyle = semaforo.estilo;
       layer._sisditStatus = predio.estatus;
@@ -561,7 +571,6 @@ cargaParcelasPromise
       onEachFeature: function(feature, layer) {
         const props = feature.properties || {};
         const tramiteId = Number(props.tramite_id) || 0;
-        const tipoTramiteId = Number(props.tipo_tramite_id) || 0;
         const texto = String(props.texto || '').trim();
         const semaforo = obtenerSemaforoEstatus(props.estatus);
         layer._sisditStatus = props.estatus;
@@ -576,7 +585,7 @@ cargaParcelasPromise
           '<strong>Dibujo:</strong> ' + escaparHtmlPredio(props.origen || 'Verificación') + '<br>' +
           (texto ? '<strong>Texto:</strong> ' + escaparHtmlPredio(texto) + '<br>' : '') +
           '<strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
-          (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '') +
+          botonDocumentoEscaneadoPredio(tramiteId, props.estatus, props.documento_escaneado) +
           '</div>';
         layer.bindPopup(popup);
 
@@ -1003,6 +1012,7 @@ if (folioSalidaNumero) {
   $('#cs_referencia_anterior').val($(this).data('referencia-anterior') || '');
   $('#cs_direccion_constancia').val($(this).data('direccion') || '');
   $('#cs_colonia_constancia').val($(this).data('colonia') || '');
+  $('#cs_cp').val($(this).data('cp') || '');
   $('#cs_entre_calle1').val($(this).data('entre-calle1') || '');
   $('#cs_entre_calle2').val($(this).data('entre-calle2') || '');
   $('#cs_cuenta_catastral').val($(this).data('cuenta-catastral') || '');
@@ -1030,6 +1040,7 @@ function actualizarDatosBotonConstanciaSec(formData) {
   const datos = {
     'direccion': formData.get('direccion_constancia') || '',
     'colonia': formData.get('colonia_constancia') || '',
+    'cp': formData.get('cp') || '',
     'tipo-asignacion': formData.get('tipo_asignacion') || 'ASIGNACION',
     'numero-asignado': formData.get('numero_asignado') || '',
     'referencia-anterior': formData.get('referencia_anterior') || '',
@@ -1191,6 +1202,7 @@ document.querySelectorAll('.btn-firmar-director').forEach(function(btn) {
       fdSalidaEl.className = 'badge bg-secondary fs-6';
     }
     document.getElementById('fd_folio_hidden').value     = d.folio;
+    document.getElementById('fd_tramite_id').value       = d.id || '';
     document.getElementById('fd_propietario').textContent= d.propietario;
     document.getElementById('fd_tramite').textContent    = d.tramite;
     document.getElementById('fd_telefono').textContent   = d.telefono || '—';
@@ -1251,6 +1263,7 @@ document.getElementById('formFirmaDirector').addEventListener('submit', function
 });
 
 document.getElementById('modalFirmaDirector').addEventListener('hidden.bs.modal', function() {
+  document.getElementById('formFirmaDirector').reset();
   if (_pendingNotifFD) setTimeout(function() { _abrirNotifFD(_pendingNotifFD); }, 150);
 });
 
