@@ -1,14 +1,4 @@
 <?php
-// =====================================================
-// ACTUALIZAR ESTATUS DE TRÁMITE
-// Llamado via fetch() POST desde js/verificar.js
-// Permite cambiar estatus, subir fotos y guardar datos de constancia
-// ======================= ==============================
-/**
- * ACTUALIZACIÓN DE TRÁMITES — v3
- * Ruta: php/actualizarTramite.php
- * Llamado vía fetch() POST desde js/verificar.js
- */
 
 // Registrar warnings sin contaminar la respuesta JSON
 error_reporting(E_ALL);
@@ -79,7 +69,9 @@ $fecha_constancia    = trim(isset($_POST['fecha_constancia']) ? $_POST['fecha_co
 $cantidad            = isset($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
 // ID del subtrámite específico (cada fila comparte folio de entrada pero tiene su
 // propio folio de salida, croquis y datos de constancia).
-$tramite_id_post     = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+$tramite_id_post     = isset($_POST['id'])
+    ? (int)$_POST['id']
+    : (isset($_POST['tramite_id']) ? (int)$_POST['tramite_id'] : 0);
 
 // Si es solo constancia, solo necesitamos el folio y los datos de constancia
 if ($solo_constancia) {
@@ -119,7 +111,7 @@ if (!empty($folio)) {
 
 // ── Estatus permitidos (solo validar si no es solo_constancia) ──
 if (!$solo_constancia) {
-    $estatusPermitidos = ['En revisión', 'En Revisión por Validador', 'Aprobado por Verificador', 'Aprobado', 'Rechazado', 'En corrección'];
+    $estatusPermitidos = ['En revisión', 'En Revisión por Validador', 'Pendiente por firmar', 'Firmado', 'Entregado y archivado', 'Rechazado', 'En corrección'];
     if (!in_array($estatus, $estatusPermitidos, true)) {
         echo json_encode(['success' => false, 'message' => 'Estatus no valido: ' . htmlspecialchars($estatus)]);
         exit;
@@ -172,6 +164,32 @@ try {
         $folio = $folio_numero . '/' . $folio_anio;
     }
     $stmtGet->close();
+
+    // El flujo de firma y archivo tiene transiciones y responsables definidos.
+    if (!$solo_constancia) {
+        if ($estatus === 'Pendiente por firmar' && !esVerificador() && !esAdministrador()) {
+            throw new Exception('Solo el verificador puede aprobar y enviar un trámite a firma.');
+        }
+        if ($estatus === 'Firmado') {
+            if (!esVentanilla() && !esAdministrador()) {
+                throw new Exception('Solo Ventanilla puede registrar la firma.');
+            }
+            if ($estatus_anterior !== 'Pendiente por firmar') {
+                throw new Exception('Solo se puede firmar un trámite con estatus Pendiente por firmar.');
+            }
+        }
+        if ($estatus === 'Entregado y archivado') {
+            if (!esVentanilla() && !esAdministrador()) {
+                throw new Exception('Solo Ventanilla puede entregar y archivar el trámite.');
+            }
+            if ($estatus_anterior !== 'Firmado') {
+                throw new Exception('Solo se puede archivar un trámite con estatus Firmado.');
+            }
+            if (!isset($_FILES['documento_firmado']) || $_FILES['documento_firmado']['error'] === UPLOAD_ERR_NO_FILE) {
+                throw new Exception('Debes escanear y adjuntar el documento firmado para archivar el trámite.');
+            }
+        }
+    }
 
     // ── MODO SOLO CONSTANCIA ───────────────────────────────
     // Guarda los datos de la constancia de UN solo subtrámite (por id) y le
@@ -338,8 +356,8 @@ try {
         if (!esVentanilla() && !esAdministrador()) {
             throw new Exception('Sin permisos para cargar el documento firmado.');
         }
-        if ($estatus !== 'Aprobado') {
-            throw new Exception('El documento firmado solo puede adjuntarse al aprobar el trámite.');
+        if ($estatus !== 'Entregado y archivado') {
+            throw new Exception('El documento firmado solo puede adjuntarse al entregar y archivar el trámite.');
         }
 
         $archivoFirmado = $_FILES['documento_firmado'];
@@ -363,7 +381,8 @@ try {
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime = $finfo ? finfo_file($finfo, $archivoFirmado['tmp_name']) : '';
-        if ($finfo) finfo_close($finfo);
+        // El recurso se libera automáticamente al salir de este bloque.
+        // finfo_close() está obsoleto en versiones recientes de PHP.
         if (!in_array($mime, $mimesPermitidos[$extension], true)) {
             throw new Exception('El contenido del documento firmado no corresponde al formato indicado.');
         }
@@ -423,7 +442,12 @@ try {
             aprobado_por       = ?,
             verificador_nombre = ?,
             fecha_aprobacion   = NOW()";
-    if (in_array($estatus, ['Aprobado', 'Rechazado'])) {
+    if ($estatus === 'Firmado') {
+        $sql .= ",
+            aprobado_director = 1,
+            fecha_aprobacion_director = NOW()";
+    }
+    if (in_array($estatus, ['Entregado y archivado', 'Rechazado'], true)) {
         $sql .= ",
             tiempo_salida      = NOW()";
     }
@@ -436,8 +460,8 @@ try {
     ];
     $types = "ssssssssssis";
 
-    // 🔥 CORREGIDO: Solo cuando el Director firma (estatus Aprobado) se guardan los datos de constancia
-    if ($estatus === 'Aprobado' && !empty($numero_asignado)) {
+    // Los datos de constancia quedan consolidados al registrar la firma.
+    if ($estatus === 'Firmado' && !empty($numero_asignado)) {
         $sql .= ",
             numero_asignado     = ?,
             tipo_asignacion     = ?,
@@ -458,13 +482,14 @@ try {
         $params[] = $manzana ?: null;
         $params[] = $lote ?: null;
         $params[] = $fecha_constancia;
-        $types   .= "ssssssss";
+        $types   .= "sssssssss";
     }
 
-    $sql .= " WHERE folio_numero = ? AND folio_anio = ?";
-    $params[] = $folio_numero;
-    $params[] = $folio_anio;
-    $types .= "ii";
+    // Actualizar exactamente el trámite seleccionado. Varios subtrámites pueden
+    // compartir el mismo folio de entrada y no deben cambiar juntos.
+    $sql .= " WHERE id = ?";
+    $params[] = $tramite_id;
+    $types .= "i";
 
     $stmtUp = $conn->prepare($sql);
     if (!$stmtUp) throw new Exception("Error prepare UPDATE: " . $conn->error);
@@ -472,6 +497,18 @@ try {
     $stmtUp->bind_param($types, ...$params);
     if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
     $stmtUp->close();
+
+    // MySQL sin modo estricto puede convertir un valor ajeno al ENUM en una
+    // cadena vacía y aun así reportar éxito. Confirmar que sí quedó persistido.
+    $stmtEstado = $conn->prepare("SELECT estatus FROM tramites WHERE id = ? LIMIT 1");
+    if (!$stmtEstado) throw new Exception("Error al verificar el estatus: " . $conn->error);
+    $stmtEstado->bind_param("i", $tramite_id);
+    if (!$stmtEstado->execute()) throw new Exception("Error al verificar el estatus: " . $stmtEstado->error);
+    $estadoGuardado = $stmtEstado->get_result()->fetch_assoc();
+    $stmtEstado->close();
+    if (!$estadoGuardado || $estadoGuardado['estatus'] !== $estatus) {
+        throw new Exception('El estatus no fue aceptado por la base de datos. Aplica la migración del flujo de firma y archivo.');
+    }
 
     // El escaneo pertenece al tramite/poligono seleccionado, no a todo el grupo del folio.
     if ($documento_firmado_guardado !== null) {
@@ -483,7 +520,7 @@ try {
     }
 
     // -- CREAR REGISTROS ADICIONALES CUANDO SE APRUEBA Y SE ASIGNA NÚMERO --
-    if ($estatus === 'Aprobado' && !empty($numero_asignado)) {
+    if ($estatus === 'Firmado' && !empty($numero_asignado)) {
          // Get current cantidad from database to see if we need to create adicionales
          $stmtCurrent = $conn->prepare("SELECT cantidad FROM tramites WHERE folio_numero = ? AND folio_anio = ?");
          $stmtCurrent->bind_param("ii", $folio_numero, $folio_anio);
@@ -541,7 +578,7 @@ try {
              }
          }
      }
-    if ($estatus === 'Aprobado') {
+    if ($estatus === 'Firmado') {
         $anio_actual = (int) date('Y');
 
         // Recorrer todas las filas del grupo (mismo folio de entrada) sin folio de salida
@@ -592,8 +629,9 @@ try {
     $accionMap = [
         'En revisión'              => 'Modificado',
         'En Revisión por Validador' => 'En Revisión por Validador',
-        'Aprobado por Verificador' => 'Aprobado por Verificador',
-        'Aprobado'                 => 'Aprobado',
+        'Pendiente por firmar'     => 'Pendiente por firmar',
+        'Firmado'                  => 'Firmado',
+        'Entregado y archivado'    => 'Entregado y archivado',
         'Rechazado'                => 'Rechazado',
         'En corrección'            => 'En corrección',
     ];
@@ -669,8 +707,9 @@ try {
     $msgs = [
         'En revisión'              => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) está EN REVISIÓN. Le informaremos novedades. — Dirección de Planeación y D.U.",
         'En Revisión por Validador' => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) está EN REVISIÓN por el Validador. Pronto nos comunicaremos con usted. — Dirección de Planeación y D.U.",
-        'Aprobado por Verificador' => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) fue APROBADO por el verificador y está pendiente de firma del Director. — Dirección de Planeación y D.U.",
-        'Aprobado'                 => "¡Hola $primerNombre! Su trámite *$folio* ($tipoTramite) fue APROBADO y firmado. Puede pasar a recogerlo con esta papeleta. — Dirección de Planeación y D.U.",
+        'Pendiente por firmar'     => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) fue aprobado por el verificador y está PENDIENTE POR FIRMAR. — Dirección de Planeación y D.U.",
+        'Firmado'                  => "¡Hola $primerNombre! Su trámite *$folio* ($tipoTramite) ya fue FIRMADO. Puede pasar a recogerlo con esta papeleta. — Dirección de Planeación y D.U.",
+        'Entregado y archivado'    => "Hola $primerNombre, su trámite *$folio* ($tipoTramite) fue ENTREGADO Y ARCHIVADO. — Dirección de Planeación y D.U.",
         'Rechazado'                => "Hola $primerNombre, lamentamos informarle que su trámite *$folio* ($tipoTramite) fue RECHAZADO." . (!empty($observaciones) ? " Motivo: $observaciones" : " Comuníquese con nosotros.") . " — Dirección de Planeación y D.U.",
         'En corrección'            => (function () use ($primerNombre, $folio, $tipoTramite, $observaciones) {
             $msg = "Hola $primerNombre, su trámite *$folio* ($tipoTramite) requiere CORRECCIÓN para continuar con el proceso.\n";
@@ -696,8 +735,9 @@ try {
     $asuntos = [
         'En revisión'              => "Trámite $folio en Revisión",
         'En Revisión por Validador' => "Trámite $folio — En Revisión por Validador",
-        'Aprobado por Verificador' => "Trámite $folio — Aprobado por Verificador",
-        'Aprobado'                 => "¡Trámite $folio Aprobado!",
+        'Pendiente por firmar'     => "Trámite $folio — Pendiente por firmar",
+        'Firmado'                  => "Trámite $folio — Firmado",
+        'Entregado y archivado'    => "Trámite $folio — Entregado y archivado",
         'Rechazado'                => "Trámite $folio Rechazado",
         'En corrección'            => "Trámite $folio — Corrección requerida",
     ];

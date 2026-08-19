@@ -40,10 +40,7 @@ if (isset($_GET['error'])) {
         'email_invalido' => ['Correo inválido', 'Ingresa una dirección de correo electrónico válida.'],
         'usuario_no_encontrado' => ['Cuenta no encontrada', 'No existe una cuenta con ese correo. Verifica tus datos o solicita una cuenta.'],
         'password_incorrecto' => ['Contraseña incorrecta', 'La contraseña ingresada no coincide con la cuenta.'],
-<<<<<<< HEAD
-=======
         'credenciales_invalidas' => ['Credenciales inválidas', 'El correo o la contraseña no son correctos.'],
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
         'password_invalida' => ['Contraseña inválida', 'La contraseña no cumple los requisitos de seguridad.'],
         'usuario_inactivo' => ['Cuenta inactiva', 'Tu cuenta aún no está activa. Contacta al administrador.'],
         'cuenta_inactiva' => ['Cuenta pendiente', 'Tu cuenta está pendiente de activación por el administrador.'],
@@ -84,12 +81,7 @@ if (isset($_GET['error'])) {
     $alerta = ['tipo' => $tipo, 'titulo' => $titulo, 'mensaje' => $mensaje];
 }
 
-<<<<<<< HEAD
-$enlaceRecuperacion = $_SESSION['recuperar_enlace_mostrar'] ?? null;
-unset($_SESSION['recuperar_enlace_mostrar']);
-=======
 $enlaceRecuperacion = null;
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -944,22 +936,13 @@ $enlaceRecuperacion = null;
                         <div class="campo">
                             <label for="reg_password">Contraseña</label>
                             <div class="campo-control campo-password">
-<<<<<<< HEAD
-                                <input type="password" name="password" id="reg_password" placeholder="8 caracteres exactos"
-                                       minlength="8" maxlength="8" autocomplete="new-password" required>
-=======
                                 <input type="password" name="password" id="reg_password" placeholder="12 caracteres o más"
                                        minlength="12" maxlength="128" autocomplete="new-password" required>
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
                                 <button class="mostrar-password" type="button" data-password="reg_password"
                                         aria-label="Mostrar contraseña">Mostrar</button>
                             </div>
                             <ul class="reglas-password" id="reglasPassword" aria-live="polite">
-<<<<<<< HEAD
-                                <li data-regla="longitud">8 caracteres exactos</li>
-=======
                                 <li data-regla="longitud">12 caracteres o más</li>
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
                                 <li data-regla="mayuscula">Una mayúscula</li>
                                 <li data-regla="minuscula">Una minúscula</li>
                                 <li data-regla="numero">Un número</li>
@@ -1052,11 +1035,7 @@ $enlaceRecuperacion = null;
 
         const passwordRegistro = document.getElementById('reg_password');
         const reglas = {
-<<<<<<< HEAD
-            longitud: valor => valor.length === 8,
-=======
             longitud: valor => valor.length >= 12,
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
             mayuscula: valor => /[A-Z]/.test(valor),
             minuscula: valor => /[a-z]/.test(valor),
             numero: valor => /[0-9]/.test(valor),
@@ -1102,36 +1081,6 @@ $enlaceRecuperacion = null;
                 ? 'La solicitud será revisada por el administrador. Recibirás una notificación cuando tu cuenta sea activada.'
                 : `El rol ${selectRol.value} requiere aprobación del administrador. Recibirás una notificación por WhatsApp o correo.`;
             notaRol.hidden = false;
-<<<<<<< HEAD
-        });
-
-        const dialogo = document.getElementById('dialogoRecuperacion');
-        const correoRecuperacion = document.getElementById('correoRecuperacion');
-        const forgotPassword = document.getElementById('forgotPassword');
-
-        forgotPassword.addEventListener('click', event => {
-            event.preventDefault();
-            const inputCorreo = document.getElementById('login_correo');
-
-            if (!inputCorreo.checkValidity()) {
-                inputCorreo.reportValidity();
-                inputCorreo.focus();
-                return;
-            }
-
-            correoRecuperacion.textContent = inputCorreo.value;
-            dialogo.showModal();
-        });
-
-        document.getElementById('cancelarRecuperacion').addEventListener('click', () => dialogo.close());
-        document.getElementById('confirmarRecuperacion').addEventListener('click', () => {
-            window.location.href = `php/recuperar.php?correo=${encodeURIComponent(document.getElementById('login_correo').value)}`;
-        });
-
-        dialogo.addEventListener('click', event => {
-            if (event.target === dialogo) dialogo.close();
-        });
-=======
         });
 
         const dialogo = document.getElementById('dialogoRecuperacion');
@@ -1173,7 +1122,6 @@ $enlaceRecuperacion = null;
         dialogo.addEventListener('click', event => {
             if (event.target === dialogo) dialogo.close();
         });
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     </script>
 </body>
 </html>

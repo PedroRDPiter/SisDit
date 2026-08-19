@@ -48,7 +48,7 @@ while ($row = $result->fetch_assoc()) {
     $stats['total']++;
 
     if ($row['estatus_actual'] == 'En revisión') $stats['en_revision']++;
-    if ($row['estatus_actual'] == 'Aprobado') $stats['aprobado']++;
+    if (in_array($row['estatus_actual'], ['Aprobado', 'Firmado', 'Entregado y archivado'], true)) $stats['aprobado']++;
     if ($row['estatus_actual'] == 'Rechazado') $stats['rechazado']++;
 }
 
@@ -201,7 +201,7 @@ Rechazados
 
 $color = "secondary";
 if ($t['estatus_actual'] == "En revisión") $color = "warning";
-if ($t['estatus_actual'] == "Aprobado") $color = "success";
+if (in_array($t['estatus_actual'], ['Aprobado', 'Firmado', 'Entregado y archivado'], true)) $color = "success";
 if ($t['estatus_actual'] == "Rechazado") $color = "danger";
 
 ?>

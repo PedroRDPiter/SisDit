@@ -120,7 +120,3 @@
     if (!wrapper.getAttribute('aria-label')) wrapper.setAttribute('aria-label', 'Tabla con desplazamiento horizontal');
   });
 })();
-<<<<<<< HEAD
-=======
-
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3

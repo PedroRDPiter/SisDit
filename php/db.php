@@ -20,7 +20,7 @@ error_reporting(E_ALL);
 $host = getenv('SISDIT_DB_HOST') ?: 'localhost';
 $user = getenv('SISDIT_DB_USER') ?: 'root'; // Compatibilidad local; configurar usuario limitado en produccion.
 $pass = getenv('SISDIT_DB_PASS') ?: '';
-$db   = getenv('SISDIT_DB_NAME') ?: 'sistema_recovery';
+$db   = getenv('SISDIT_DB_NAME') ?: 'sistema';
 
 try {
     $conn = new mysqli($host, $user, $pass, $db);

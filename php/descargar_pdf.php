@@ -48,7 +48,7 @@ if (!$puede_ver) {
 }
 
 // Solo se puede descargar PDF si está aprobado (o si es administrador)
-if ($tramite['estatus'] !== 'Aprobado' && !esAdministrador()) {
+if (!in_array($tramite['estatus'], ['Firmado', 'Entregado y archivado', 'Aprobado'], true) && !esAdministrador()) {
     die("El trámite debe estar aprobado para descargar el PDF");
 }
 

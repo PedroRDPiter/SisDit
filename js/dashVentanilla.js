@@ -114,11 +114,8 @@ let selectedPolygon = null;
 // Variable para almacenar la capa GeoJSON
 let parcelasLayer = null;
 const capasPredios = [];
-<<<<<<< HEAD
 const capasDibujosCroquis = [];
 const cuentasCatastralesBase = new Set();
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 let predioConsultaToken = 0;
 
 function escaparHtmlPredio(valor) {
@@ -130,13 +127,10 @@ function escaparHtmlPredio(valor) {
     .replace(/'/g, '&#039;');
 }
 
-<<<<<<< HEAD
 function normalizarCuentaCatastral(valor) {
   return String(valor ?? '').trim().toUpperCase();
 }
 
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 function limpiarEtiquetaPredio(layer) {
   if (layer && layer._sisditSavedTooltip) {
     layer.unbindTooltip();
@@ -144,14 +138,8 @@ function limpiarEtiquetaPredio(layer) {
   }
 }
 
-<<<<<<< HEAD
 function verConstanciaPredio(tramiteId, documentoUrl) {
   const id = Number(tramiteId) || 0;
-=======
-function verConstanciaPredio(tramiteId, tipoTramiteId) {
-  const id = Number(tramiteId) || 0;
-  const tipoId = Number(tipoTramiteId) || 0;
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 
   if (!id) {
     Swal.fire({
@@ -163,27 +151,16 @@ function verConstanciaPredio(tramiteId, tipoTramiteId) {
     return;
   }
 
-<<<<<<< HEAD
   const url = String(documentoUrl || '').trim();
   if (url) {
     window.open(url, '_blank', 'noopener');
-=======
-  if (tipoId === 1) {
-    window.open('constancia_numero.php?id=' + encodeURIComponent(id), '_blank', 'noopener');
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     return;
   }
 
   Swal.fire({
-<<<<<<< HEAD
     icon: 'warning',
     title: 'Documento no escaneado',
     text: 'No se ha escaneado el documento.',
-=======
-    icon: 'info',
-    title: 'Próximamente',
-    text: 'La constancia para este tipo de trámite estará disponible próximamente.',
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     confirmButtonColor: '#721832'
   });
 }
@@ -192,12 +169,11 @@ document.addEventListener('click', function(event) {
   const button = event.target.closest('.btn-ver-constancia-predio');
   if (!button) return;
   event.preventDefault();
-<<<<<<< HEAD
   verConstanciaPredio(button.dataset.tramiteId, button.dataset.documentoUrl);
 });
 
 function botonDocumentoEscaneadoPredio(tramiteId, estatus, documento) {
-  if (!tramiteId || String(estatus || '').trim().toLowerCase() !== 'aprobado') return '';
+  if (!tramiteId || normalizarEstatusPredio(estatus) !== 'entregado y archivado') return '';
 
   const datos = documento && typeof documento === 'object' ? documento : {};
   const etiqueta = datos.etiqueta || 'Ver constancia';
@@ -207,11 +183,6 @@ function botonDocumentoEscaneadoPredio(tramiteId, estatus, documento) {
     escaparHtmlPredio(etiqueta) + '</button></div>';
 }
 
-=======
-  verConstanciaPredio(button.dataset.tramiteId, button.dataset.tipoTramiteId);
-});
-
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
   const cuenta = String(cuentaCatastral || '').trim();
   const token = ++predioConsultaToken;
@@ -238,10 +209,6 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
       const texto = String(predio.texto || '').trim();
       const semaforo = obtenerSemaforoEstatus(predio.estatus);
       const tramiteId = Number(predio.tramite_id) || 0;
-<<<<<<< HEAD
-=======
-      const tipoTramiteId = Number(predio.tipo_tramite_id) || 0;
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
       const utm = predio.utm_centro_x && predio.utm_centro_y
         ? escaparHtmlPredio(predio.utm_centro_x) + ', ' + escaparHtmlPredio(predio.utm_centro_y)
         : 'No disponible';
@@ -253,11 +220,7 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
         '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
         '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
         (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '') +
-<<<<<<< HEAD
         botonDocumentoEscaneadoPredio(tramiteId, predio.estatus, predio.documento_escaneado);
-=======
-        (tramiteId ? '<div class="d-grid mt-2"><button type="button" class="btn btn-sm btn-primary btn-ver-constancia-predio" data-tramite-id="' + tramiteId + '" data-tipo-tramite-id="' + tipoTramiteId + '"><i class="bi bi-file-earmark-text me-1"></i>Ver constancia</button></div>' : '');
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 
       layer._sisditStatusStyle = semaforo.estilo;
       layer._sisditStatus = predio.estatus;
@@ -315,16 +278,16 @@ function obtenerSemaforoEstatus(estatus) {
       estilo: { color: '#984c0c', weight: 4, opacity: 1, fillColor: '#fd7e14', fillOpacity: 0.62 }
     };
   }
-  if (valor === 'aprobado por verificador') {
+  if (valor === 'pendiente por firmar') {
     return {
-      etiqueta: 'Aprobado por Verificador',
+      etiqueta: 'Pendiente por firmar',
       color: '#ffc107',
       estilo: { color: '#856404', weight: 4, opacity: 1, fillColor: '#ffc107', fillOpacity: 0.62 }
     };
   }
-  if (valor === 'aprobado') {
+  if (valor === 'firmado' || valor === 'entregado y archivado') {
     return {
-      etiqueta: 'Aprobado',
+      etiqueta: valor === 'firmado' ? 'Firmado' : 'Entregado y archivado',
       color: '#198754',
       estilo: { color: '#0f5132', weight: 4, opacity: 1, fillColor: '#198754', fillOpacity: 0.58 }
     };
@@ -354,20 +317,17 @@ function obtenerClaveFiltroEstatus(estatus) {
 const filtrosEstatusPredio = new Set([
   'cancelado',
   'en revision',
-  'aprobado por verificador',
-  'aprobado'
+  'pendiente por firmar',
+  'firmado',
+  'entregado y archivado'
 ]);
 
 function aplicarFiltrosEstatusPredios() {
   if (!parcelasLayer) return;
 
-<<<<<<< HEAD
   capasPredios.concat(capasDibujosCroquis).forEach(layer => {
-=======
-  capasPredios.forEach(layer => {
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     const estatus = obtenerClaveFiltroEstatus(layer._sisditStatus);
-    const tieneFiltro = ['cancelado', 'en revision', 'aprobado por verificador', 'aprobado'].includes(estatus);
+    const tieneFiltro = ['cancelado', 'en revision', 'pendiente por firmar', 'firmado', 'entregado y archivado'].includes(estatus);
     const visible = !tieneFiltro || filtrosEstatusPredio.has(estatus);
     const estaEnCapa = parcelasLayer.hasLayer(layer);
 
@@ -418,8 +378,9 @@ function actualizarConteosSemaforo(resumen) {
   const asignaciones = {
     'conteo-estatus-cancelado': (resumen['Cancelado'] || resumen['cancelado'] || 0) + (resumen['Rechazado'] || 0),
     'conteo-estatus-revision': resumen['En revisión'] || 0,
-    'conteo-estatus-verificador': resumen['Aprobado por Verificador'] || 0,
-    'conteo-estatus-aprobado': resumen['Aprobado'] || 0
+    'conteo-estatus-verificador': resumen['Pendiente por firmar'] || 0,
+    'conteo-estatus-firmado': resumen['Firmado'] || 0,
+    'conteo-estatus-archivado': resumen['Entregado y archivado'] || 0
   };
 
   Object.keys(asignaciones).forEach(id => {
@@ -440,8 +401,9 @@ leyendaSemaforo.onAdd = function() {
     '<strong>Estatus del predio</strong><br>' +
     '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="cancelado" checked> <span style="color:#dc3545">●</span> Cancelado (<strong id="conteo-estatus-cancelado">0</strong>)</label>' +
     '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="en revision" checked> <span style="color:#fd7e14">●</span> En revisión (<strong id="conteo-estatus-revision">0</strong>)</label>' +
-    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="aprobado por verificador" checked> <span style="color:#ffc107">●</span> Aprobado por Verificador (<strong id="conteo-estatus-verificador">0</strong>)</label>' +
-    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="aprobado" checked> <span style="color:#198754">●</span> Aprobado (<strong id="conteo-estatus-aprobado">0</strong>)</label>';
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="pendiente por firmar" checked> <span style="color:#ffc107">●</span> Pendiente por firmar (<strong id="conteo-estatus-verificador">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="firmado" checked> <span style="color:#198754">●</span> Firmado (<strong id="conteo-estatus-firmado">0</strong>)</label>' +
+    '<label style="display:block;cursor:pointer"><input class="filtro-estatus-predio" type="checkbox" value="entregado y archivado" checked> <span style="color:#198754">●</span> Entregado y archivado (<strong id="conteo-estatus-archivado">0</strong>)</label>';
   L.DomEvent.disableClickPropagation(div);
   L.DomEvent.disableScrollPropagation(div);
   div.querySelectorAll('.filtro-estatus-predio').forEach(input => {
@@ -574,18 +536,12 @@ const cargaParcelasPromise = fetch('./Geojson/TRAMITES_reprojected.geojson')
     }).addTo(map);
 
     // Agregar a overlays
-<<<<<<< HEAD
     overlays["Predios y verificación"] = parcelasLayer;
     layerControl.addOverlay(parcelasLayer, "Predios y verificación");
-=======
-    overlays["Poligonos"] = parcelasLayer;
-    layerControl.addOverlay(parcelasLayer, "Poligonos");
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     cargarSemaforoPredios();
   })
   .catch(error => console.error('Error cargando GeoJSON de parcelas:', error));
 
-<<<<<<< HEAD
 function estiloDibujoCroquis(feature) {
   const origen = normalizarEstatusPredio(feature?.properties?.origen);
   if (origen === 'subdivision') {
@@ -666,8 +622,6 @@ cargaParcelasPromise
   })
   .catch(error => console.warn('No se pudieron cargar los dibujos de verificación:', error));
 
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
 // ── MAYÚSCULAS ──
 document.querySelectorAll('.mayusculas').forEach(i=>{
   i.addEventListener('input',function(){
@@ -1256,37 +1210,23 @@ document.querySelectorAll('.btn-firmar-director').forEach(function(btn) {
     document.getElementById('fd_tramite').textContent    = d.tramite;
     document.getElementById('fd_telefono').textContent   = d.telefono || '—';
     document.getElementById('fd_tipo_tramite_id').value  = d.tipoTramiteId || '';
-    document.getElementById('fd_observaciones').value    = '';
-    document.getElementById('fd_btn_ficha').href         = 'ficha.php?folio=' + d.folio;
-    // Limpiar radios
-    document.getElementById('rdAprobado').checked  = false;
-    document.getElementById('rdRechazado').checked = false;
   });
 });
 
-// ── Envío resolución Director ──
+// ── Registrar firma ──
 var _pendingNotifFD = null;
 
 document.getElementById('formFirmaDirector').addEventListener('submit', function(e) {
   e.preventDefault();
 
-  var estatusSeleccionado = document.querySelector('input[name="estatus"]:checked');
-  if (!estatusSeleccionado) {
-    Swal.fire({icon:'warning', title:'Selecciona una resolución', text:'Debes elegir Aprobado o Rechazado.'});
-    return;
-  }
-
-  var estatus = estatusSeleccionado.value;
-  var etiqueta = estatus === 'Aprobado' ? '✅ Aprobado — firmado por el Director' : '❌ Rechazado';
-
   Swal.fire({
-    title: '¿Confirmar resolución?',
-    html: 'Resolución: <strong>' + etiqueta + '</strong>',
+    title: '¿Confirmar firma?',
+    html: 'El trámite cambiará a <strong>Firmado</strong>.',
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'Sí, guardar',
+    confirmButtonText: 'Sí, aceptar',
     cancelButtonText: 'Cancelar',
-    confirmButtonColor: estatus === 'Aprobado' ? '#198754' : '#dc3545',
+    confirmButtonColor: '#198754',
     cancelButtonColor: '#6c757d'
   }).then(function(result) {
     if (!result.isConfirmed) return;
@@ -1314,6 +1254,62 @@ document.getElementById('formFirmaDirector').addEventListener('submit', function
 document.getElementById('modalFirmaDirector').addEventListener('hidden.bs.modal', function() {
   document.getElementById('formFirmaDirector').reset();
   if (_pendingNotifFD) setTimeout(function() { _abrirNotifFD(_pendingNotifFD); }, 150);
+});
+
+// ── Entregar y archivar: el escaneo firmado es obligatorio ──
+document.querySelectorAll('.btn-entregar-archivar').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var d = btn.dataset;
+    document.getElementById('ea_tramite_id').value = d.id || '';
+    document.getElementById('ea_folio_hidden').value = d.folio || '';
+    document.getElementById('ea_folio').textContent = d.folio || '—';
+    document.getElementById('ea_propietario').textContent = d.propietario || '—';
+    document.getElementById('ea_tramite').textContent = d.tramite || '—';
+    document.getElementById('ea_documento_firmado').value = '';
+  });
+});
+
+document.getElementById('formEntregarArchivar')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  var archivo = document.getElementById('ea_documento_firmado');
+  if (!archivo.files || !archivo.files.length) {
+    Swal.fire({icon:'warning', title:'Falta el documento', text:'Escanea y adjunta el documento firmado para archivar.'});
+    return;
+  }
+
+  Swal.fire({
+    title: '¿Entregar y archivar?',
+    text: 'Esta acción finalizará el trámite.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, archivar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#212529'
+  }).then(function(result) {
+    if (!result.isConfirmed) return;
+
+    fetch('php/actualizarTramite.php', {
+      method: 'POST',
+      body: new FormData(form),
+      credentials: 'same-origin'
+    })
+    .then(function(r) {
+      return r.json().then(function(data) {
+        if (!r.ok) throw new Error(data.message || 'No se pudo archivar el trámite.');
+        return data;
+      });
+    })
+    .then(function(data) {
+      if (!data.success) throw new Error(data.message || 'No se pudo archivar el trámite.');
+      bootstrap.Modal.getInstance(document.getElementById('modalEntregarArchivar')).hide();
+      Swal.fire({icon:'success', title:'Trámite archivado', text:'El documento fue guardado y el trámite quedó finalizado.'})
+        .then(function() { window.location.reload(); });
+    })
+    .catch(function(err) {
+      Swal.fire({icon:'error', title:'Error', text: err.message});
+    });
+  });
 });
 
 function _abrirNotifFD(data) {
@@ -1883,18 +1879,18 @@ function mostrarAlertaNumerosOficiales() {
 
     if (typeof estatus_verificador !== 'undefined' && estatus_verificador !== null) {
         estatusVerificador = String(estatus_verificador).trim();
-    } else if (document.getElementById('Aprobado por Verificador')) {
-        estatusVerificador = String(document.getElementById('Aprobado por Verificador').value || document.getElementById('Aprobado por Verificador').textContent).trim();
+    } else if (document.getElementById('Pendiente por firmar')) {
+        estatusVerificador = String(document.getElementById('Pendiente por firmar').value || document.getElementById('Pendiente por firmar').textContent).trim();
     } else if (document.body.dataset.estatusVerificador) {
         estatusVerificador = String(document.body.dataset.estatusVerificador).trim();
     }
 
     if (!Number.isNaN(numeroOficial) && numeroOficial > 0 &&
-        estatusVerificador && estatusVerificador.toLowerCase().includes('aprob')) {
+        estatusVerificador && estatusVerificador.toLowerCase().includes('pendiente por firmar')) {
         Swal.fire({
             icon: 'info',
             title: 'Constancias por firmar',
-            text: 'faltan numeros oficiales por firmar y aprobar',
+            text: 'Faltan números oficiales por firmar.',
             confirmButtonColor: '#7b0f2b'
         });
     }

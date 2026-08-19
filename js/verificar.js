@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'En revision':              'El trámite continúa en proceso de revisión.',
         'En Revisión por Validador': 'El trámite está listo para ser revisado por el Validador.',
         'En correccion':            'Se notificará al ciudadano que debe corregir su expediente.',
-        'Aprobado por Verificador': 'El trámite pasará a la Ventanilla para firma final del Director.',
+        'Pendiente por firmar':     'El trámite pasará a Ventanilla con estatus Pendiente por firmar.',
         'Rechazado':                'El trámite se rechaza definitivamente.'
     };
 

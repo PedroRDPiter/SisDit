@@ -4,6 +4,7 @@
 /uploads/*
 !/uploads/.htaccess
 /logs/
+/backups/
 /*.log
 /*.sql
 
@@ -16,3 +17,7 @@
 /temp_*.php
 /*migrate*.php
 /php/*migrate*.php
+
+# Migración versionada del flujo de firma y archivo
+!/migrate_flujo_firma_archivo.sql
+!/php/migrate_flujo_firma_archivo.php

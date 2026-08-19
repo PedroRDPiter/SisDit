@@ -39,7 +39,7 @@ $total_global = (int)$totals['total_global'];
 $reporte_mes = $conn->query("
     SELECT MONTH(fecha_ingreso) AS mes,
            COUNT(*) AS total,
-           SUM(estatus='Aprobado') AS aprobados,
+           SUM(estatus IN ('Aprobado','Entregado y archivado')) AS aprobados,
            SUM(estatus='En revisión') AS en_revision,
            SUM(estatus='En corrección') AS en_correccion,
            SUM(estatus='Rechazado') AS rechazados
@@ -53,7 +53,7 @@ while ($r = $reporte_mes->fetch_assoc()) $datos_mes[(int)$r['mes']] = $r;
 
 $reporte_tipo = $conn->query("
     SELECT tt.nombre AS tipo, COUNT(*) AS total,
-           SUM(t.estatus='Aprobado') AS aprobados,
+           SUM(t.estatus IN ('Aprobado','Entregado y archivado')) AS aprobados,
            SUM(t.estatus='Rechazado') AS rechazados
     FROM tramites t
     LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
@@ -63,36 +63,36 @@ $reporte_tipo = $conn->query("
 ");
 $datos_tipo = [];
 while ($r = $reporte_tipo->fetch_assoc()) $datos_tipo[] = $r;
-$total_aprobados_v = $conn->query("SELECT COUNT(*) as c FROM tramites WHERE estatus = 'Aprobado por Verificador'")->fetch_assoc()['c'];
+$total_aprobados_v = $conn->query("SELECT COUNT(*) as c FROM tramites WHERE estatus = 'Pendiente por firmar'")->fetch_assoc()['c'];
 
 // ── Configuración del sistema (para formato de constancia) ──
 $cfg = [];
 $resCfg = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 while ($rowCfg = $resCfg->fetch_assoc()) $cfg[$rowCfg['clave']] = $rowCfg['valor'];
 
-// ── Trámites aprobados por verificador (pendientes de firma del Director) ──
+// ── Trámites aprobados por verificador (pendientes de firma) ──
 $aprobados_ver_res = $conn->query("
     SELECT t.*, tt.nombre AS tipo_tramite_nombre
     FROM tramites t
     LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-    WHERE t.estatus = 'Aprobado por Verificador'
+    WHERE t.estatus = 'Pendiente por firmar'
     ORDER BY t.updated_at ASC
 ");
 
 // ── Números oficiales pendientes por firmar (tipo_tramite_id = 1) ──
 $numeros_oficiales_pendientes = $conn->query("
     SELECT COUNT(*) as c FROM tramites 
-    WHERE estatus = 'Aprobado por Verificador' 
+    WHERE estatus = 'Pendiente por firmar'
     AND tipo_tramite_id = 1
 ")->fetch_assoc()['c'];
 
-// ── Trámites firmados por el Director (ya aprobados) ──
+// ── Trámites firmados, pendientes de entrega y archivo ──
 $tramites_firmados_res = $conn->query("
     SELECT t.*, tt.nombre AS tipo_tramite_nombre,
            CONCAT(LPAD(t.folio_numero,3,'0'),'/',t.folio_anio) AS folio_formateado
     FROM tramites t
     LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-    WHERE t.estatus = 'Aprobado'
+    WHERE t.estatus = 'Firmado'
     ORDER BY t.fecha_aprobacion DESC
 ");
 
@@ -105,6 +105,8 @@ $stmtF->bind_result($siguiente_folio);
 $stmtF->fetch();
 $stmtF->close();
 $siguiente_folio = str_pad($siguiente_folio, 3, "0", STR_PAD_LEFT);
+$lote = isset($_GET['lote']) ? trim((string)$_GET['lote']) : '';
+$manzana = isset($_GET['manzana']) ? trim((string)$_GET['manzana']) : '';
 
 // ── Trámites en corrección ──
 $correccion_res = $conn->query("
@@ -464,7 +466,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
     document.addEventListener('DOMContentLoaded', function() {
         Swal.fire({
             title: '¡Atención!',
-            text: 'Faltan números oficiales por firmar y aprobar — Hay <?= $total_aprobados_v ?> trámite(s) de Constancia de Número Oficial con estatus "Aprobado por Verificador".',
+            text: 'Hay <?= $total_aprobados_v ?> trámite(s) con estatus "Pendiente por firmar".',
             icon: 'warning',
             confirmButtonText: 'Entendido',
             confirmButtonColor: '#7b0f2b',
@@ -476,18 +478,18 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
 <?php endif; ?>
 
 <!-- ================================================ -->
-<!-- FIRMA DEL DIRECTOR / RESOLUCIÓN FINAL           -->
+<!-- FIRMA DEL DIRECTOR                              -->
 <!-- ================================================ -->
 <section id="firma-director" class="tramite-box mb-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="m-0" style="color:#7b0f2b;">
-      <i class="bi bi-pen me-2"></i>Aprobados por Verificador — Firma del Director
+      <i class="bi bi-pen me-2"></i>Pendientes por firmar
     </h4>
     <span class="badge bg-info text-dark fs-6"><?= $aprobados_ver_res->num_rows ?></span>
   </div>
   <div class="alert alert-info py-2 mb-3" style="font-size:.85rem;">
     <i class="bi bi-info-circle-fill me-2"></i>
-    Estos trámites fueron revisados y aprobados por el verificador. La ventanilla registra aquí si el Director los <strong>firma (Aprobado)</strong> o los <strong>Rechaza</strong>.
+    Estos trámites fueron aprobados por el verificador. Ventanilla únicamente registra la <strong>firma</strong>.
   </div>
 
   <?php if($aprobados_ver_res->num_rows === 0): ?>
@@ -507,7 +509,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
           <th style="background:#7b0f2b;color:#fff;">Teléfono</th>
           <th style="background:#7b0f2b;color:#fff;">Verificador</th>
           <th style="background:#7b0f2b;color:#fff;">Fecha Aprobación</th>
-          <th style="background:#7b0f2b;color:#fff;text-align:center;">Resolución</th>
+          <th style="background:#7b0f2b;color:#fff;text-align:center;">Firmar</th>
         </tr>
       </thead>
       <tbody>
@@ -593,7 +595,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             data-tipo-tramite-id="<?= (int)$av['tipo_tramite_id'] ?>"
             title="Registrar firma del Director"
             data-bs-toggle="modal" data-bs-target="#modalFirmaDirector">
-            <i class="bi bi-pen me-1"></i>Resolución
+            <i class="bi bi-pen me-1"></i>Firmar
           </button>
         </td>
       </tr>
@@ -604,12 +606,12 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
   <?php endif; ?>
 </section>
 
-<!-- MODAL: RESOLUCIÓN DEL DIRECTOR -->
+<!-- MODAL 1: REGISTRAR FIRMA -->
 <div class="modal fade" id="modalFirmaDirector" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content shadow">
       <div class="modal-header text-white" style="background:#7b0f2b;">
-        <h5 class="modal-title"><i class="bi bi-pen me-2"></i>Resolución del Director</h5>
+        <h5 class="modal-title"><i class="bi bi-pen me-2"></i>Firmar trámite</h5>
         <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -620,6 +622,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <input type="hidden" name="id" id="fd_tramite_id">
           <input type="hidden" name="verificador_nombre" value="VENTANILLA">
           <input type="hidden" name="tipo_tramite_id" id="fd_tipo_tramite_id">
+          <input type="hidden" name="estatus" value="Firmado">
 
           <!-- Info del trámite -->
           <div class="alert alert-light border mb-3 py-2">
@@ -630,53 +633,15 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             <p class="mb-0"><strong>Teléfono:</strong> <span id="fd_telefono"></span></p>
           </div>
 
-          <!-- Selección de resolución -->
-          <div class="mb-3">
-            <label class="fw-bold mb-2">Resolución del Director:</label>
-            <div class="d-flex gap-3">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="estatus" id="rdAprobado"
-                       value="Aprobado" required>
-                <label class="form-check-label fw-semibold text-success" for="rdAprobado">
-                  <i class="bi bi-check-circle-fill me-1"></i>Aprobado — firmado por el Director
-                </label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="estatus" id="rdRechazado"
-                       value="Rechazado">
-                <label class="form-check-label fw-semibold text-danger" for="rdRechazado">
-                  <i class="bi bi-x-circle-fill me-1"></i>Rechazado
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Observaciones / motivo -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">
-              <i class="bi bi-chat-left-text me-1"></i>Observaciones / Motivo de rechazo (opcional):
-            </label>
-            <textarea name="observaciones" id="fd_observaciones" class="form-control form-control-sm" rows="3"
-              placeholder="Ej: El Director firmó el día de hoy / Rechazado por documentación incompleta..."></textarea>
-          </div>
-
-          <div class="mb-3">
-            <label for="fd_documento_firmado" class="form-label fw-semibold">
-              <i class="bi bi-file-earmark-arrow-up me-1"></i>Documento firmado y escaneado
-            </label>
-            <input type="file" name="documento_firmado" id="fd_documento_firmado"
-              class="form-control" accept=".pdf,.jpg,.jpeg,.png">
-            <div class="form-text">Adjunta la constancia o licencia firmada. Formatos permitidos: PDF, JPG o PNG (máximo 10 MB).</div>
+          <div class="alert alert-success mb-0">
+            <i class="bi bi-check-circle-fill me-2"></i>Al aceptar, el trámite cambiará a <strong>Firmado</strong>.
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <a id="fd_btn_ficha" href="#" target="_blank" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-printer me-1"></i>Ver Ficha
-        </a>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="submit" form="formFirmaDirector" class="btn btn-primary">
-          <i class="bi bi-save me-1"></i>Guardar Resolución
+          <i class="bi bi-check-lg me-1"></i>Aceptar
         </button>
       </div>
     </div>
@@ -882,7 +847,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           AVG(TIME_TO_SEC(TIME(COALESCE(tiempo_salida,fecha_aprobacion)))) AS avg_salida_secs
         FROM tramites t
         WHERE t.tipo_tramite_id=? 
-          AND t.estatus='Aprobado'
+          AND t.estatus IN ('Aprobado','Entregado y archivado')
           AND COALESCE(tiempo_ingreso,created_at) IS NOT NULL 
           AND COALESCE(tiempo_salida,fecha_aprobacion) IS NOT NULL
       ");
@@ -1011,6 +976,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <span><?= $siguiente_folio ?></span><span>/<?= $anio_actual ?></span>
           <input type="hidden" name="folio_numero" value="<?= $siguiente_folio ?>">
           <input type="hidden" name="folio_anio" value="<?= $anio_actual ?>">
+
         </div>
       </div>
 
@@ -1070,10 +1036,18 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)">
         </div>
         <div class="col-12 col-sm-6 col-md-3 mb-3">
+          <label class="form-label" for="lote">Lote</label>
+          <input type="text" class="form-control" id="lote" name="lote" value="<?= $lote ?>" required>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3 mb-3">
+          <label class="form-label" for="manzana">Manzana</label>
+          <input type="text" class="form-control" id="manzana" name="manzana" value="<?= $manzana ?>" required>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3 mb-3">
           <label class="form-label">Superficie</label>
           <input type="text" class="form-control" name="superficie" placeholder="Ej: 200 m2">
         </div>
-        <div class="col-12 col-sm-6 col-md-3 mb-3">
+        <div class="col-12 col-sm-6 col-md-6 mb-3">
           <label class="form-label">Cuenta Catastral <span class="badge bg-success ms-1" style="font-size:.65rem;">Auto</span></label>
           <div class="input-group">
             <input type="text" class="form-control" name="cuenta_catastral" id="cuenta_catastral"
@@ -1312,8 +1286,9 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <option value="todos">Todos los estatus</option>
           <option value="En revisión">En revisión</option>
           <option value="En Revisión por Validador">En Revisión por Validador</option>
-          <option value="Aprobado por Verificador">Aprobado por Verificador</option>
-          <option value="Aprobado">Aprobado</option>
+          <option value="Pendiente por firmar">Pendiente por firmar</option>
+          <option value="Firmado">Firmado</option>
+          <option value="Entregado y archivado">Entregado y archivado</option>
           <option value="Rechazado">Rechazado</option>
         </select>
       <button type="button" class="btn btn-sm btn-outline-primary" onclick="centrarMapa()" aria-label="Centrar mapa en el municipio">
@@ -1457,7 +1432,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         <label class="form-label fw-semibold"><i class="bi bi-flag me-1"></i>Estatus</label>
         <select name="estatus" class="form-select">
           <option value="">Todos</option>
-          <?php foreach(['En revisión','En Revisión por Validador','Aprobado por Verificador','Aprobado','Rechazado','En corrección'] as $es): 
+          <?php foreach(['En revisión','En Revisión por Validador','Pendiente por firmar','Firmado','Entregado y archivado','Rechazado','En corrección'] as $es):
             $sel = (isset($_GET['estatus']) && $_GET['estatus'] === $es) ? 'selected' : '';
           ?>
           <option value="<?= $es ?>" <?= $sel ?>><?= $es ?></option>
@@ -1509,8 +1484,9 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         $fecha       = date('d/m/Y', strtotime($t['created_at']));
         if ($estatus === 'En revisión')              $badge = 'bg-warning text-dark';
         elseif ($estatus === 'En Revisión por Validador') $badge = 'bg-secondary';
-        elseif ($estatus === 'Aprobado por Verificador') $badge = 'bg-info text-dark';
-        elseif ($estatus === 'Aprobado')             $badge = 'bg-success';
+        elseif ($estatus === 'Pendiente por firmar') $badge = 'bg-info text-dark';
+        elseif ($estatus === 'Firmado')              $badge = 'bg-success';
+        elseif ($estatus === 'Entregado y archivado') $badge = 'bg-dark';
         elseif ($estatus === 'Rechazado')            $badge = 'bg-danger';
         elseif ($estatus === 'En corrección')        $badge = 'bg-primary';
         else                                         $badge = 'bg-secondary';
@@ -1536,14 +1512,14 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
 
 
 <!-- ================================================ -->
-<!-- TRÁMITES APROBADOS (REIMPRESIÓN)                -->
+<!-- TRÁMITES FIRMADOS PENDIENTES DE ARCHIVO         -->
 <!-- ================================================ -->
 <section id="tramites-aprobados" class="tramite-box mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="text-success m-0"><i class="bi bi-check-circle-fill"></i> Trámites Aprobados — Imprimir Constancia</h4>
-        <span class="badge bg-success fs-6"><?= $tramites_firmados_res->num_rows ?> aprobados</span>
+        <h4 class="text-success m-0"><i class="bi bi-check-circle-fill"></i> Trámites firmados</h4>
+        <span class="badge bg-success fs-6"><?= $tramites_firmados_res->num_rows ?> firmados</span>
     </div>
-    <p class="text-muted small mb-3"><i class="bi bi-info-circle"></i> Haz clic en <strong>Imprimir</strong> para abrir la constancia lista para firmar y entregar al solicitante.</p>
+    <p class="text-muted small mb-3"><i class="bi bi-info-circle"></i> Entrega el documento al solicitante y después escanéalo para finalizar y archivar el trámite.</p>
 
     <div class="table-responsive">
         <table id="tablaAprobadosSec" class="table table-bordered table-hover">
@@ -1557,7 +1533,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                     <th style="background:#1a6e35;color:#fff;">Dirección</th>
                     <th style="background:#1a6e35;color:#fff;">Número Asignado</th>
                     <th style="background:#1a6e35;color:#fff;">Fecha Aprobación</th>
-                    <th style="background:#1a6e35;color:#fff; text-align:center;">Constancia</th>
+                    <th style="background:#1a6e35;color:#fff; text-align:center;">Acción</th>
                 </tr>
             </thead>
             <tbody>
@@ -1565,7 +1541,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                 <tr>
                     <td colspan="10" class="text-center text-muted py-4">
                         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                        No hay trámites aprobados aún.
+                        No hay trámites firmados pendientes de archivo.
                     </td>
                 </tr>
                 <?php else: ?>
@@ -1586,31 +1562,14 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
                     <td><?php echo htmlspecialchars($tr['numero_asignado'] ?? '—'); ?></td>
                     <td><?php echo $tr['fecha_aprobacion'] ? date('d/m/Y', strtotime($tr['fecha_aprobacion'])) : '—'; ?></td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-success btn-constancia-sec"
+                        <button class="btn btn-sm btn-dark btn-entregar-archivar"
                             data-id="<?php echo (int)$tr['id']; ?>"
                             data-folio="<?php echo $folio_ing; ?>"
-                            data-folio-salida-numero="<?php echo $tr['folio_salida_numero'] ?? ''; ?>"
-                            data-folio-salida-anio="<?php echo $tr['folio_salida_anio'] ?? ''; ?>"
                             data-propietario="<?php echo htmlspecialchars($tr['propietario']); ?>"
-                            data-direccion="<?php echo htmlspecialchars($tr['direccion'] ?? ''); ?>"
-                            data-colonia="<?php echo htmlspecialchars($tr['colonia'] ?? ''); ?>"
-                            data-cp="<?php echo htmlspecialchars($tr['cp'] ?? ''); ?>"
-                            data-numero="<?php echo htmlspecialchars($tr['numero'] ?? ''); ?>"
-                            data-localidad="<?php echo htmlspecialchars($tr['localidad'] ?? ''); ?>"
-                            data-tipo-asignacion="<?php echo htmlspecialchars($tr['tipo_asignacion'] ?? 'ASIGNACION'); ?>"
-                            data-numero-asignado="<?php echo htmlspecialchars($tr['numero_asignado'] ?? ''); ?>"
-                            data-referencia-anterior="<?php echo htmlspecialchars($tr['referencia_anterior'] ?? ''); ?>"
-                            data-entre-calle1="<?php echo htmlspecialchars($tr['entre_calle1'] ?? ''); ?>"
-                            data-entre-calle2="<?php echo htmlspecialchars($tr['entre_calle2'] ?? ''); ?>"
-                            data-manzana="<?php echo htmlspecialchars($tr['manzana'] ?? ''); ?>"
-                            data-lote="<?php echo htmlspecialchars($tr['lote'] ?? ''); ?>"
-                            data-fecha-constancia="<?php echo htmlspecialchars($tr['fecha_constancia'] ?? date('Y-m-d')); ?>"
-                            data-cuenta-catastral="<?php echo htmlspecialchars($tr['cuenta_catastral'] ?? ''); ?>"
-                            data-superficie="<?php echo htmlspecialchars($tr['superficie'] ?? ''); ?>"
-                            data-croquis="<?php echo htmlspecialchars($tr['croquis_archivo'] ?? ''); ?>"
-                            data-bs-toggle="modal" data-bs-target="#modalConstanciaSec"
-                            title="Reimprimir constancia">
-                            <i class="bi bi-printer me-1"></i>Imprimir
+                            data-tramite="<?php echo htmlspecialchars($tr['tipo_tramite_nombre'] ?? '—'); ?>"
+                            data-bs-toggle="modal" data-bs-target="#modalEntregarArchivar"
+                            title="Entregar y archivar trámite">
+                            <i class="bi bi-archive me-1"></i>Entregar y archivar
                         </button>
                     </td>
                 </tr>
@@ -1620,6 +1579,42 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         </table>
     </div>
 </section>
+
+<!-- MODAL 2: ENTREGAR Y ARCHIVAR -->
+<div class="modal fade" id="modalEntregarArchivar" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow">
+      <div class="modal-header text-white bg-dark">
+        <h5 class="modal-title"><i class="bi bi-archive me-2"></i>Entregar y archivar</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formEntregarArchivar" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="<?= generarCSRF() ?>">
+          <input type="hidden" name="folio" id="ea_folio_hidden">
+          <input type="hidden" name="id" id="ea_tramite_id">
+          <input type="hidden" name="estatus" value="Entregado y archivado">
+          <input type="hidden" name="verificador_nombre" value="VENTANILLA">
+          <div class="alert alert-light border">
+            <p class="mb-1"><strong>Folio:</strong> <span id="ea_folio"></span></p>
+            <p class="mb-1"><strong>Propietario:</strong> <span id="ea_propietario"></span></p>
+            <p class="mb-0"><strong>Trámite:</strong> <span id="ea_tramite"></span></p>
+          </div>
+          <label for="ea_documento_firmado" class="form-label fw-semibold">Documento firmado y escaneado *</label>
+          <input type="file" name="documento_firmado" id="ea_documento_firmado" class="form-control"
+                 accept=".pdf,.jpg,.jpeg,.png" required *>
+          <div class="form-text">PDF, JPG o PNG; máximo 10 MB.</div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" form="formEntregarArchivar" class="btn btn-dark">
+          <i class="bi bi-archive me-1"></i>Archivar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 
@@ -2156,12 +2151,8 @@ window.DASH_VENTANILLA_CONFIG = <?= json_encode([
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
-<<<<<<< HEAD
-<script src="js/dashVentanilla.js?v=20260811-1"></script>
-=======
-<script src="js/dashVentanilla.js?v=20260805-2"></script>
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
-<script src="js/dashboard-ui.js?v=20260804"></script>
+<script src="js/dashVentanilla.js?v=20260819-1"></script>
+<script src="js/dashboard-ui.js?v=20260814-1"></script>
 
 </body>
 </html>

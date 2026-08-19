@@ -74,7 +74,7 @@ if (!empty($folio)) {
     $types .= "ii";
 } elseif (!empty($propietario) && $tipo_tramite_id > 0) {
     $sql .= " AND t.propietario LIKE ? AND t.tipo_tramite_id = ?
-              AND t.estatus IN ('Aprobado', 'Aprobado por Verificador')";
+              AND t.estatus IN ('Aprobado', 'Firmado', 'Entregado y archivado')";
     $params[] = '%' . $propietario . '%';
     $params[] = $tipo_tramite_id;
     $types .= "si";

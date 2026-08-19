@@ -400,7 +400,7 @@ window.onpopstate = function () {
     // Obtener estadísticas
     $total_tramites = $conn->query("SELECT COUNT(*) as total FROM tramites")->fetch_assoc()['total'];
     $en_revision = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión'")->fetch_assoc()['total'];
-    $aprobados_hoy = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'Aprobado' AND DATE(created_at) = CURDATE()")->fetch_assoc()['total'];
+    $aprobados_hoy = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'Pendiente por firmar' AND DATE(updated_at) = CURDATE()")->fetch_assoc()['total'];
     $pendientes = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión' AND foto1_archivo IS NULL")->fetch_assoc()['total'];
     ?>
     
@@ -437,7 +437,7 @@ window.onpopstate = function () {
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-muted mb-1">Aprobados Hoy</h6>
+                        <h6 class="text-muted mb-1">Enviados a firma hoy</h6>
                         <h3 class="mb-0"><?= $aprobados_hoy ?></h3>
                     </div>
                     <i class="bi bi-check-circle text-success fs-1 opacity-50"></i>
@@ -471,8 +471,8 @@ window.onpopstate = function () {
         <a href="?estatus=En revisión" class="btn btn-sm btn-outline-warning">
             <i class="bi bi-hourglass-split"></i> En Revisión
         </a>
-        <a href="?estatus=Aprobado" class="btn btn-sm btn-outline-success">
-            <i class="bi bi-check-circle"></i> Aprobados
+        <a href="?estatus=Pendiente por firmar" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-check-circle"></i> Pendientes por firmar
         </a>
         <a href="?estatus=Rechazado" class="btn btn-sm btn-outline-danger">
             <i class="bi bi-x-circle"></i> Rechazados
@@ -534,8 +534,8 @@ window.onpopstate = function () {
             <option value="En Revisión por Validador" <?= ($_GET['estatus'] ?? '') === 'En Revisión por Validador' ? 'selected' : '' ?>>
                 En Revisión por Validador
             </option>
-            <option value="Aprobado" <?= ($_GET['estatus'] ?? '') === 'Aprobado' ? 'selected' : '' ?>>
-                Aprobado
+            <option value="Pendiente por firmar" <?= ($_GET['estatus'] ?? '') === 'Pendiente por firmar' ? 'selected' : '' ?>>
+                Pendiente por firmar
             </option>
             <option value="Rechazado" <?= ($_GET['estatus'] ?? '') === 'Rechazado' ? 'selected' : '' ?>>
                 Rechazado
@@ -602,8 +602,10 @@ window.onpopstate = function () {
                 $badge = match ($t['estatus']) {
                     'En revisión' => 'bg-warning text-dark',
                     'En Revisión por Validador' => 'bg-secondary',
+                    'Pendiente por firmar' => 'bg-info text-dark',
+                    'Firmado' => 'bg-success',
+                    'Entregado y archivado' => 'bg-dark',
                     'Aprobado' => 'bg-success',
-                    'Aprobado por Verificador' => 'bg-info text-dark',
                     'Rechazado' => 'bg-danger',
                     'En corrección' => 'bg-primary',
                     default => 'bg-secondary'
@@ -657,7 +659,7 @@ window.onpopstate = function () {
                 >
                     Ver detalles
                 </button>
-                <?php if (in_array($t['estatus'], ['Aprobado por Verificador', 'Aprobado']) && $t['tipo_tramite_id'] == 1): ?>
+                <?php if (in_array($t['estatus'], ['Pendiente por firmar', 'Firmado']) && $t['tipo_tramite_id'] == 1): ?>
                 <button 
                     class="btn btn-sm btn-success btn-generar-constancia"
 
@@ -828,7 +830,7 @@ window.onpopstate = function () {
         <select class="form-select form-select-sm" name="estatus" id="m_estatus">
             <option value="En revisión">🟡 En revisión</option>
             <option value="En corrección">🔵 En corrección</option>
-            <option value="Aprobado por Verificador">✅ Aprobado por Verificador</option>
+            <option value="Pendiente por firmar">✅ Aprobar y enviar a firma</option>
             <option value="Rechazado">❌ Rechazado</option>
         </select>
         <small class="text-muted d-block mt-1" id="estatus-hint"></small>
@@ -1357,7 +1359,7 @@ window.onpopstate = function () {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="js/verificar.js"></script>
+<script src="js/verificar.js?v=20260819-1"></script>
 
 <script>
 // Mostrar alertas con SweetAlert2 - SOLO para errores del sistema, NO para validación de campos
@@ -1804,8 +1806,11 @@ document.getElementById('detalleTramite').addEventListener('show.bs.modal', func
                     lista.appendChild(item);
                 });
 
-                // Cargar el primero por defecto
-                cargarSubtramiteEnFormulario(data.tramites[0], folio);
+                // Mantener seleccionado el trámite de la fila que abrió el modal.
+                const tramiteSolicitado = data.tramites.find(
+                    tram => String(tram.id) === String(button.getAttribute('data-id') || '')
+                ) || data.tramites[0];
+                cargarSubtramiteEnFormulario(tramiteSolicitado, folio);
             } else {
                 contenedor.style.display = 'none';
                 // Fallback: usar los data-* del botón (comportamiento anterior)
@@ -1847,7 +1852,7 @@ function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
             hiddenId = document.createElement('input');
             hiddenId.type = 'hidden';
             hiddenId.id = 'm_tramite_id';
-            hiddenId.name = 'tramite_id';
+            hiddenId.name = 'id';
             form.appendChild(hiddenId);
         }
         hiddenId.value = idActual;
@@ -1856,59 +1861,6 @@ function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
 
 // Interceptar el envío del formulario de actualización de trámite
 document.addEventListener('DOMContentLoaded', function() {
-    const formActualizar = document.getElementById('formActualizarTramite');
-    if (formActualizar) {
-        formActualizar.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            Swal.fire({
-                title: 'Guardando...',
-                text: 'Por favor espere',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            
-            fetch('php/actualizarTramite.php', {
-                method: 'POST',
-                body: new FormData(this),
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('detalleTramite'));
-                    if (modal) modal.hide();
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Actualizado!',
-                        text: data.message || 'Trámite actualizado correctamente.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'No se pudo actualizar el trámite.'
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de conexión',
-                    text: 'No se pudo conectar con el servidor.'
-                });
-            });
-        });
-    }
-    
     // Configurar botones de constancia
     const botonesConstancia = document.querySelectorAll('.btn-generar-constancia');
     botonesConstancia.forEach(btn => {

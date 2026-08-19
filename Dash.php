@@ -665,7 +665,7 @@ window.onpopstate = function () {
         <label class="form-label fw-semibold"><i class="bi bi-flag me-1"></i>Estatus</label>
         <select name="estatus" class="form-select">
           <option value="">Todos</option>
-          <?php foreach(['En revisión','Aprobado por Verificador','Aprobado','Rechazado','En corrección'] as $es): 
+          <?php foreach(['En revisión','Pendiente por firmar','Firmado','Entregado y archivado','Rechazado','En corrección'] as $es):
             $sel = (isset($_GET['estatus']) && $_GET['estatus'] === $es) ? 'selected' : '';
           ?>
           <option value="<?= $es ?>" <?= $sel ?>><?= $es ?></option>
@@ -741,8 +741,8 @@ $dias_restantes = calcularDiasHabilesPHP($hoy_dt, $fecha_entrega_dt);
                             $fecha_entrega = date('d/m/Y', strtotime($t['create_at']));
                     }
                     if ($estatus === 'En revisión')              $badge = 'badge-status-revision';
-                    elseif ($estatus === 'Aprobado por Verificador') $badge = 'badge-status-verificador';
-                    elseif ($estatus === 'Aprobado')             $badge = 'badge-status-aprobado';
+                    elseif ($estatus === 'Pendiente por firmar') $badge = 'badge-status-verificador';
+                    elseif (in_array($estatus, ['Aprobado', 'Firmado', 'Entregado y archivado'], true)) $badge = 'badge-status-aprobado';
                     elseif ($estatus === 'Rechazado')            $badge = 'badge-status-rechazado';
                     elseif ($estatus === 'En corrección')        $badge = 'badge-status-correccion';
                     else                                         $badge = 'badge-status-default';
@@ -987,7 +987,7 @@ function initDash() {
             estatusSpan.textContent = btn.dataset.estatus;
             estatusSpan.className = 'badge';
             if (btn.dataset.estatus === 'En revisión') estatusSpan.classList.add('bg-warning','text-dark');
-            else if (btn.dataset.estatus === 'Aprobado') estatusSpan.classList.add('bg-success');
+            else if (btn.dataset.estatus === 'Aprobado' || btn.dataset.estatus === 'Firmado' || btn.dataset.estatus === 'Entregado y archivado') estatusSpan.classList.add('bg-success');
             else if (btn.dataset.estatus === 'Rechazado') estatusSpan.classList.add('bg-danger');
             else estatusSpan.classList.add('bg-secondary');
 

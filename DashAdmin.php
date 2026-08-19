@@ -14,7 +14,7 @@ require_once "php/db.php";
 $stats_tramites = $conn->query("SELECT 
     COUNT(*) as total,
     SUM(CASE WHEN estatus = 'En revisión' THEN 1 ELSE 0 END) as en_revision,
-    SUM(CASE WHEN estatus = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
+    SUM(CASE WHEN estatus IN ('Aprobado', 'Entregado y archivado') THEN 1 ELSE 0 END) as aprobados,
     SUM(CASE WHEN estatus = 'Rechazado' THEN 1 ELSE 0 END) as rechazados
     FROM tramites")->fetch_assoc();
 
@@ -38,7 +38,7 @@ $tramites_aprobados = $conn->query("
     FROM tramites t
     LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
     LEFT JOIN usuarios u ON t.usuario_creador_id = u.id
-    WHERE t.estatus = 'Aprobado'
+    WHERE t.estatus IN ('Aprobado', 'Entregado y archivado')
     ORDER BY t.fecha_aprobacion DESC
 ");
 
@@ -67,7 +67,7 @@ $reporte_mes = $conn->query("
     SELECT
         MONTH(fecha_ingreso) AS mes,
         COUNT(*) AS total,
-        SUM(CASE WHEN estatus = 'Aprobado' THEN 1 ELSE 0 END) AS aprobados,
+        SUM(CASE WHEN estatus IN ('Aprobado', 'Entregado y archivado') THEN 1 ELSE 0 END) AS aprobados,
         SUM(CASE WHEN estatus = 'En revisión' THEN 1 ELSE 0 END) AS en_revision,
         SUM(CASE WHEN estatus = 'En corrección' THEN 1 ELSE 0 END) AS en_correccion,
         SUM(CASE WHEN estatus = 'Rechazado' THEN 1 ELSE 0 END) AS rechazados
@@ -83,7 +83,7 @@ while ($r = $reporte_mes->fetch_assoc()) $datos_mes[(int)$r['mes']] = $r;
 $reporte_tipo = $conn->query("
     SELECT tt.nombre AS tipo,
            COUNT(*) AS total,
-           SUM(CASE WHEN t.estatus = 'Aprobado' THEN 1 ELSE 0 END) AS aprobados,
+           SUM(CASE WHEN t.estatus IN ('Aprobado', 'Entregado y archivado') THEN 1 ELSE 0 END) AS aprobados,
            SUM(CASE WHEN t.estatus = 'Rechazado' THEN 1 ELSE 0 END) AS rechazados
     FROM tramites t
     LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id

@@ -101,8 +101,8 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                         const props = feature.properties;
                         const estado = String(props.ESTATUS || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                         const color = estado === 'en revision' ? '#dc3545'
-                            : (estado === 'aprobado por verificador' ? '#ffc107'
-                            : (estado === 'aprobado' ? '#198754' : '#6c757d'));
+                            : (estado === 'pendiente por firmar' ? '#ffc107'
+                            : ((estado === 'firmado' || estado === 'entregado y archivado') ? '#198754' : '#6c757d'));
                         const marker = L.circleMarker(latlng, {
                             radius: 7, color: '#fff', weight: 2,
                             fillColor: color, fillOpacity: .92

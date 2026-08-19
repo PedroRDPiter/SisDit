@@ -45,11 +45,8 @@ $stmt = $conn->prepare("
         d.updated_at,
         t.estatus,
         t.tipo_tramite_id,
-<<<<<<< HEAD
         t.formato_constancia,
         t.otros_archivos,
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
         tt.nombre AS tipo_tramite
     FROM croquis_poligono_detalles d
     INNER JOIN tramites t ON t.id = d.tramite_id
@@ -73,10 +70,7 @@ $stmt->close();
 if (!$row) {
     $fallback = $conn->prepare("
         SELECT t.id AS tramite_id, t.estatus, t.numero_asignado, t.tipo_tramite_id,
-<<<<<<< HEAD
                t.formato_constancia, t.otros_archivos,
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
                t.folio_numero, t.folio_anio, t.updated_at,
                tt.nombre AS tipo_tramite
         FROM tramites t
@@ -97,10 +91,7 @@ if (!$row) {
     if ($texto === '') {
         $texto = str_pad((string)$tramite['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_anio'];
     }
-<<<<<<< HEAD
     $documento = obtenerDocumentoEscaneadoTramite($tramite);
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
     echo json_encode([
         'success' => true,
         'poligono' => [
@@ -111,10 +102,7 @@ if (!$row) {
             'estatus' => $tramite['estatus'],
             'tipo_tramite_id' => (int)$tramite['tipo_tramite_id'],
             'tipo_tramite' => $tramite['tipo_tramite'],
-<<<<<<< HEAD
             'documento_escaneado' => $documento,
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
             'updated_at' => $tramite['updated_at']
         ]
     ], JSON_UNESCAPED_UNICODE);
@@ -142,10 +130,7 @@ echo json_encode([
         'estatus' => $row['estatus'],
         'tipo_tramite_id' => (int)$row['tipo_tramite_id'],
         'tipo_tramite' => $row['tipo_tramite'],
-<<<<<<< HEAD
         'documento_escaneado' => $documento,
-=======
->>>>>>> 2cd7dfdf537a87fa50f0fda8689b5fcf168d42f3
         'updated_at' => $row['updated_at']
     ]
 ]);

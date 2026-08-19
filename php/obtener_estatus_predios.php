@@ -84,8 +84,9 @@ if ($directos) {
 $resumen_tramites = [
     'Cancelado' => 0,
     'En revisión' => 0,
-    'Aprobado por Verificador' => 0,
-    'Aprobado' => 0
+    'Pendiente por firmar' => 0,
+    'Firmado' => 0,
+    'Entregado y archivado' => 0
 ];
 $resConteos = $conn->query("
     SELECT estatus, COUNT(*) AS total
