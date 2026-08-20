@@ -166,10 +166,17 @@ function verConstanciaPredio(tramiteId, documentoUrl) {
 }
 
 document.addEventListener('click', function(event) {
-  const button = event.target.closest('.btn-ver-constancia-predio');
+  const button = event.target.closest('.btn-ver-constancia-predio, .tramite-predio-documento');
   if (!button) return;
   event.preventDefault();
   verConstanciaPredio(button.dataset.tramiteId, button.dataset.documentoUrl);
+});
+
+document.addEventListener('keydown', function(event) {
+  const recuadro = event.target.closest('.tramite-predio-documento');
+  if (!recuadro || (event.key !== 'Enter' && event.key !== ' ')) return;
+  event.preventDefault();
+  verConstanciaPredio(recuadro.dataset.tramiteId, recuadro.dataset.documentoUrl);
 });
 
 function botonDocumentoEscaneadoPredio(tramiteId, estatus, documento) {
@@ -199,13 +206,14 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
     .then(data => {
       if (token !== predioConsultaToken || layer !== selectedPolygon) return;
 
-      if (!data.success || !data.poligono) {
+      const tramitesCuenta = Array.isArray(data.tramites) ? data.tramites : [];
+      if (!data.success || (!data.poligono && tramitesCuenta.length === 0)) {
         layer.setStyle(selectedStyle);
         layer.bindPopup('<strong>Clave Catastral:</strong> ' + escaparHtmlPredio(cuenta) + '<br><span class="text-muted">Sin datos guardados</span>').openPopup();
         return;
       }
 
-      const predio = data.poligono;
+      const predio = data.poligono || tramitesCuenta[0];
       const texto = String(predio.texto || '').trim();
       const semaforo = obtenerSemaforoEstatus(predio.estatus);
       const tramiteId = Number(predio.tramite_id) || 0;
@@ -220,7 +228,9 @@ function mostrarDatosGuardadosPredio(layer, cuentaCatastral) {
         '<strong>Trámite relacionado:</strong> ' + escaparHtmlPredio(predio.tramite_id || 'No disponible') +
         '<br><strong>Estatus:</strong> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' + escaparHtmlPredio(semaforo.etiqueta) +
         (predio.updated_at ? '<br><strong>Actualizado:</strong> ' + escaparHtmlPredio(predio.updated_at) : '') +
-        botonDocumentoEscaneadoPredio(tramiteId, predio.estatus, predio.documento_escaneado);
+        (tramitesCuenta.length > 0
+          ? listaTramitesCuentaPredio(tramitesCuenta)
+          : botonDocumentoEscaneadoPredio(tramiteId, predio.estatus, predio.documento_escaneado));
 
       layer._sisditStatusStyle = semaforo.estilo;
       layer._sisditStatus = predio.estatus;
@@ -278,9 +288,9 @@ function obtenerSemaforoEstatus(estatus) {
       estilo: { color: '#984c0c', weight: 4, opacity: 1, fillColor: '#fd7e14', fillOpacity: 0.62 }
     };
   }
-  if (valor === 'pendiente por firmar') {
+  if (valor === 'aprobado' || valor === 'pendiente por firmar') {
     return {
-      etiqueta: 'Pendiente por firmar',
+      etiqueta: valor === 'aprobado' ? 'Aprobado' : 'Pendiente por firmar',
       color: '#ffc107',
       estilo: { color: '#856404', weight: 4, opacity: 1, fillColor: '#ffc107', fillOpacity: 0.62 }
     };
@@ -310,6 +320,7 @@ function normalizarEstatusPredio(estatus) {
 
 function obtenerClaveFiltroEstatus(estatus) {
   const valor = normalizarEstatusPredio(estatus);
+  if (valor === 'aprobado') return 'pendiente por firmar';
   // En la base histórica este estado también se registra como "Rechazado".
   return valor === 'rechazado' ? 'cancelado' : valor;
 }
@@ -545,12 +556,37 @@ const cargaParcelasPromise = fetch('./Geojson/TRAMITES_reprojected.geojson')
 function estiloDibujoCroquis(feature) {
   const origen = normalizarEstatusPredio(feature?.properties?.origen);
   if (origen === 'subdivision') {
-    return { color: '#6f42c1', weight: 4, opacity: 1, fillColor: '#6f42c1', fillOpacity: 0.16, dashArray: '8 5' };
+    return { color: '#6f42c1', weight: 4, opacity: 1, fillColor: '#6f42c1', fillOpacity: 0.16, dashArray: null };
   }
   if (origen === 'catastro-copia') {
-    return { color: '#0f766e', weight: 4, opacity: 1, fillColor: '#14b8a6', fillOpacity: 0.12, dashArray: '5 5' };
+    return { color: '#0f766e', weight: 4, opacity: 1, fillColor: '#14b8a6', fillOpacity: 0.12, dashArray: null };
   }
-  return { color: '#0d6efd', weight: 4, opacity: 1, fillColor: '#0d6efd', fillOpacity: 0.14, dashArray: '10 5' };
+  return { color: '#0d6efd', weight: 4, opacity: 1, fillColor: '#0d6efd', fillOpacity: 0.14, dashArray: null };
+}
+
+function listaTramitesCuentaPredio(tramites) {
+  if (!Array.isArray(tramites) || tramites.length === 0) return '';
+  return '<hr class="my-2"><strong>Trámites en esta cuenta (' + tramites.length + '):</strong><div style="max-height:280px;overflow:auto">' +
+    tramites.map(function(tramite, indice) {
+      const semaforo = obtenerSemaforoEstatus(tramite.estatus);
+      const numero = String(tramite.numero_asignado || '').trim();
+      const documento = tramite.documento_escaneado && typeof tramite.documento_escaneado === 'object'
+        ? tramite.documento_escaneado
+        : {};
+      const urlDocumento = String(documento.url || '').trim();
+      const indicacion = urlDocumento ? 'Abrir documento escaneado' : 'Documento pendiente de escaneo';
+      return '<div class="border rounded p-2 mt-2 tramite-predio-documento" role="button" tabindex="0" ' +
+        'data-tramite-id="' + escaparHtmlPredio(tramite.tramite_id) + '" ' +
+        'data-documento-url="' + escaparHtmlPredio(urlDocumento) + '" ' +
+        'title="' + escaparHtmlPredio(indicacion) + '" style="background:#fff;cursor:pointer">' +
+        '<strong>' + escaparHtmlPredio(tramite.folio || ('Trámite ' + (indice + 1))) + '</strong>' +
+        ' · ' + escaparHtmlPredio(tramite.tipo_tramite || 'Tipo no disponible') + '<br>' +
+        (numero ? '<strong>Número:</strong> ' + escaparHtmlPredio(numero) + '<br>' : '') +
+        '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + semaforo.color + ';margin-right:4px"></span>' +
+        escaparHtmlPredio(semaforo.etiqueta) + '<br>' +
+        '<small class="text-primary"><i class="bi bi-file-earmark-text me-1"></i>' + escaparHtmlPredio(indicacion) + '</small>' +
+        '</div>';
+    }).join('') + '</div>';
 }
 
 // Integrar en la misma capa solo los dibujos cuya cuenta existe en el catastro base.

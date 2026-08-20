@@ -13,7 +13,11 @@ date_default_timezone_set('America/Mexico_City');
 // En producción cambiar a 0 para no mostrar errores al usuario
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
+$logDirectory = __DIR__ . '/../logs';
+if (!is_dir($logDirectory)) {
+    @mkdir($logDirectory, 0750, true);
+}
+ini_set('error_log', $logDirectory . '/php_errors.log');
 error_reporting(E_ALL);
 
 // Credenciales de la base de datos

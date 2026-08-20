@@ -99,6 +99,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                 L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         const props = feature.properties;
+                        const tramites = Array.isArray(props.TRAMITES) && props.TRAMITES.length ? props.TRAMITES : [props];
                         const estado = String(props.ESTATUS || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                         const color = estado === 'en revision' ? '#dc3545'
                             : (estado === 'pendiente por firmar' ? '#ffc107'
@@ -107,7 +108,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                             radius: 7, color: '#fff', weight: 2,
                             fillColor: color, fillOpacity: .92
                         });
-                        const popupContent = `
+                        let popupContent = `
                             <div style="max-width: 300px;">
                                 <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${escaparHtml(props.FOLIO_INGR || 'N/A')}</h6>
                                 <strong>Solicitante:</strong> ${escaparHtml(props.NOM_SOLI || 'N/A')}<br>
@@ -122,6 +123,16 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                                 <strong>Número:</strong> ${escaparHtml(props.NUMERO || 'N/A')}
                             </div>
                         `;
+                        if (tramites.length > 1) {
+                            const lista = tramites.map((tramite, indice) => `
+                                <div class="${indice ? 'border-top mt-2 pt-2' : ''}">
+                                    <strong>Folio:</strong> ${escaparHtml(tramite.FOLIO_INGR || 'N/A')}<br>
+                                    <strong>Solicitante:</strong> ${escaparHtml(tramite.NOM_SOLI || 'N/A')}<br>
+                                    <strong>Tipo:</strong> ${escaparHtml(tramite.TIP_TRAMIT || 'N/A')}<br>
+                                    <strong>Estatus:</strong> ${escaparHtml(tramite.ESTATUS || 'N/A')}
+                                </div>`).join('');
+                            popupContent = `<div style="max-width:340px"><h6>${tramites.length} trámites en la cuenta ${escaparHtml(props.CUENTA_CATASTRAL || '')}</h6><div style="max-height:320px;overflow:auto">${lista}</div></div>`;
+                        }
                         marker.bindPopup(popupContent);
                         return marker;
                     }

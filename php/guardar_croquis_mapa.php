@@ -143,6 +143,12 @@ if ($georeferencia !== '' && json_decode($georeferencia, true) === null) {
 }
 
 $tmp = $_FILES['croquis']['tmp_name'];
+$validacionCroquis = validarArchivo($_FILES['croquis'], ['png', 'jpg', 'jpeg', 'webp']);
+if (!$validacionCroquis['valido']) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => $validacionCroquis['mensaje']]);
+    exit;
+}
 $mime = function_exists('mime_content_type') ? mime_content_type($tmp) : $_FILES['croquis']['type'];
 if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'])) {
     echo json_encode(['success' => false, 'message' => 'La captura del croquis debe ser imagen PNG, JPG o WEBP']);
@@ -150,7 +156,14 @@ if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'])) {
 }
 
 $carpeta = "../.private/{$tramite_id}/croquis/";
-if (!is_dir($carpeta)) mkdir($carpeta, 0755, true);
+try {
+    Utilidades::crearDirectorioSeguro($carpeta);
+} catch (ArchivoException $error) {
+    AppLogger::error($error, ['evento' => 'crear_directorio_croquis', 'tramite_id' => $tramite_id]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $error->getMessage()]);
+    exit;
+}
 
 $max_num = 0;
 if ($handle = opendir($carpeta)) {
@@ -331,8 +344,10 @@ try {
         'archivo' => $relative_path,
         'url' => $relative_path
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $conn->rollback();
     if (file_exists("../" . $relative_path)) unlink("../" . $relative_path);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    AppLogger::error($e, ['endpoint' => 'guardar_croquis_mapa', 'tramite_id' => $tramite_id]);
+    http_response_code($e instanceof ValidacionException ? 400 : 500);
+    echo json_encode(['success' => false, 'message' => $e instanceof ValidacionException ? $e->getMessage() : 'No fue posible guardar el croquis.']);
 }

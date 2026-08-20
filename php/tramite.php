@@ -318,8 +318,9 @@ try {
     header("Location: ../ficha.php?folio=" . str_pad($folio_numero, 3, "0", STR_PAD_LEFT) . "/$folio_anio");
     exit;
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $conn->rollback();
+    AppLogger::error($e, ['endpoint' => 'tramite', 'usuario_id' => $_SESSION['id'] ?? null]);
 
     // Borrar archivos subidos si los hubo
     if (!empty($archivos)) {

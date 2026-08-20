@@ -86,7 +86,14 @@ $ext = $validacion['extension'];
 
 // Usar el ID del trámite para organizar los archivos en lugar del folio
 $carpeta = "../.private/{$tramite_id}/croquis/";
-if (!is_dir($carpeta)) mkdir($carpeta, 0755, true);
+try {
+    Utilidades::crearDirectorioSeguro($carpeta);
+} catch (ArchivoException $error) {
+    AppLogger::error($error, ['endpoint' => 'guardar_croquis', 'tramite_id' => $tramite_id]);
+    http_response_code(500);
+    echo json_encode(array('success'=>false,'message'=>$error->getMessage()));
+    exit;
+}
 
 // Encontrar el siguiente número disponible para evitar conflictos
 $max_num = 0;

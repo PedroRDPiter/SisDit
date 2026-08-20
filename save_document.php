@@ -98,6 +98,14 @@ if (!isset($_FILES['documentFile'])) {
 }
 
 $archivo = $_FILES['documentFile'];
+try {
+    $archivoValidado = Utilidades::validarArchivo($archivo, ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+} catch (ArchivoException $error) {
+    AppLogger::error($error, ['evento' => 'carga_documento_rechazada', 'tipo_documento' => $documentType]);
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => $error->getMessage()]);
+    exit;
+}
 if ($archivo['error'] !== UPLOAD_ERR_OK) {
     $mensajesError = [
         UPLOAD_ERR_INI_SIZE => 'El archivo excede el límite configurado en el servidor.',
@@ -159,6 +167,14 @@ if (!puedeAccederTramite($tramite)) {
 }
 
 $uploadsDir = __DIR__ . '/uploads';
+try {
+    Utilidades::crearDirectorioSeguro($uploadsDir);
+} catch (ArchivoException $error) {
+    AppLogger::error($error, ['evento' => 'crear_directorio_documentos']);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $error->getMessage()]);
+    exit;
+}
 if (!is_dir($uploadsDir) && !mkdir($uploadsDir, 0755, true)) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'No se pudo crear la carpeta de archivos']);
@@ -184,7 +200,7 @@ if (!file_exists($folderHtaccess)) {
     file_put_contents($folderHtaccess, "Options -Indexes\nAddType application/octet-stream .php .phtml .php3 .php4 .php5\nphp_flag engine off\n");
 }
 
-$fileName = $documentType . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
+$fileName = Utilidades::generarNombreArchivo($documentType, $extension);
 $destination = $folder . '/' . $fileName;
 
 if (!move_uploaded_file($archivo['tmp_name'], $destination)) {
@@ -236,6 +252,8 @@ if (!$stmt->execute()) {
 }
 
 $stmt->close();
+
+registrarLog($conn, (int) $_SESSION['id'], 'Documento cargado', 'tramites', (int) $tramite['id'], $documentType . ': ' . $storedPath);
 
 echo json_encode([
     'success' => true,

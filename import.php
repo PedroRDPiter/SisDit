@@ -14,10 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
         http_response_code(403);
         exit('Token de seguridad invalido');
     }
-    $file = $_FILES['archivo']['tmp_name'];
+    $validacionArchivo = validarArchivo($_FILES['archivo'], ['csv'], 5242880);
+    if (!$validacionArchivo['valido']) {
+        $mensaje = $validacionArchivo['mensaje'];
+        AppLogger::error(new ArchivoException($mensaje), ['evento' => 'importacion_csv_rechazada']);
+    }
+    $file = $mensaje === '' ? $_FILES['archivo']['tmp_name'] : '';
     $tipo = $_POST['tipo_import'];
 
-    if (($handle = fopen($file, "r")) !== FALSE) {
+    if ($file !== '' && ($handle = fopen($file, "r")) !== FALSE) {
         $row = 0;
         $imported = 0;
         while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
@@ -69,8 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
             }
         }
         fclose($handle);
+        registrarLog($conn, (int) $_SESSION['id'], 'Importacion CSV', $tipo, null, 'Filas procesadas: ' . max(0, $row - 1) . '; importadas: ' . $imported);
         $mensaje = "Importación completada. Filas leídas: " . ($row - 1) . ", importadas exitosamente: $imported.";
-    } else {
+    } elseif ($mensaje === '') {
         $mensaje = "Error al abrir el archivo.";
     }
 }

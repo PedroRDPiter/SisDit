@@ -1,5 +1,2 @@
-cerrar tunel
-Get-Process cloudflared | Stop-Process -Force
-iniciar tunel
-$exe = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter cloudflared.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
-& $exe tunnel --protocol http2 --url http://127.0.0.1:8081
+// Mejoras //
+- me entregaron los 
