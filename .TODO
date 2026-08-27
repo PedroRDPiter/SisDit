@@ -1,5 +1,11 @@
-cerrar tunel
-Get-Process cloudflared | Stop-Process -Force
-iniciar tunel
-$exe = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter cloudflared.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
-& $exe tunnel --protocol http2 --url http://127.0.0.1:8081
+// Mejoras //
+
+- Agregar autenticación JWT en lugar de sesiones para APIs REST
+- Implementar validación de archivos (tipo MIME, tamaño máximo)
+- Agregar logging de errores y eventos importantes
+- Refactorizar funciones comunes a clase utilitaria
+- Añadir pruebas unitarias para lógica de negocio
+- Mejorar manejo de errores con excepciones
+- Implementar control de versiones de documentos
+- en el mapa de ventanilla no mostrar poligonos de verificador, solo si es uno que ya esta aprobado, no debera mostrar linea punteada
+- manejo de posibles tramites multiples en el mismo poligono para el mapa, que muestre todos los que se tiene en la misma cuenta catastral
