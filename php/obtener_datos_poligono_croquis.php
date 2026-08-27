@@ -26,6 +26,36 @@ if ($cuenta === '' || strlen($cuenta) > 50) {
     exit;
 }
 
+// Una cuenta catastral puede acumular varios trámites, incluso con folios distintos.
+$tramitesCuenta = [];
+$stmtTramites = $conn->prepare("
+    SELECT DISTINCT t.id AS tramite_id, t.folio_numero, t.folio_anio,
+           t.estatus, t.numero_asignado, t.tipo_tramite_id,
+           t.formato_constancia, t.otros_archivos, t.updated_at,
+           tt.nombre AS tipo_tramite
+    FROM tramites t
+    LEFT JOIN tipos_tramite tt ON tt.id = t.tipo_tramite_id
+    LEFT JOIN croquis_poligono_detalles dc ON dc.tramite_id = t.id AND dc.activo = 1
+    WHERE t.cuenta_catastral = ?
+       OR dc.cuenta_catastral_origen = ?
+       OR dc.numero_poligono = ?
+    ORDER BY t.updated_at DESC, t.id DESC
+");
+if ($stmtTramites) {
+    $stmtTramites->bind_param('sss', $cuenta, $cuenta, $cuenta);
+    $stmtTramites->execute();
+    $resultadoTramites = $stmtTramites->get_result();
+    while ($tramiteCuenta = $resultadoTramites->fetch_assoc()) {
+        $tramiteCuenta['tramite_id'] = (int) $tramiteCuenta['tramite_id'];
+        $tramiteCuenta['tipo_tramite_id'] = (int) $tramiteCuenta['tipo_tramite_id'];
+        $tramiteCuenta['folio'] = str_pad((string) $tramiteCuenta['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramiteCuenta['folio_anio'];
+        $tramiteCuenta['documento_escaneado'] = obtenerDocumentoEscaneadoTramite($tramiteCuenta);
+        unset($tramiteCuenta['formato_constancia'], $tramiteCuenta['otros_archivos']);
+        $tramitesCuenta[] = $tramiteCuenta;
+    }
+    $stmtTramites->close();
+}
+
 $stmt = $conn->prepare("
     SELECT
         d.id,
@@ -84,7 +114,7 @@ if (!$row) {
     $tramite = $fallback->get_result()->fetch_assoc();
     $fallback->close();
     if (!$tramite) {
-        echo json_encode(['success' => true, 'poligono' => null]);
+        echo json_encode(['success' => true, 'poligono' => null, 'tramites' => $tramitesCuenta]);
         exit;
     }
     $texto = trim((string)($tramite['numero_asignado'] ?? ''));
@@ -104,7 +134,8 @@ if (!$row) {
             'tipo_tramite' => $tramite['tipo_tramite'],
             'documento_escaneado' => $documento,
             'updated_at' => $tramite['updated_at']
-        ]
+        ],
+        'tramites' => $tramitesCuenta
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -132,5 +163,6 @@ echo json_encode([
         'tipo_tramite' => $row['tipo_tramite'],
         'documento_escaneado' => $documento,
         'updated_at' => $row['updated_at']
-    ]
+    ],
+    'tramites' => $tramitesCuenta
 ]);

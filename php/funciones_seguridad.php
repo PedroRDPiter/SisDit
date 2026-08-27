@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/sesion.php';
+require_once __DIR__ . '/Utilidades.php';
+require_once __DIR__ . '/AppLogger.php';
 iniciarSesionSegura();
 // =====================================================
 // FUNCIONES DE SEGURIDAD Y VALIDACIÓN
@@ -71,7 +73,7 @@ function validarFormatoFolio($folio) {
 // Verifica extensión, tamaño Y tipo MIME real del archivo
 // (no solo el nombre — alguien podría renombrar un .php a .jpg)
 // =====================================================
-function validarArchivo($archivo, $tiposPermitidos = ['pdf', 'jpg', 'jpeg', 'png']) {
+function validarArchivoAnterior($archivo, $tiposPermitidos = ['pdf', 'jpg', 'jpeg', 'png']) {
     if (!isset($archivo) || $archivo['error'] !== UPLOAD_ERR_OK) {
         return ['valido' => false, 'mensaje' => 'Error al subir el archivo'];
     }
@@ -109,9 +111,17 @@ function validarArchivo($archivo, $tiposPermitidos = ['pdf', 'jpg', 'jpeg', 'png
     return ['valido' => true, 'extension' => $extension, 'mime' => $mimeType];
 }
 
+function validarArchivo($archivo, $tiposPermitidos = ['pdf', 'jpg', 'jpeg', 'png'], $tamanoMaximo = Utilidades::TAMANO_MAXIMO_ARCHIVO) {
+    try {
+        return ['valido' => true] + Utilidades::validarArchivo((array) $archivo, $tiposPermitidos, (int) $tamanoMaximo);
+    } catch (ArchivoException $error) {
+        return ['valido' => false, 'mensaje' => $error->getMessage()];
+    }
+}
+
 // Nombre de archivo único para evitar colisiones y caracteres problemáticos
 function generarNombreUnico($prefijo, $extension) {
-    return $prefijo . '_' . uniqid() . '_' . time() . '.' . $extension;
+    return Utilidades::generarNombreArchivo($prefijo, $extension);
 }
 
 // =====================================================
@@ -119,7 +129,7 @@ function generarNombreUnico($prefijo, $extension) {
 // Crea la carpeta con permisos correctos y agrega
 // un .htaccess para que PHP no ejecute archivos ahí
 // =====================================================
-function crearCarpetaSegura($ruta) {
+function crearCarpetaSeguraAnterior($ruta) {
     if (!is_dir($ruta)) {
         mkdir($ruta, 0755, true);
 
@@ -133,13 +143,18 @@ function crearCarpetaSegura($ruta) {
     return true;
 }
 
+function crearCarpetaSegura($ruta) {
+    Utilidades::crearDirectorioSeguro($ruta);
+    return true;
+}
+
 // =====================================================
 // REGISTRAR ACTIVIDAD EN LOGS
 // Guarda un registro de cada acción importante.
 // usuario_id = 0 se convierte a NULL para no romper
 // la clave foránea cuando es un usuario no autenticado
 // =====================================================
-function registrarLog($conn, $usuario_id, $accion, $tabla = null, $registro_id = null, $detalles = null) {
+function registrarLogAnterior($conn, $usuario_id, $accion, $tabla = null, $registro_id = null, $detalles = null) {
     $ip         = $_SERVER['REMOTE_ADDR']     ?? 'desconocida';
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'desconocido';
 
@@ -161,6 +176,11 @@ function registrarLog($conn, $usuario_id, $accion, $tabla = null, $registro_id =
     }
 
     $stmt->close();
+}
+
+function registrarLog($conn, $usuario_id, $accion, $tabla = null, $registro_id = null, $detalles = null) {
+    $uid = ($usuario_id == 0 || $usuario_id === '0') ? null : (int) $usuario_id;
+    AppLogger::evento($conn instanceof mysqli ? $conn : null, (string) $accion, $tabla, $registro_id === null ? null : (int) $registro_id, $detalles, $uid);
 }
 
 // =====================================================

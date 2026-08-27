@@ -92,13 +92,20 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
         // Cargar los trámites actuales desde la base de datos.
         fetch('./php/get_tramites_geojson.php', { credentials: 'same-origin', cache: 'no-store' })
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
+                return response.json().catch(() => {
+                    throw new Error(`El servidor devolvió una respuesta inválida (HTTP ${response.status}).`);
+                }).then(data => {
+                    if (!response.ok || data.error) {
+                        throw new Error(data.error || `No fue posible consultar los trámites (HTTP ${response.status}).`);
+                    }
+                    return data;
+                });
             })
             .then(data => {
                 L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         const props = feature.properties;
+                        const tramites = Array.isArray(props.TRAMITES) && props.TRAMITES.length ? props.TRAMITES : [props];
                         const estado = String(props.ESTATUS || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                         const color = estado === 'en revision' ? '#dc3545'
                             : (estado === 'pendiente por firmar' ? '#ffc107'
@@ -107,7 +114,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                             radius: 7, color: '#fff', weight: 2,
                             fillColor: color, fillOpacity: .92
                         });
-                        const popupContent = `
+                        let popupContent = `
                             <div style="max-width: 300px;">
                                 <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${escaparHtml(props.FOLIO_INGR || 'N/A')}</h6>
                                 <strong>Solicitante:</strong> ${escaparHtml(props.NOM_SOLI || 'N/A')}<br>
@@ -122,6 +129,16 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                                 <strong>Número:</strong> ${escaparHtml(props.NUMERO || 'N/A')}
                             </div>
                         `;
+                        if (tramites.length > 1) {
+                            const lista = tramites.map((tramite, indice) => `
+                                <div class="${indice ? 'border-top mt-2 pt-2' : ''}">
+                                    <strong>Folio:</strong> ${escaparHtml(tramite.FOLIO_INGR || 'N/A')}<br>
+                                    <strong>Solicitante:</strong> ${escaparHtml(tramite.NOM_SOLI || 'N/A')}<br>
+                                    <strong>Tipo:</strong> ${escaparHtml(tramite.TIP_TRAMIT || 'N/A')}<br>
+                                    <strong>Estatus:</strong> ${escaparHtml(tramite.ESTATUS || 'N/A')}
+                                </div>`).join('');
+                            popupContent = `<div style="max-width:340px"><h6>${tramites.length} trámites en la cuenta ${escaparHtml(props.CUENTA_CATASTRAL || '')}</h6><div style="max-height:320px;overflow:auto">${lista}</div></div>`;
+                        }
                         marker.bindPopup(popupContent);
                         return marker;
                     }
@@ -131,9 +148,14 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                 console.error('Error cargando TRAMITES.geojson:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudo cargar el mapa de trámites.',
+                    title: 'No se pudieron cargar los trámites',
+                    text: error.message || 'El servicio del mapa no está disponible.',
+                    confirmButtonText: 'Reintentar',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cerrar',
                     confirmButtonColor: '#7b0f2b'
+                }).then(resultado => {
+                    if (resultado.isConfirmed) window.location.reload();
                 });
             });
     </script>

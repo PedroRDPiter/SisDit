@@ -1,4 +1,5 @@
 <?php
+define('SISDIT_JSON_RESPONSE', true);
 require_once "db.php";
 require_once "funciones_seguridad.php";
 
@@ -73,6 +74,7 @@ try {
             t.estatus AS ESTATUS,
             t.telefono AS CONTACTO,
             t.numero_asignado AS NUMERO,
+            t.cuenta_catastral AS CUENTA_CATASTRAL,
             t.lat,
             t.lng
         FROM tramites t
@@ -82,7 +84,7 @@ try {
     ";
 
     $result = $conn->query($sql);
-    $features = [];
+    $featuresPorPredio = [];
     $omitidos = 0;
 
     while ($row = $result->fetch_assoc()) {
@@ -107,7 +109,27 @@ try {
             $omitidos++;
             continue;
         }
-        $features[] = [
+        $tramiteMapa = [
+            'FOLIO_INGR' => $row['FOLIO_INGR'],
+            'NOM_SOLI' => $row['NOM_SOLI'] ?? 'N/A',
+            'TIP_TRAMIT' => $row['TIP_TRAMIT'] ?? 'N/A',
+            'UBICACION' => $row['UBICACION'] ?? 'N/A',
+            'FECH_INGRE' => $row['FECH_INGRE'] ?? 'N/A',
+            'FECH_ENTRE' => $row['FECH_ENTRE'] ?? 'N/A',
+            'ESTATUS' => $row['ESTATUS'] ?? 'N/A',
+            'CONTACTO' => $row['CONTACTO'] ?? 'N/A',
+            'NUMERO' => $row['NUMERO'] ?? 'N/A',
+        ];
+        $cuenta = Utilidades::normalizarCuentaCatastral($row['CUENTA_CATASTRAL'] ?? '');
+        $clavePredio = $cuenta !== '' ? 'cuenta:' . $cuenta : 'coord:' . round($longitud, 7) . ',' . round($latitud, 7);
+
+        if (isset($featuresPorPredio[$clavePredio])) {
+            $featuresPorPredio[$clavePredio]['properties']['TRAMITES'][] = $tramiteMapa;
+            $featuresPorPredio[$clavePredio]['properties']['TOTAL_TRAMITES']++;
+            continue;
+        }
+
+        $featuresPorPredio[$clavePredio] = [
             'type' => 'Feature',
             'properties' => [
                 'FOLIO_INGR' => $row['FOLIO_INGR'],
@@ -120,7 +142,10 @@ try {
                 'X' => round($utm[0], 2),
                 'Y' => round($utm[1], 2),
                 'CONTACTO' => $row['CONTACTO'] ?? 'N/A',
-                'NUMERO' => $row['NUMERO'] ?? 'N/A'
+                'NUMERO' => $row['NUMERO'] ?? 'N/A',
+                'CUENTA_CATASTRAL' => $cuenta,
+                'TOTAL_TRAMITES' => 1,
+                'TRAMITES' => [$tramiteMapa]
             ],
             'geometry' => [
                 'type' => 'Point',
@@ -128,6 +153,8 @@ try {
             ]
         ];
     }
+
+    $features = array_values($featuresPorPredio);
 
     $geojson = [
         'type' => 'FeatureCollection',
@@ -143,8 +170,10 @@ try {
 
     echo json_encode($geojson, JSON_PRETTY_PRINT);
 
-} catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+} catch (Throwable $e) {
+    AppLogger::error($e, ['endpoint' => 'get_tramites_geojson']);
+    http_response_code(500);
+    echo json_encode(['error' => 'No fue posible generar la información del mapa.']);
 }
 
 $conn->close();

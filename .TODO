@@ -7,5 +7,6 @@
 - Añadir pruebas unitarias para lógica de negocio
 - Mejorar manejo de errores con excepciones
 - Implementar control de versiones de documentos
-- en el mapa de ventanilla no mostrar poligonos de verificador, solo si es uno que ya esta aprobado, no debera mostrar linea punteada
-- manejo de posibles tramites multiples en el mismo poligono para el mapa, que muestre todos los que se tiene en la misma cuenta catastral
+- En el mapa de ventanilla no mostrar polígonos de verificador, solo los aprobados y sin línea punteada
+- Manejar múltiples trámites en un mismo polígono y mostrar todos los de la misma cuenta catastral
+- Me entregaron los

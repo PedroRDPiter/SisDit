@@ -48,6 +48,7 @@ $sql = "
       AND d.geojson IS NOT NULL
       AND TRIM(d.geojson) <> ''
       AND LOWER(COALESCE(d.origen, '')) <> 'catastro'
+      AND t.estatus IN ('Aprobado', 'Pendiente por firmar', 'Firmado', 'Entregado y archivado')
     ORDER BY d.updated_at ASC, d.id ASC
 ";
 

@@ -297,7 +297,7 @@ try {
 
     // ── MODO NORMAL: Fotografias (opcionales) ──────────────
     $carpeta = "../uploads/";
-    if (!is_dir($carpeta)) mkdir($carpeta, 0755, true);
+    Utilidades::crearDirectorioSeguro($carpeta);
 
     $foto1_archivo = $tramite['foto1_archivo'];
     $foto2_archivo = $tramite['foto2_archivo'];
@@ -307,13 +307,12 @@ try {
         if (empty($_FILES[$fKey]['name'])) continue;
 
         $validacion = validarArchivo($_FILES[$fKey], ['jpg', 'jpeg', 'png']);
-        if (!$validacion['valido']) continue;
+        if (!$validacion['valido']) throw new ArchivoException($fKey . ': ' . $validacion['mensaje']);
         $ext = $validacion['extension'];
 
-        $n = $fKey . '_' . uniqid() . '_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES[$fKey]['tmp_name'], $carpeta . $n)) {
-            $fVar = $n;
-        }
+        $n = Utilidades::generarNombreArchivo($fKey, $ext);
+        if (!move_uploaded_file($_FILES[$fKey]['tmp_name'], $carpeta . $n)) throw new ArchivoException('No se pudo guardar ' . $fKey . '.');
+        $fVar = $n;
     }
     unset($fVar);
 
@@ -338,13 +337,12 @@ try {
         if (empty($_FILES[$inputName]['name'])) continue;
 
         $validacion = validarArchivo($_FILES[$inputName], ['jpg', 'jpeg', 'png', 'pdf']);
-        if (!$validacion['valido']) continue;
+        if (!$validacion['valido']) throw new ArchivoException($inputName . ': ' . $validacion['mensaje']);
         $ext = $validacion['extension'];
 
-        $n = $info['prefijo'] . '_' . uniqid() . '_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES[$inputName]['tmp_name'], $carpeta . $n)) {
-            $info['campo'] = $n;
-        }
+        $n = Utilidades::generarNombreArchivo($info['prefijo'], $ext);
+        if (!move_uploaded_file($_FILES[$inputName]['tmp_name'], $carpeta . $n)) throw new ArchivoException('No se pudo guardar ' . $inputName . '.');
+        $info['campo'] = $n;
     }
     unset($info);
 
@@ -361,6 +359,7 @@ try {
         }
 
         $archivoFirmado = $_FILES['documento_firmado'];
+        Utilidades::validarArchivo($archivoFirmado, ['pdf', 'jpg', 'jpeg', 'png']);
         if ($archivoFirmado['error'] !== UPLOAD_ERR_OK) {
             throw new Exception('No se pudo recibir el documento firmado.');
         }
@@ -390,7 +389,7 @@ try {
         $esLicenciaFirmada = (int)$tramite['tipo_tramite_id'] === 7;
         $tipoDocumentoFirmado = $esLicenciaFirmada ? 'documento_firmado_licencia' : 'documento_firmado_constancia';
         $etiquetaDocumentoFirmado = $esLicenciaFirmada ? 'Licencia firmada y escaneada' : 'Constancia firmada y escaneada';
-        $nombreFirmado = $tipoDocumentoFirmado . '_' . $tramite_id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
+        $nombreFirmado = Utilidades::generarNombreArchivo($tipoDocumentoFirmado . '_' . $tramite_id, $extension);
         $destinoFirmado = $carpeta . $nombreFirmado;
         if (!move_uploaded_file($archivoFirmado['tmp_name'], $destinoFirmado)) {
             throw new Exception('No se pudo guardar el documento firmado.');
@@ -777,7 +776,8 @@ try {
     if (!$transaccion_confirmada && !empty($documento_firmado_guardado) && is_file($documento_firmado_guardado)) {
         unlink($documento_firmado_guardado);
     }
-    error_log("[actualizarTramite] " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    AppLogger::error($e, ['endpoint' => 'actualizarTramite', 'tramite_id' => $tramite_id_post]);
+    $esValidacion = $e instanceof ValidacionException;
+    http_response_code($esValidacion ? 400 : 500);
+    echo json_encode(['success' => false, 'message' => $esValidacion ? $e->getMessage() : 'No fue posible actualizar el trámite.']);
 }
