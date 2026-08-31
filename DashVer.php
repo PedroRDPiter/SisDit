@@ -1359,7 +1359,7 @@ window.onpopstate = function () {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="js/verificar.js?v=20260819-1"></script>
+<script src="js/verificar.js?v=20260831-1"></script>
 
 <script>
 // Mostrar alertas con SweetAlert2 - SOLO para errores del sistema, NO para validación de campos

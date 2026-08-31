@@ -1700,10 +1700,12 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
 
     const osm = new ol.layer.Tile({
       source: new ol.source.XYZ({
-        url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        // CARTO ahora marca sus mosaicos sin credenciales con "API KEY REQUIRED".
+        // OpenStreetMap no requiere una clave y permite capturar el croquis por CORS.
+        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         crossOrigin: 'anonymous',
         maxZoom: 19,
-        attributions: '&copy; OpenStreetMap contributors &copy; CARTO'
+        attributions: '&copy; OpenStreetMap contributors'
       }),
       visible: true
     });
@@ -1805,7 +1807,7 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
       { key: 'split', icon: 'bi-scissors', title: 'Subdividir poligono', action: startSplitPolygon },
       { key: 'text', icon: 'bi-fonts', title: 'Agregar texto de referencia', action: addExtraTextFromControls },
       { key: 'delete', icon: 'bi-trash', title: 'Borrar poligono seleccionado', action: deleteSelectedFeature },
-      { key: 'baseMap', icon: 'bi-map', title: 'Mapa base CARTO', action: function() { setBaseLayer('Mapa'); } },
+      { key: 'baseMap', icon: 'bi-map', title: 'Mapa base OpenStreetMap', action: function() { setBaseLayer('Mapa'); } },
       { key: 'satellite', icon: 'bi-globe-americas', title: 'Vista satelital', action: function() { setBaseLayer('Satelital'); } },
       { key: 'streetLayer', icon: 'bi-signpost-split', title: 'Mostrar u ocultar capa Calles', action: toggleCallesLayer },
       { key: 'save', icon: 'bi-cloud-upload', title: 'Guardar croquis', action: saveMapCroquis }
