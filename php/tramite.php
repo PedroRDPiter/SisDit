@@ -12,6 +12,28 @@ require "funciones_seguridad.php";
 
 session_start();
 
+function crearSolicitudLicencia(mysqli $conn, int $tramiteId): void {
+    $anio = (int) date('Y');
+    $stmtFolio = $conn->prepare(
+        "INSERT INTO solicitud_lc_folios (anio, ultimo_numero)
+         VALUES (?, LAST_INSERT_ID(1))
+         ON DUPLICATE KEY UPDATE ultimo_numero = LAST_INSERT_ID(ultimo_numero + 1)"
+    );
+    if (!$stmtFolio) throw new Exception("Error folio solicitud_lc: " . $conn->error);
+    $stmtFolio->bind_param('i', $anio);
+    if (!$stmtFolio->execute()) throw new Exception("Error reservar folio solicitud_lc: " . $stmtFolio->error);
+    $stmtFolio->close();
+    $folio = (int) $conn->insert_id;
+
+    $stmt = $conn->prepare(
+        "INSERT INTO solicitud_lc (tramite_id, folio_numero, folio_anio) VALUES (?, ?, ?)"
+    );
+    if (!$stmt) throw new Exception("Error preparar solicitud_lc: " . $conn->error);
+    $stmt->bind_param('iii', $tramiteId, $folio, $anio);
+    if (!$stmt->execute()) throw new Exception("Error insertar solicitud_lc: " . $stmt->error);
+    $stmt->close();
+}
+
 /* ── Seguridad ─────────────────────────────────────────── */
 if (!isset($_SESSION['id'])) {
     header("Location: ../acceso.php"); exit;
@@ -202,6 +224,11 @@ try {
         $estatus_inicial = 'En Revisión por Validador';
     }
 
+    // Si es Licencia de Construcción, crear registro vacío en solicitud_LC con folio propio
+    if ($tipo_tramite_id === 7) {
+        crearSolicitudLicencia($conn, (int) $first_tramite_id);
+    }
+
     // Historial y log del principal
     $accion_hist_val = 'Creado';
     $comentario_hist_val = 'Trámite creado';
@@ -277,7 +304,12 @@ try {
             );
 
             if (!$stmt2->execute()) throw new Exception("Error insert adicional: " . $stmt2->error);
+            $tramite_adicional_id = (int) $stmt2->insert_id;
             $stmt2->close();
+
+            if ($ta_tipo_id === 7) {
+                crearSolicitudLicencia($conn, $tramite_adicional_id);
+            }
         }
     }
 

@@ -1,12 +1,4 @@
 // Mejoras //
-
-- Agregar autenticación JWT en lugar de sesiones para APIs REST
-- Implementar validación de archivos (tipo MIME, tamaño máximo)
-- Agregar logging de errores y eventos importantes
-- Refactorizar funciones comunes a clase utilitaria
-- Añadir pruebas unitarias para lógica de negocio
-- Mejorar manejo de errores con excepciones
-- Implementar control de versiones de documentos
-- En el mapa de ventanilla no mostrar polígonos de verificador, solo los aprobados y sin línea punteada
-- Manejar múltiples trámites en un mismo polígono y mostrar todos los de la misma cuenta catastral
-- Me entregaron los
+- mejora si en tramite adicional se tiene Licencia de Construcción agregar el boton en ficha.php de solicitud LC
+- al momento de registrar un tramite de Constancia de Compatibilidad Urbanística tambien se debera mostrar para el rol de calificador y ver las observaciones que puso el verificador
+- ya que este aprobado el tramite de Constancia de Compatibilidad Urbanística y Licencia de Construcción por verificador y calidficador, en el usuario dashventanilla, se debera mostrar un boton de constancia igual como el de 	Constancia de Número Oficial pera poder ver las constancias de esos tramites

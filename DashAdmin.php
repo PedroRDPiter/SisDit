@@ -259,6 +259,7 @@ window.onpopstate = function () {
             <li class="nav-item"><a class="nav-link" href="#estadisticas">Estadísticas</a></li>
             <li class="nav-item"><a class="nav-link" href="#usuarios">Gestión de Usuarios</a></li>
             <li class="nav-item"><a class="nav-link" href="#logs">Logs de Actividad</a></li>
+            <li class="nav-item"><a class="nav-link" href="#actualizar-shp">Actualizar SHP</a></li>
             <li class="nav-item">
                 <a class="nav-link" href="#solicitudes">
                     <i class="bi bi-person-check me-1"></i> Solicitudes
@@ -280,6 +281,7 @@ window.onpopstate = function () {
     <a class="nav-link text-white" href="#estadisticas">Estadísticas</a>
     <a class="nav-link text-white" href="#usuarios">Usuarios</a>
     <a class="nav-link text-white" href="#logs">Logs</a>
+    <a class="nav-link text-white" href="#actualizar-shp"><i class="bi bi-map me-1"></i> Actualizar SHP</a>
     <a class="nav-link text-white" href="#solicitudes">
         <i class="bi bi-person-check me-1"></i> Solicitudes
         <?php if($total_pendientes > 0): ?>
@@ -756,6 +758,19 @@ window.onpopstate = function () {
 </section>
 
 <!-- GESTIÓN DE USUARIOS -->
+<section id="actualizar-shp" class="tramite-box mb-4">
+    <h4 class="mb-3"><i class="bi bi-map me-2"></i>Actualizar SHP</h4>
+    <p>Selecciona el archivo de polígonos catastrales para actualizar los mapas de ventanilla, verificador y calificador.</p>
+    <form id="form-actualizar-shp" enctype="multipart/form-data" method="post" action="php/actualizar_shp.php">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(generarCSRF(), ENT_QUOTES, 'UTF-8') ?>">
+        <label for="archivo-shp" class="form-label">Archivo de polígonos (.shp)</label>
+        <input id="archivo-shp" name="shp" type="file" accept=".shp" class="form-control mb-2" required aria-describedby="ayuda-shp">
+        <p id="ayuda-shp" class="text-muted small">Máximo 30 MB. Utiliza el SHP municipal en UTM zona 13 norte. Se conserva una copia de la capa anterior. Las claves existentes se recuperan cuando coincide la geometría; los predios nuevos quedan sin clave porque el archivo SHP no incluye esos datos.</p>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-repeat me-1"></i>Cambiar a GeoJSON y actualizar mapas</button>
+    </form>
+    <div id="resultado-shp" class="d-none" role="status" aria-live="polite"></div>
+</section>
+
 <section id="usuarios" class="tramite-box mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="text-primary m-0"><i class="bi bi-people"></i> Gestión de Usuarios</h4>
@@ -895,6 +910,7 @@ window.onpopstate = function () {
                             <option value="Usuario">Usuario</option>
                             <option value="Ventanilla">Ventanilla</option>
                             <option value="Verificador">Verificador</option>
+                            <option value="Calificador">Calificador</option>
                             <option value="Administrador">Administrador</option>
                         </select>
                     </div>
@@ -939,6 +955,7 @@ window.onpopstate = function () {
                             <option value="Usuario">Usuario</option>
                             <option value="Ventanilla">Ventanilla</option>
                             <option value="Verificador">Verificador</option>
+                            <option value="Calificador">Calificador</option>
                             <option value="Administrador">Administrador</option>
                         </select>
                     </div>
@@ -1025,6 +1042,7 @@ new Chart(ctxUsuarios, {
 </script>
 
 <script src="js/admin.js"></script>
+<script src="js/actualizar-shp.js?v=<?= filemtime(__DIR__ . '/js/actualizar-shp.js') ?>"></script>
 <script>
 $(document).ready(function() {
     $('#tablaAprobados').DataTable({

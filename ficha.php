@@ -102,6 +102,18 @@ foreach ($tas as $ta) {
     $tipos_agrupados[$tid]['cantidad_total'] += (int)($ta['cantidad'] ?? 1);
 }
 
+// La solicitud de LC pertenece al registro concreto, incluso cuando es un
+// tramite adicional. Conservamos cada ID para abrir el formulario correcto.
+$tramites_lc = [];
+if ($principal_tid === 7) {
+    $tramites_lc[] = $tramite;
+}
+foreach ($tas as $ta) {
+    if ((int)$ta['tipo_tramite_id'] === 7) {
+        $tramites_lc[] = $ta;
+    }
+}
+
 // Obtener config del municipio
 $config = [];
 $config_result = $conn->query("SELECT clave, valor FROM configuracion_sistema");
@@ -601,21 +613,18 @@ $conn->close();
 <!-- BARRA ACCIONES -->
 <div class="no-print">
     <button class="btn-print" onclick="window.print()">Imprimir Ficha</button>
+    <?php foreach ($tramites_lc as $indice_lc => $tramite_lc): ?>
+    <button class="btn-back" style="background:#e67e22;" onclick="window.location.href='DashVentanilla.php?abrir_solicitud_lc=<?= (int)$tramite_lc['id'] ?>&lc_folio=<?= urlencode(str_pad($tramite_lc['folio_numero'],3,'0',STR_PAD_LEFT).'/'.$tramite_lc['folio_anio']) ?>'">
+        <i class="bi bi-building"></i> Solicitud LC<?= count($tramites_lc) > 1 ? ' ' . ($indice_lc + 1) : '' ?>
+    </button>
+    <?php endforeach; ?>
     <button class="btn-back" onclick="window.location.href='<?php 
-        // Redirigir según el rol del usuario
         switch($_SESSION['rol']) {
-            case 'Administrador':
-                echo 'DashAdmin.php';
-                break;
-            case 'Verificador':
-                echo 'DashVer.php';
-                break;
-            case 'Ventanilla':
-                echo 'DashVentanilla.php';
-                break;
-            default:
-                echo 'Dash.php';
-                break;
+            case 'Administrador': echo 'DashAdmin.php'; break;
+            case 'Verificador':   echo 'DashVer.php';   break;
+            case 'Calificador':   echo 'DashCalf.php';  break;
+            case 'Ventanilla':    echo 'DashVentanilla.php'; break;
+            default:              echo 'Dash.php';
         }
     ?>'">Regresar al Panel
     </button>

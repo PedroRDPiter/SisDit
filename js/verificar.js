@@ -1699,13 +1699,10 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
     }
 
     const osm = new ol.layer.Tile({
-      source: new ol.source.XYZ({
-        // CARTO ahora marca sus mosaicos sin credenciales con "API KEY REQUIRED".
-        // OpenStreetMap no requiere una clave y permite capturar el croquis por CORS.
-        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      source: new ol.source.OSM({
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         crossOrigin: 'anonymous',
-        maxZoom: 19,
-        attributions: '&copy; OpenStreetMap contributors'
+        maxZoom: 19
       }),
       visible: true
     });

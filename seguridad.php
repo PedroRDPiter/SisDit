@@ -21,7 +21,10 @@ header("Expires: 0");
 // Headers de seguridad adicionales
 header("X-Content-Type-Options: nosniff");   // Evitar MIME sniffing
 header("X-Frame-Options: SAMEORIGIN");       // Evitar clickjacking
-header("Referrer-Policy: same-origin");
+// Leaflet obtiene mosaicos desde otros origenes. La politica anterior
+// (same-origin) suprimia por completo el Referer y algunos proveedores de mapas
+// bloquean esas solicitudes. Esta variante comparte unicamente el origen.
+header("Referrer-Policy: strict-origin-when-cross-origin");
 header("Permissions-Policy: camera=(), microphone=(), geolocation=(self)");
 if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
     header("Strict-Transport-Security: max-age=31536000; includeSubDomains");

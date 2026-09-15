@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require "seguridad.php";
 require_once "php/funciones_seguridad.php";
 ?>
@@ -147,7 +147,7 @@ window.onpopstate = function () {
 };
 </script>
 <style>
-    /* =====================================================
+ /* =====================================================
    DATATABLES - ALINEACIÓN PERFECTA
 ===================================================== */
 
@@ -171,21 +171,21 @@ window.onpopstate = function () {
         flex-wrap: wrap !important;
         gap: 10px !important;
     }
-    
+
     /* Selector de registros */
     .dataTables_wrapper .dataTables_length {
         float: none !important;
         width: auto !important;
         order: 1 !important;
     }
-    
+
     /* Buscador */
     .dataTables_wrapper .dataTables_filter {
         float: none !important;
         width: auto !important;
         order: 2 !important;
     }
-    
+
     /* Labels - FORZAR MISMA ALTURA */
     .dataTables_wrapper .dataTables_length label,
     .dataTables_wrapper .dataTables_filter label {
@@ -195,7 +195,7 @@ window.onpopstate = function () {
         line-height: 1 !important;  /* <-- MISMA ALTURA DE LÍNEA */
         height: 36px !important;     /* <-- MISMA ALTURA FIJA */
     }
-    
+
     /* Texto de los labels - MISMA PROPIEDADES */
     .dataTables_wrapper .dataTables_length label span,
     .dataTables_wrapper .dataTables_length label .fw-semibold,
@@ -203,7 +203,7 @@ window.onpopstate = function () {
         font-size: 14px !important;
         line-height: 36px !important;  /* <-- MISMA ALTURA DE LÍNEA */
     }
-    
+
     /* Selector pequeño */
     .dataTables_wrapper .dataTables_length select {
         width: 65px !important;
@@ -213,7 +213,7 @@ window.onpopstate = function () {
         border: 1px solid #ced4da !important;
         border-radius: 4px !important;
     }
-    
+
     /* Input de búsqueda */
     .dataTables_wrapper .dataTables_filter input {
         width: 150px !important;
@@ -231,18 +231,18 @@ window.onpopstate = function () {
         flex-direction: column !important;
         align-items: stretch !important;
     }
-    
+
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter {
         width: 100% !important;
     }
-    
+
     .dataTables_wrapper .dataTables_length label,
     .dataTables_wrapper .dataTables_filter label {
         width: 100% !important;
         justify-content: space-between !important;
     }
-    
+
     .dataTables_wrapper .dataTables_filter input {
         width: calc(100% - 60px) !important;
     }
@@ -403,7 +403,7 @@ window.onpopstate = function () {
     $aprobados_hoy = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'Pendiente por firmar' AND DATE(updated_at) = CURDATE()")->fetch_assoc()['total'];
     $pendientes = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión' AND foto1_archivo IS NULL")->fetch_assoc()['total'];
     ?>
-    
+
     <div class="col-md-3">
         <div class="card shadow-sm border-start border-primary border-4">
             <div class="card-body">
@@ -417,7 +417,7 @@ window.onpopstate = function () {
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-3">
         <div class="card shadow-sm border-start border-warning border-4">
             <div class="card-body">
@@ -431,7 +431,7 @@ window.onpopstate = function () {
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-3">
         <div class="card shadow-sm border-start border-success border-4">
             <div class="card-body">
@@ -445,7 +445,7 @@ window.onpopstate = function () {
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-3">
         <div class="card shadow-sm border-start border-danger border-4">
             <div class="card-body">
@@ -465,7 +465,7 @@ window.onpopstate = function () {
 <section id="seguimiento" class="tramite-box mb-4">
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="text-primary m-0"><i class="bi bi-search"></i> Seguimiento de Trámites</h4>
-    
+
     <!-- Filtros rápidos -->
     <div class="btn-group" role="group">
         <a href="?estatus=En revisión" class="btn btn-sm btn-outline-warning">
@@ -617,7 +617,7 @@ window.onpopstate = function () {
         </td>
         <td class="text-center">
             <div class="btn-group" role="group">
-                <button 
+                <button
                     class="btn btn-sm btn-outline-primary"
                     data-bs-toggle="modal"
                     data-bs-target="#detalleTramite"
@@ -660,7 +660,7 @@ window.onpopstate = function () {
                     Ver detalles
                 </button>
                 <?php if (in_array($t['estatus'], ['Pendiente por firmar', 'Firmado']) && $t['tipo_tramite_id'] == 1): ?>
-                <button 
+                <button
                     class="btn btn-sm btn-success btn-generar-constancia"
 
                     data-id="<?= (int)$t['id'] ?>"
@@ -835,10 +835,39 @@ window.onpopstate = function () {
         </select>
         <small class="text-muted d-block mt-1" id="estatus-hint"></small>
     </div>
-    
+
 </div>
         </div>
         <hr>
+
+        <!-- RESUMEN SOLICITUD LC APROBADA -->
+        <div id="lc_ver_resumen" class="mb-3" style="display:none;">
+          <div class="card border-success shadow-sm">
+            <div class="card-header bg-success text-white d-flex align-items-center gap-2">
+              <i class="bi bi-check-circle-fill"></i>
+              <strong>Solicitud de Licencia de Construcción — Aprobada</strong>
+              <span class="badge bg-light text-success ms-auto" id="lc_ver_folio"></span>
+            </div>
+            <div class="card-body" style="font-size:.88rem;">
+              <div class="row mb-2">
+                <div class="col-md-6"><strong>Tipo de obra:</strong> <span id="lc_ver_tipo_obra">—</span></div>
+                <div class="col-md-6"><strong>Fecha de aprobación:</strong> <span id="lc_ver_fecha_aprobacion">—</span></div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-md-6"><strong>Aprobó:</strong> <span id="lc_ver_responsable">—</span></div>
+                <div class="col-md-6"><strong>Urbanización existente:</strong> <span id="lc_ver_servicios">—</span></div>
+              </div>
+              <div class="mb-2">
+                <strong>Descripción de la obra:</strong>
+                <p class="mb-0" id="lc_ver_descripcion">—</p>
+              </div>
+              <div>
+                <strong>Superficies:</strong>
+                <div id="lc_ver_superficies" class="mt-1">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- OBSERVACIONES / CORRECCIÓN -->
         <div class="mb-3" id="bloque-observaciones">
@@ -998,17 +1027,17 @@ window.onpopstate = function () {
               <span><i class="bi bi-file-earmark-text me-2"></i> Predial</span>
               <span class="badge bg-primary">Ver</span>
             </a>
-            
+
             <a id="doc_formato_constancia" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" target="_blank" style="display:none;">
               <span><i class="bi bi-file-earmark-ruled me-2"></i> Formato de Constancia</span>
               <span class="badge bg-primary">Ver</span>
             </a>
           </div>
-          
+
           <div id="modal-sin-documentos" class="text-muted mb-3" style="display:none;">
             <i class="bi bi-info-circle me-1"></i> No hay documentos cargados para este tramite.
           </div>
-          
+
           <!-- Seccion de documentos faltantes -->
           <div id="seccion-docs-faltantes" style="display:none;">
             <h6 class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Documentos Faltantes</h6>
@@ -1092,7 +1121,7 @@ window.onpopstate = function () {
           <input type="hidden" name="folio" id="c_folio_hidden">
           <input type="hidden" name="id" id="c_id">
           <input type="hidden" name="solo_constancia" value="1">
-          
+
           <!-- Info del tramite -->
           <div class="alert alert-light border mb-3">
             <div class="row">
@@ -1106,7 +1135,7 @@ window.onpopstate = function () {
               </div>
             </div>
           </div>
-          
+
           <nav class="constancia-steps mb-4" aria-label="Progreso de asignación de número">
             <button type="button" class="constancia-step active" data-wizard-go="1"><span>1</span><strong>Número oficial</strong><small>Tipo y número</small></button>
             <button type="button" class="constancia-step" data-wizard-go="2"><span>2</span><strong>Ubicación</strong><small>Predio y catastro</small></button>
@@ -1343,7 +1372,7 @@ window.onpopstate = function () {
         </a>
         <p class="text-muted mt-3 mb-0" style="font-size:.72rem;">
           <i class="bi bi-info-circle me-1"></i>
-          Falta correo o teléfono del ciudadano. 
+          Falta correo o teléfono del ciudadano.
         </p>
       </div>
       <div class="modal-footer">
@@ -1353,13 +1382,13 @@ window.onpopstate = function () {
   </div>
 </div>
 
-<!-- SCRIPTS --> 
+<!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="js/verificar.js?v=20260831-1"></script>
+<script src="js/verificar.js?v=<?= filemtime(__DIR__ . '/js/verificar.js') ?>"></script>
 
 <script>
 // Mostrar alertas con SweetAlert2 - SOLO para errores del sistema, NO para validación de campos
@@ -1367,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <?php if(isset($_GET['error']) && $_GET['error'] !== 'sin_numero_asignado'): ?>
     let errorMsg = '';
     let errorTitle = 'Error';
-    
+
     switch(<?= json_encode((string)($_GET['error'] ?? '')) ?>) {
     case 'csrf':
         errorMsg = 'Error de seguridad. Por favor intenta de nuevo.';
@@ -1384,7 +1413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     default:
         errorMsg = <?= json_encode((string)($_GET['error'] ?? '')) ?>;
     }
-    
+
     Swal.fire({
       icon: 'error',
       title: errorTitle,
@@ -1397,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <?php if(isset($_GET['success'])): ?>
     let successMsg = '';
     let successTitle = '¡Éxito!';
-    
+
     switch(<?= json_encode((string)($_GET['success'] ?? '')) ?>) {
       case 'tramite_actualizado':
         successMsg = 'El trámite ha sido actualizado correctamente.';
@@ -1410,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
       default:
         successMsg = 'Operación completada correctamente.';
     }
-    
+
     Swal.fire({
       icon: 'success',
       title: successTitle,
@@ -1557,7 +1586,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('c_localidad').textContent = btn.getAttribute('data-localidad') || '';
     document.getElementById('c_folio_hidden').value = folio;
     document.getElementById('c_numero_asignado').value = btn.getAttribute('data-numero-asignado') || '';
-    
+
     // Seleccionar la opción correcta en el select
     const tipoAsignacion = btn.getAttribute('data-tipo-asignacion') || 'ASIGNACION';
     const selectTipo = document.getElementById('c_tipo_asignacion');
@@ -1570,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     document.getElementById('c_referencia_anterior').value = btn.getAttribute('data-referencia-anterior') || '';
     document.getElementById('c_entre_calle1').value = btn.getAttribute('data-entre-calle1') || '';
     document.getElementById('c_entre_calle2').value = btn.getAttribute('data-entre-calle2') || '';
@@ -1580,14 +1609,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('c_manzana').value = btn.getAttribute('data-manzana') || '';
     document.getElementById('c_lote').value = btn.getAttribute('data-lote') || '';
     document.getElementById('c_fecha_constancia').value = btn.getAttribute('data-fecha-constancia') || new Date().toISOString().split('T')[0];
-    
+
     // Mostrar croquis si existe
     const croquis = btn.getAttribute('data-croquis');
     const alertaCroquis = document.getElementById('ver_alerta_croquis');
     const okCroquis = document.getElementById('ver_ok_croquis');
     const prevImg = document.getElementById('ver_prev_img');
     const prevPh = document.getElementById('ver_prev_ph');
-    
+
     if (croquis && croquis.trim()) {
         alertaCroquis.style.display = 'none';
         okCroquis.style.display = 'flex';
@@ -1602,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Mantener sincronizada la bandera usada por el botón de impresión.
     window._ver_croquis_ok = Boolean(croquis && croquis.trim());
-    
+
     modalConstancia.show();
 }
 
@@ -1756,12 +1785,12 @@ let grupoSubtramitesActual = [];
 document.getElementById('detalleTramite').addEventListener('show.bs.modal', function (event) {
     const button = event.relatedTarget;
     const folio = button.getAttribute('data-folio');
-    
+
     const btnVerDocumentos = document.getElementById('btn_ver_documentos');
     if (btnVerDocumentos && folio) {
         btnVerDocumentos.href = 'imprimir_documentos.php?folio=' + encodeURIComponent(folio);
     }
-    
+
     const btnImprimirFicha = document.getElementById('btn_imprimir_ficha');
     if (btnImprimirFicha && folio) {
         btnImprimirFicha.href = 'ficha.php?folio=' + encodeURIComponent(folio);
@@ -1866,17 +1895,87 @@ document.addEventListener('DOMContentLoaded', function() {
     botonesConstancia.forEach(btn => {
         const nuevoBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(nuevoBtn, btn);
-        
+
         nuevoBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             abrirModalConstancia(this);
         });
     });
-    
+
 });
 </script>
 <script src="js/constancia-wizard.js?v=20260805"></script>
 <script src="js/dashboard-ui.js?v=20260804"></script>
+
+<!-- ============================================================
+     Solicitud LC aprobada en el modal de detalle de trámite.
+    ============================================================ -->
+<script>
+document.getElementById('detalleTramite').addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const resumen = document.getElementById('lc_ver_resumen');
+    if (!resumen) return;
+
+    // Ocultar por defecto hasta confirmar que aplica
+    resumen.style.display = 'none';
+
+    const tramiteId    = button.getAttribute('data-id');
+    const tipoTramiteId = button.getAttribute('data-tipo-tramite-id');
+
+    // Solo aplica a Licencia de Construcción (tipo_tramite_id = 7)
+    if (!tramiteId || String(tipoTramiteId) !== '7') return;
+
+    fetch('php/obtener_solicitud_lc.php?tramite_id=' + encodeURIComponent(tramiteId))
+        .then(r => r.json())
+        .then(resp => {
+            if (!resp.success || !resp.data) return;
+            const d = resp.data;
+
+            // Solo se muestra si la solicitud ya está Aprobada
+            if (d.estatus !== 'Aprobada') return;
+
+            document.getElementById('lc_ver_folio').textContent = d.folio_solicitud ? ('Folio LC: ' + d.folio_solicitud) : '';
+            document.getElementById('lc_ver_tipo_obra').textContent = d.tipo_obra || '—';
+            document.getElementById('lc_ver_descripcion').textContent = d.descripcion_obra || '—';
+            document.getElementById('lc_ver_responsable').textContent = (d.aprobado_por_nombre || '').trim() || '—';
+
+            // Servicios de urbanización existente
+            const servicios = Array.isArray(d.urbanizacion) ? d.urbanizacion : [];
+            document.getElementById('lc_ver_servicios').textContent = servicios.length ? servicios.join(', ') : '—';
+
+            if (d.fecha_aprobacion) {
+                const fa = new Date(d.fecha_aprobacion.replace(' ', 'T'));
+                document.getElementById('lc_ver_fecha_aprobacion').textContent = isNaN(fa) ? d.fecha_aprobacion : fa.toLocaleDateString('es-MX');
+            } else {
+                document.getElementById('lc_ver_fecha_aprobacion').textContent = '—';
+            }
+
+            // Superficies: muetra solo los que tengan valor capturado
+            const sup = d.superficies || {};
+            const etiquetas = {
+                sotano: 'Sótano', planta_baja: 'Planta baja', primer_nivel: 'Primer nivel',
+                segundo_nivel: 'Segundo nivel', tercer_nivel: 'Tercer nivel'
+            };
+            const partes = [];
+            Object.keys(etiquetas).forEach(k => {
+                const obj = sup[k];
+                if (obj && obj.valor !== null && obj.valor !== '' && obj.valor !== undefined) {
+                    const unidad = obj.unidad === 'mlin' ? 'Mlin' : 'M²';
+                    partes.push(etiquetas[k] + ': ' + obj.valor + ' ' + unidad);
+                }
+            });
+            if (sup.otra_area) {
+                const otra = typeof sup.otra_area === 'object' ? (sup.otra_area.valor || '') : sup.otra_area;
+                if (otra) partes.push('Otras áreas: ' + otra);
+            }
+            document.getElementById('lc_ver_superficies').textContent = partes.length ? partes.join(' · ') : '—';
+
+            resumen.style.display = 'block';
+        })
+        .catch(() => { /* En caso de  falla, simplemente no se muestra el resumen */ });
+});
+</script>
+
 </body>
 </html>

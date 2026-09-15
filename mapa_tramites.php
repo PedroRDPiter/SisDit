@@ -76,7 +76,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
         const CENTRO_MUNICIPIO = [22.228, -102.320];
 
         // Inicializar mapa
-        const mapaTramites = L.map('mapaTramites').setView(CENTRO_MUNICIPIO, 12);
+        const mapaTramites = L.map('mapaTramites', { preferCanvas: true }).setView(CENTRO_MUNICIPIO, 12);
 
         // Capa base
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -89,17 +89,37 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
             return div.innerHTML;
         }
 
+        // Mantener los predios debajo de los marcadores de trámites.
+        mapaTramites.createPane('predios');
+        mapaTramites.getPane('predios').style.zIndex = 350;
+        fetch('./Geojson/TRAMITES_reprojected.geojson', { cache: 'no-cache' })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                const predios = L.geoJSON(data, {
+                    pane: 'predios',
+                    style: { color: '#7b0f2b', weight: 1, fillOpacity: 0.08 },
+                    onEachFeature: (feature, layer) => {
+                        const cuenta = feature.properties?.CVE_CAT_OR;
+                        layer.bindPopup(cuenta
+                            ? `<strong>Clave catastral:</strong> ${escaparHtml(cuenta)}`
+                            : 'Predio sin clave catastral en la capa disponible');
+                    }
+                }).addTo(mapaTramites);
+                L.control.layers(null, { 'Predios del municipio': predios }).addTo(mapaTramites);
+            })
+            .catch(error => {
+                console.error('Error cargando polígonos municipales:', error);
+                Swal.fire({ icon: 'error', title: 'Polígonos no disponibles', text: 'No se pudieron cargar los predios del municipio.' });
+            });
+
         // Cargar los trámites actuales desde la base de datos.
         fetch('./php/get_tramites_geojson.php', { credentials: 'same-origin', cache: 'no-store' })
             .then(response => {
-                return response.json().catch(() => {
-                    throw new Error(`El servidor devolvió una respuesta inválida (HTTP ${response.status}).`);
-                }).then(data => {
-                    if (!response.ok || data.error) {
-                        throw new Error(data.error || `No fue posible consultar los trámites (HTTP ${response.status}).`);
-                    }
-                    return data;
-                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
             })
             .then(data => {
                 L.geoJSON(data, {
@@ -148,14 +168,9 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                 console.error('Error cargando TRAMITES.geojson:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'No se pudieron cargar los trámites',
-                    text: error.message || 'El servicio del mapa no está disponible.',
-                    confirmButtonText: 'Reintentar',
-                    showCancelButton: true,
-                    cancelButtonText: 'Cerrar',
+                    title: 'Error',
+                    text: 'No se pudo cargar el mapa de trámites.',
                     confirmButtonColor: '#7b0f2b'
-                }).then(resultado => {
-                    if (resultado.isConfirmed) window.location.reload();
                 });
             });
     </script>

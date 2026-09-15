@@ -21,7 +21,10 @@ function iniciarSesionSegura(): void
     if (!headers_sent()) {
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: SAMEORIGIN');
-        header('Referrer-Policy: same-origin');
+        // Los mapas cargan mosaicos desde proveedores externos. Enviar solo el
+        // origen permite que esos servicios validen la solicitud sin revelar la
+        // ruta completa ni los parametros de la pagina privada.
+        header('Referrer-Policy: strict-origin-when-cross-origin');
         header('Permissions-Policy: camera=(), microphone=(), geolocation=(self)');
         if ($https) header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }

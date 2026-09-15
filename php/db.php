@@ -32,12 +32,6 @@ try {
     if ($conn->connect_error) {
         // No mostrar detalles del error en producción, solo loguearlo
         error_log("Error de conexión: " . $conn->connect_error);
-        if (defined('SISDIT_JSON_RESPONSE') && SISDIT_JSON_RESPONSE) {
-            if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
-            http_response_code(503);
-            echo json_encode(['error' => 'El servicio de datos del mapa no está disponible. Intenta nuevamente.']);
-            exit;
-        }
         die("Error al conectar con la base de datos. Por favor contacte al administrador.");
     }
 
@@ -47,14 +41,8 @@ try {
     // Zona horaria también en MySQL (zona 6 = Centro México)
     $conn->query("SET time_zone = '-06:00'");
 
-} catch (Throwable $e) {
+} catch (Exception $e) {
     error_log("Excepción en conexión DB: " . $e->getMessage());
-    if (defined('SISDIT_JSON_RESPONSE') && SISDIT_JSON_RESPONSE) {
-        if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
-        http_response_code(503);
-        echo json_encode(['error' => 'El servicio de datos del mapa no está disponible. Intenta nuevamente.']);
-        exit;
-    }
     die("Error al conectar con la base de datos.");
 }
 

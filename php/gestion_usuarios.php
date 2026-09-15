@@ -70,8 +70,8 @@ function crearUsuario() {
         return;
     }
     
-    $roles_validos = ['Usuario', 'Ventanilla', 'Verificador', 'Administrador'];
-    if(!in_array($rol, $roles_validos)) {
+    $roles_validos = ['Usuario', 'Ventanilla', 'Verificador', 'Calificador', 'Administrador'];
+    if(!in_array($rol, $roles_validos, true)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Rol no válido']);
         return;
@@ -134,8 +134,8 @@ function editarUsuario() {
         return;
     }
     
-    $roles_validos = ['Usuario', 'Ventanilla', 'Verificador', 'Administrador'];
-    if(!in_array($rol, $roles_validos)) {
+    $roles_validos = ['Usuario', 'Ventanilla', 'Verificador', 'Calificador', 'Administrador'];
+    if(!in_array($rol, $roles_validos, true)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Rol no válido']);
         return;

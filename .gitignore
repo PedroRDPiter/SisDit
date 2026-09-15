@@ -7,7 +7,7 @@
 /backups/
 /*.log
 /*.sql
-
+/uploads
 # Configuracion local y secretos
 /.env
 /.env.*

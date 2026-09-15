@@ -85,6 +85,9 @@ if ($resultado->num_rows == 1) {
             case 'Verificador':
                 header("Location: ../DashVer.php");
                 break;
+            case 'Calificador':
+                header("Location: ../DashCalf.php");
+                break;
             case 'Ventanilla':
                 header("Location: ../DashVentanilla.php");
                 break;

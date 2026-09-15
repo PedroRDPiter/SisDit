@@ -265,6 +265,7 @@ function tienePermiso($rolRequerido) {
         'Usuario'       => 1,
         'Ventanilla'    => 2,
         'Verificador'   => 3,
+        'Calificador'   => 3,
         'Administrador' => 4,
     ];
 
@@ -289,6 +290,12 @@ function esVerificador() {
 function esVentanilla() {
     return isset($_SESSION['rol']) &&
            ($_SESSION['rol'] === 'Ventanilla' || $_SESSION['rol'] === 'Administrador');
+}
+
+// Calificador incluye también al Administrador
+function esCalificador() {
+    return isset($_SESSION['rol']) &&
+           ($_SESSION['rol'] === 'Calificador' || $_SESSION['rol'] === 'Administrador');
 }
 
 // =====================================================
@@ -330,7 +337,7 @@ function limpiarMayusculas($texto) {
 }
 
 function esPersonalAutorizado(): bool {
-    return isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['Administrador', 'Ventanilla', 'Verificador'], true);
+    return isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['Administrador', 'Ventanilla', 'Verificador', 'Calificador'], true);
 }
 
 function puedeAccederTramite(array $tramite): bool {

@@ -1,5 +1,4 @@
 <?php
-define('SISDIT_JSON_RESPONSE', true);
 require_once "db.php";
 require_once "funciones_seguridad.php";
 

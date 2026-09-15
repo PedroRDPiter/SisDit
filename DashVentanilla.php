@@ -81,7 +81,7 @@ $aprobados_ver_res = $conn->query("
 
 // ── Números oficiales pendientes por firmar (tipo_tramite_id = 1) ──
 $numeros_oficiales_pendientes = $conn->query("
-    SELECT COUNT(*) as c FROM tramites 
+    SELECT COUNT(*) as c FROM tramites
     WHERE estatus = 'Pendiente por firmar'
     AND tipo_tramite_id = 1
 ")->fetch_assoc()['c'];
@@ -117,8 +117,16 @@ $correccion_res = $conn->query("
 ");
 
 // ── Todos los trámites (seguimiento) ──
-$sql_seg = "SELECT t.*, tt.nombre AS tipo_tramite_nombre FROM tramites t
-            LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id WHERE 1=1";
+$sql_seg = "SELECT t.*, tt.nombre AS tipo_tramite_nombre,
+                   s.folio_numero AS lc_folio_numero, s.folio_anio AS lc_folio_anio,
+                   ts.id AS calificacion_id, ts.estatus AS calificacion_estatus,
+                   ts.vigencia AS calificacion_vigencia, ts.expiracion AS calificacion_expiracion,
+                   ts.reglamento_id AS calificacion_reglamento_id, s.tipo_obra AS lc_tipo_obra
+            FROM tramites t
+            LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
+            LEFT JOIN solicitud_lc s ON s.tramite_id = t.id
+            LEFT JOIN tramites_salida ts ON ts.tramite_id = t.id
+            WHERE 1=1";
 $params_seg = []; $types_seg = "";
 if (!empty($_GET['folio'])) {
     if (str_contains($_GET['folio'],'/')) {
@@ -164,16 +172,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const coloniaInput = document.getElementById('colonia_input');
   const coloniaLista = document.getElementById('colonia_lista');
   const cpInput = document.querySelector('input[name="cp"]');
-  
+
   if (coloniaInput) {
     coloniaInput.addEventListener('input', function() {
       const valor = this.value.trim().toLowerCase();
-      
+
       if (valor.length < 2) {
         coloniaLista.style.display = 'none';
         return;
       }
-      
+
       // Hacer petición AJAX al servidor
       fetch('php/buscar_asentamientos.php', {
         method: 'POST',
@@ -185,12 +193,12 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         coloniaLista.innerHTML = '';
-        
+
         if (data.length === 0) {
           coloniaLista.style.display = 'none';
           return;
         }
-        
+
         data.forEach(item => {
           const li = document.createElement('li');
           li.className = 'list-group-item list-group-item-action';
@@ -205,12 +213,12 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           coloniaLista.appendChild(li);
         });
-        
+
         coloniaLista.style.display = 'block';
       })
       .catch(error => console.error('Error:', error));
     });
-    
+
     // Cerrar lista cuando se hace clic fuera
     document.addEventListener('click', function(e) {
       if (e.target !== coloniaInput) {
@@ -231,7 +239,7 @@ function mostrarCamposTA(indice, tipoId) {
   if (tipoId) {
     panel.style.display = 'block';
     hidden.value = tipoId;
-    
+
     // Si el tipo adicional es el mismo que el principal, auto-rellenar con sus datos
     const tipoTramiteId = document.getElementById('tipo_tramite_id_hidden')?.value;
     if (tipoId === tipoTramiteId) {
@@ -239,12 +247,12 @@ function mostrarCamposTA(indice, tipoId) {
       const solicitante = document.querySelector('input[name="solicitante"]')?.value || '';
       const telefono = document.querySelector('input[name="telefono"]')?.value || '';
       const correo = document.querySelector('input[name="correo"]')?.value || '';
-      
+
       const taPropInput = document.querySelector('input[name="' + indice + '_propietario"]');
       const taSoliInput = document.querySelector('input[name="' + indice + '_solicitante"]');
       const taTelInput = document.querySelector('input[name="' + indice + '_telefono"]');
       const taCorreoInput = document.querySelector('input[name="' + indice + '_correo"]');
-      
+
       if (taPropInput && !taPropInput.value) taPropInput.value = propietario;
       if (taSoliInput && !taSoliInput.value) taSoliInput.value = solicitante;
       if (taTelInput && !taTelInput.value) taTelInput.value = telefono;
@@ -322,6 +330,25 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
 .tramite-selector-card:hover{border-color:var(--vino)!important;
   box-shadow:0 4px 16px rgba(123,15,43,.15);transform:translateY(-2px);}
 #mapa{height:380px;border-radius:12px;}
+body.mapa-abierto { overflow: hidden; }
+.dashboard-shell #mapaa.mapa-expandido {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0 !important;
+  padding: 12px !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  overflow: auto;
+  animation: none;
+  transform: none;
+}
+#mapaa.mapa-expandido > :not(#mapa) { flex-shrink: 0; }
+#mapaa.mapa-expandido #mapa { flex: 1 0 180px; height: auto; min-height: 180px; }
 .predio-dato-guardado{
   background:#7b0f2b;
   border:1px solid #fff;
@@ -342,7 +369,7 @@ body{background:#f4f6f9;font-family:'Segoe UI',sans-serif;}
 }
 
 /* Asegurar que el texto sea completamente visible */
-.hero h1, 
+.hero h1,
 .hero p,
 .hero strong,
 .hero * {
@@ -670,7 +697,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <div class="row">
             <div class="col-md-6">
               <p><strong>Folio Ingreso:</strong> <span id="cs_folio" class="badge bg-success"></span></p>
-               <p><strong>Folio Salida:</strong> 
+               <p><strong>Folio Salida:</strong>
         <span id="cs_folio_salida" class="badge bg-primary"></span>
       </p>
               <p><strong>Propietario:</strong> <span id="cs_propietario"></span></p>
@@ -841,14 +868,14 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
       $numOfId=$numOfIdRes['id']??1;
       $numOfIdStmt->close();
       $avgStmt=$conn->prepare("
-        SELECT 
+        SELECT
           COUNT(*) AS n,
           AVG(TIMESTAMPDIFF(SECOND,COALESCE(tiempo_ingreso,created_at),COALESCE(tiempo_salida,fecha_aprobacion,updated_at))) AS avg_seg,
           AVG(TIME_TO_SEC(TIME(COALESCE(tiempo_salida,fecha_aprobacion)))) AS avg_salida_secs
         FROM tramites t
-        WHERE t.tipo_tramite_id=? 
+        WHERE t.tipo_tramite_id=?
           AND t.estatus IN ('Aprobado','Entregado y archivado')
-          AND COALESCE(tiempo_ingreso,created_at) IS NOT NULL 
+          AND COALESCE(tiempo_ingreso,created_at) IS NOT NULL
           AND COALESCE(tiempo_salida,fecha_aprobacion) IS NOT NULL
       ");
       $avgStmt->bind_param("i",$numOfId);
@@ -1187,6 +1214,7 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
         </div>
       </div>
 
+
       <!-- DOCUMENTOS -->
       <section id="seccion-documentos" style="display:none;" class="tramite-box mb-4">
         <h5 class="mb-1" style="color:#7b0f2b;"><i class="bi bi-file-earmark-check me-2"></i>Documentos: <span id="titulo-tramite-seleccionado"></span></h5>
@@ -1271,7 +1299,9 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
       <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i><strong>NOTA:</strong> Para recoger su trámite, deberá presentar esta papeleta original.</div>
 
       <div class="text-end">
-        <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save me-2"></i>Guardar Trámite</button>
+        <button type="submit" class="btn btn-success btn-lg">
+          <i class="bi bi-save me-2"></i>Guardar Trámite
+        </button>
       </div>
     </form>
   </div>
@@ -1291,6 +1321,9 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
           <option value="Entregado y archivado">Entregado y archivado</option>
           <option value="Rechazado">Rechazado</option>
         </select>
+        <button id="btn-expandir-mapa" type="button" class="btn btn-sm btn-outline-secondary" onclick="expandirMapa()" aria-label="Expandir mapa" aria-controls="mapaa" aria-expanded="false">
+          <i class="bi bi-arrows-fullscreen me-1"></i>Expandir
+        </button>
       <button type="button" class="btn btn-sm btn-outline-primary" onclick="centrarMapa()" aria-label="Centrar mapa en el municipio">
         <i class="bi bi-geo-alt me-1"></i>Centrar municipio
       </button>
@@ -1502,6 +1535,42 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
             <a href="ficha.php?folio=<?= urlencode($folio) ?>" target="_blank" class="btn btn-sm btn-outline-info" title="Ver ficha completa">
               <i class="bi bi-eye"></i> Ver
             </a>
+            <!-- BOTON DE SOLICITUD DEL MODAL -->
+            <?php if((int)$t['tipo_tramite_id'] === 7): ?>
+              <?php if ($t['lc_folio_numero'] !== null): ?>
+            <button class="btn btn-sm btn-outline-warning btn-solicitud-lc ms-1"
+              data-tramite-id="<?= (int)$t['id'] ?>"
+              data-folio="<?= htmlspecialchars($folio) ?>"
+              title="Solicitud de Licencia de Construcción">
+              <i class="bi bi-building"></i> Solicitud LC
+            </button>
+              <?php else: ?>
+            <button class="btn btn-sm btn-outline-secondary ms-1" disabled
+              title="No disponible: este trámite es anterior al módulo de Solicitud LC y no tiene folio de solicitud asignado.">
+              <i class="bi bi-building"></i> Solicitud LC
+            </button>
+              <?php endif; ?>
+            <?php endif; ?>
+            <!-- Aqui finaliza el lo del boton para solicitud Lc -->
+            <?php
+              $aprobadoPorVerificador = in_array($t['estatus'], ['Pendiente por firmar', 'Firmado', 'Entregado y archivado', 'Aprobado por Verificador', 'Aprobado'], true);
+              $documentoCalificado = $aprobadoPorVerificador && ($t['calificacion_estatus'] ?? '') === 'Aprobado' && !empty($t['calificacion_id']);
+              $tipoObraLc = $t['lc_tipo_obra'] ?? '';
+              $licenciaCompleta = !empty($t['calificacion_vigencia']) && !empty($t['calificacion_expiracion'])
+                && (in_array($tipoObraLc, ['Construcción', 'Demolición'], true)
+                    || ($tipoObraLc === 'Otro' && !empty($t['calificacion_reglamento_id'])));
+            ?>
+            <?php if ($documentoCalificado && (int)$t['tipo_tramite_id'] === 2): ?>
+            <a href="constancia_compatibilidad.php?id=<?= (int)$t['calificacion_id'] ?>" target="_blank"
+               class="btn btn-sm btn-success ms-1" title="Ver Constancia de Compatibilidad Urbanística">
+              <i class="bi bi-file-earmark-check"></i> Constancia
+            </a>
+            <?php elseif ($documentoCalificado && $licenciaCompleta && (int)$t['tipo_tramite_id'] === 7): ?>
+            <a href="licencia_construccion.php?id=<?= (int)$t['calificacion_id'] ?>" target="_blank"
+               class="btn btn-sm btn-success ms-1" title="Ver Licencia de Construcción">
+              <i class="bi bi-file-earmark-check"></i> Licencia
+            </a>
+            <?php endif; ?>
           </td>
         </tr>
       <?php endwhile; endif; ?>
@@ -1509,6 +1578,259 @@ data-folio-salida-anio="<?= $av['folio_salida_anio'] ?>"
     </table>
   </div>
 </section>
+
+<!-- MODAL SOLICITUD LICENCIA DE CONSTRUCCIÓN -->
+<!--
+Comentarios para la instalación porque se me van a olvidar de aqui en adelante esta las esctructura html del modal
+Las dividi por secciónes dentro del mismo modal
+-->
+<div class="modal fade" id="modalSolicitudLC" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow">
+      <div class="modal-header text-white" style="background:#7b0f2b;">
+        <h5 class="modal-title"><i class="bi bi-building me-2"></i>Solicitud de Licencia de Construcción</h5>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+          <span class="badge bg-light text-dark" id="slc_folio_label"></span>
+          <span class="badge bg-warning text-dark" id="slc_folio_solicitud_label" style="display:none;"></span>
+          <span class="badge" id="slc_estatus_badge" style="display:none;"></span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4" style="font-size:.87rem;">
+          <i class="bi bi-info-circle me-1"></i>
+          Capture los datos de la obra antes de aprobar la solicitud.
+        </p>
+
+        <input type="hidden" id="slc_tramite_id">
+
+        <!-- DATOS DE OBRA -->
+        <div class="tramite-header d-flex align-items-center pb-2 mb-3">
+          <h6 class="mb-0" style="color:#7b0f2b;"><i class="bi bi-pencil-square me-2"></i>Datos de la obra</h6>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Descripción de obra <span class="text-danger">*</span></label>
+          <textarea id="slc_descripcion_obra" class="form-control" rows="3" placeholder="Describa en qué consiste la obra o cuál es la finalidad..." required></textarea>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Tipo de obra <span class="text-danger">*</span></label>
+          <select id="slc_tipo_obra" class="form-control" required>
+            <option value="">Seleccione...</option>
+            <option value="Construcción">Construcción</option>
+            <option value="Demolición">Demolición</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+
+        <!-- SUPERFICIES -->
+        <div class="tramite-header d-flex align-items-center pb-2 mb-3">
+          <h6 class="mb-0" style="color:#7b0f2b;"><i class="bi bi-rulers me-2"></i>Superficie a construir</h6>
+        </div>
+        <div class="row mb-4">
+
+          <?php
+          $superficies_lc = [
+            'sotano'        => 'Sótano',
+            'planta_baja'   => 'Planta baja',
+            'primer_nivel'  => 'Primer nivel',
+            'segundo_nivel' => 'Segundo nivel',
+            'tercer_nivel'  => 'Tercer nivel',
+          ];
+          foreach ($superficies_lc as $key => $label):
+          ?>
+          <div class="col-md-4 mb-3">
+            <label class="form-label"><?= $label ?></label>
+            <div class="input-group">
+              <input type="number" step="0.01" min="0"
+                id="slc_<?= $key ?>"
+                class="form-control slc-superficie"
+                data-key="<?= $key ?>"
+                placeholder="Valor">
+              <span class="input-group-text p-1">
+                <div class="d-flex flex-column" style="font-size:.75rem; line-height:1.6;">
+                  <div class="form-check mb-0">
+                    <input class="form-check-input slc-unidad" type="radio"
+                      name="unidad_<?= $key ?>"
+                      id="m2_<?= $key ?>"
+                      value="m2" checked>
+                    <label class="form-check-label" for="m2_<?= $key ?>">M²</label>
+                  </div>
+                  <div class="form-check mb-0">
+                    <input class="form-check-input slc-unidad" type="radio"
+                      name="unidad_<?= $key ?>"
+                      id="mlin_<?= $key ?>"
+                      value="mlin">
+                    <label class="form-check-label" for="mlin_<?= $key ?>">MLin</label>
+                  </div>
+                </div>
+              </span>
+            </div>
+          </div>
+          <?php endforeach; ?>
+
+          <!-- Otro (texto libre) -->
+          <div class="col-12 mb-3">
+            <label class="form-label">Otras áreas <span class="text-muted" style="font-size:.8rem;">(descripción libre)</span></label>
+            <textarea id="slc_otra_area" class="form-control" rows="2"
+              placeholder="Ej: Terraza 25 m², cochera 18 m², jardín 40 m²..."></textarea>
+          </div>
+
+        </div>
+
+        <!-- URBANIZACIÓN -->
+        <div class="tramite-header d-flex align-items-center pb-2 mb-3">
+          <h6 class="mb-0" style="color:#7b0f2b;"><i class="bi bi-cone-striped me-2"></i>Urbanización existente</h6>
+        </div>
+        <div class="row row-cols-2 row-cols-md-3 g-3 mb-4">
+          <div class="col"><div class="form-check">
+            <input class="form-check-input slc-urb" type="checkbox" id="slc_urb_agua" value="Agua potable">
+            <label class="form-check-label" for="slc_urb_agua">Agua potable</label>
+          </div></div>
+          <div class="col"><div class="form-check">
+            <input class="form-check-input slc-urb" type="checkbox" id="slc_urb_electricidad" value="Electricidad">
+            <label class="form-check-label" for="slc_urb_electricidad">Electricidad</label>
+          </div></div>
+          <div class="col"><div class="form-check">
+            <input class="form-check-input slc-urb" type="checkbox" id="slc_urb_drenaje" value="Drenaje">
+            <label class="form-check-label" for="slc_urb_drenaje">Drenaje</label>
+          </div></div>
+          <div class="col"><div class="form-check">
+            <input class="form-check-input slc-urb" type="checkbox" id="slc_urb_pavimento" value="Pavimento">
+            <label class="form-check-label" for="slc_urb_pavimento">Pavimento</label>
+          </div></div>
+          <div class="col"><div class="form-check">
+            <input class="form-check-input slc-urb" type="checkbox" id="slc_urb_banqueta" value="Banqueta">
+            <label class="form-check-label" for="slc_urb_banqueta">Banqueta</label>
+          </div></div>
+          <div class="col"><div class="form-check">
+            <input class="form-check-input slc-urb" type="checkbox" id="slc_urb_guarnicion" value="Guarnición">
+            <label class="form-check-label" for="slc_urb_guarnicion">Guarnición</label>
+          </div></div>
+        </div>
+
+        <!-- PERITOS (oculto por defecto; se muestra según reglas de superficie) -->
+        <div id="slc_peritos_wrap" style="display:none;">
+        <div class="tramite-header d-flex align-items-center pb-2 mb-3">
+          <h6 class="mb-0" style="color:#7b0f2b;"><i class="bi bi-person-badge me-2"></i>Peritos de obra</h6>
+        </div>
+        <p class="text-muted mb-3" style="font-size:.83rem;">
+          <i class="bi bi-info-circle me-1"></i>Seleccione los peritos que aplican y capture su información. Puede dejar sin marcar si aún no cuenta con esta información.
+        </p>
+
+        <!-- D.R.O. -->
+        <div class="border rounded p-3 mb-3">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="chk_dro">
+            <label class="form-check-label fw-bold" for="chk_dro">D.R.O. <span class="text-muted fw-normal" style="font-size:.8rem;">(Director Responsable de Obra)</span></label>
+          </div>
+          <div id="campos_dro" style="display:none;">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label mb-1" style="font-size:.85rem;">Nombre</label>
+                <input type="text" id="slc_dro_nombre" class="form-control form-control-sm" placeholder="Nombre completo">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">N° de registro</label>
+                <input type="text" id="slc_dro_registro" class="form-control form-control-sm" placeholder="N° registro">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">Cédula profesional</label>
+                <input type="text" id="slc_dro_cedula" class="form-control form-control-sm" placeholder="Cédula">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ESTRUCTURAL -->
+        <div class="border rounded p-3 mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="chk_estructural">
+              <label class="form-check-label fw-bold" for="chk_estructural">Estructural</label>
+            </div>
+            <div class="form-check mb-0" id="mismo_estructural_wrap" style="display:none;">
+              <input class="form-check-input" type="checkbox" id="mismo_estructural">
+              <label class="form-check-label text-muted" style="font-size:.83rem;" for="mismo_estructural">Es el mismo que D.R.O.</label>
+            </div>
+          </div>
+          <div id="campos_estructural" style="display:none;">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label mb-1" style="font-size:.85rem;">Nombre</label>
+                <input type="text" id="slc_estructural_nombre" class="form-control form-control-sm" placeholder="Nombre completo">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">N° de registro</label>
+                <input type="text" id="slc_estructural_registro" class="form-control form-control-sm" placeholder="N° registro">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">Cédula profesional</label>
+                <input type="text" id="slc_estructural_cedula" class="form-control form-control-sm" placeholder="Cédula">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSTALACIONES ESPECIALES -->
+        <div class="border rounded p-3 mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="chk_especialista">
+              <label class="form-check-label fw-bold" for="chk_especialista">Instalaciones especiales</label>
+            </div>
+            <div class="form-check mb-0" id="mismo_especialista_wrap" style="display:none;">
+              <input class="form-check-input" type="checkbox" id="mismo_especialista">
+              <label class="form-check-label text-muted" style="font-size:.83rem;" for="mismo_especialista">Es el mismo que Estructural.</label>
+            </div>
+          </div>
+          <div id="campos_especialista" style="display:none;">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label mb-1" style="font-size:.85rem;">Nombre</label>
+                <input type="text" id="slc_especialista_nombre" class="form-control form-control-sm" placeholder="Nombre completo">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">N° de registro</label>
+                <input type="text" id="slc_especialista_registro" class="form-control form-control-sm" placeholder="N° registro">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">Cédula profesional</label>
+                <input type="text" id="slc_especialista_cedula" class="form-control form-control-sm" placeholder="Cédula">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- PERITOS FIN -->
+        </div>
+
+        <!-- /slc_peritos_wrap -->
+
+        <div id="slc_alerta" class="alert d-none mt-3"></div>
+
+        <!-- ID de la solicitud LC (se llena al cargar datos) -->
+        <input type="hidden" id="slc_solicitud_id">
+        <input type="hidden" id="slc_estatus_actual">
+
+      </div><!-- /.modal-body -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i>Cerrar
+        </button>
+        <button type="button" id="btnImprimirLC" class="btn btn-outline-primary" style="display:none;" onclick="imprimirSolicitudLC()">
+          <i class="bi bi-printer me-1"></i>Imprimir solicitud
+        </button>
+        <button type="button" id="btnAprobar" class="btn btn-outline-success" style="display:none;" onclick="aprobarSolicitudLC()">
+          <i class="bi bi-check-circle me-1"></i>Aprobar
+        </button>
+        <button type="button" id="btnGuardarLC" class="btn btn-success">
+          <i class="bi bi-save me-1"></i>Guardar solicitud
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MODAL SOLICITUD LC FIN -->
+<!-- Dejo esto solo para acordarte que Hasta abajo tenemos funciones para limpiar los campos ademas de el boton para abrir esta parte
+ Nota: Aparte recuerda que antes de pasar con el rol posterior modifica la ficha por el boton para abrir este modal.  -->
 
 
 <!-- ================================================ -->
@@ -2144,15 +2466,58 @@ window.DASH_VENTANILLA_CONFIG = <?= json_encode([
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
-<script src="js/dashVentanilla.js?v=20260827-1"></script>
+<script src="js/dashVentanilla.js?v=<?= filemtime(__DIR__ . '/js/dashVentanilla.js') ?>"></script>
 <script src="js/dashboard-ui.js?v=20260814-1"></script>
+
+<?php
+// Si viene desde ficha.php con parámetro para abrir el modal de Solicitud LC
+$abrir_lc_id   = isset($_GET['abrir_solicitud_lc']) ? (int)$_GET['abrir_solicitud_lc'] : 0;
+$abrir_lc_folio = isset($_GET['lc_folio']) ? htmlspecialchars(urldecode($_GET['lc_folio'])) : '';
+if ($abrir_lc_id > 0 && $abrir_lc_folio):
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Simular el clic en el botón de Solicitud LC para ese trámite
+    // cargando los datos y abriendo el modal directamente
+    const tramiteId = <?= $abrir_lc_id ?>;
+    const folio     = <?= json_encode($abrir_lc_folio) ?>;
+
+    // Limpiar modal y asignar datos del trámite
+    if (typeof limpiarModalLC === 'function') limpiarModalLC();
+    document.getElementById('slc_tramite_id').value        = tramiteId;
+    document.getElementById('slc_folio_label').textContent = 'Folio: ' + folio;
+
+    const btnGuardar = document.getElementById('btnGuardarLC');
+    if (btnGuardar) {
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cargando...';
+    }
+
+    fetch('php/obtener_solicitud_lc.php?tramite_id=' + tramiteId)
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success && typeof llenarModalLC === 'function') llenarModalLC(resp.data);
+        })
+         .catch(() => {})
+         .finally(() => {
+             if (btnGuardar) {
+                 btnGuardar.disabled = document.getElementById('slc_estatus_actual')?.value === 'Aprobada';
+                 btnGuardar.innerHTML = '<i class="bi bi-save me-1"></i>Guardar solicitud';
+            }
+            bootstrap.Modal.getOrCreateInstance(
+                document.getElementById('modalSolicitudLC')
+            ).show();
+        });
+});
+</script>
+<?php endif; ?>
 
 </body>
 </html>

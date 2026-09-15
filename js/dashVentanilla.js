@@ -31,6 +31,44 @@ function centrarMapa() {
   setTimeout(() => map.invalidateSize(), 150);
 }
 
+let mapaScrollAnterior = 0;
+
+function expandirMapa() {
+  const mapaContainer = document.getElementById('mapaa');
+  if (!mapaContainer) return;
+  const expandido = !mapaContainer.classList.contains('mapa-expandido');
+  if (expandido) mapaScrollAnterior = window.scrollY;
+  mapaContainer.classList.toggle('mapa-expandido', expandido);
+  document.body.classList.toggle('mapa-abierto', expandido);
+  const boton = document.getElementById('btn-expandir-mapa');
+  if (boton) {
+    boton.setAttribute('aria-expanded', String(expandido));
+    boton.setAttribute('aria-label', expandido ? 'Contraer mapa' : 'Expandir mapa');
+    boton.innerHTML = expandido
+      ? '<i class="bi bi-fullscreen-exit me-1"></i>Contraer'
+      : '<i class="bi bi-arrows-fullscreen me-1"></i>Expandir';
+  }
+  requestAnimationFrame(() => {
+    map.invalidateSize({ pan: false });
+    if (!expandido) {
+      window.scrollTo({ top: mapaScrollAnterior, behavior: 'instant' });
+      boton?.focus({ preventScroll: true });
+    }
+  });
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.getElementById('mapaa')?.classList.contains('mapa-expandido')) {
+    expandirMapa();
+  }
+});
+
+// Ajustar también cuando cambian las coordenadas visibles o la orientación.
+if (typeof ResizeObserver !== 'undefined') {
+  const mapaResizeObserver = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+  mapaResizeObserver.observe(map.getContainer());
+}
+
 function obtenerUbicacion() {
   if (!navigator.geolocation) {
     Swal.fire({
@@ -76,6 +114,7 @@ function obtenerUbicacion() {
 
 window.centrarMapa = centrarMapa;
 window.obtenerUbicacion = obtenerUbicacion;
+window.expandirMapa = expandirMapa;
 
 // Definir capas base
 const openStreetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -103,10 +142,6 @@ const layerControl = L.control.layers(baseLayers, overlays, {
     position: 'topright',
     collapsed: false
 }).addTo(map);
-
-
-
-// Cargar puntos de trámites (tu código original, corregido)
 
 
 // Variable para rastrear el polígono seleccionado
@@ -483,7 +518,7 @@ function buscarYResaltarPoligono(cuentaCatastral) {
 }
 
 // Cargar poligonos de TRAMITES_reprojected.geojson
-const cargaParcelasPromise = fetch('./Geojson/TRAMITES_reprojected.geojson')
+const cargaParcelasPromise = fetch('./Geojson/TRAMITES_reprojected.geojson', { cache: 'no-cache' })
   .then(response => response.json())
   .then(data => {
 
@@ -732,6 +767,8 @@ function volverSeleccion(){
   document.getElementById('paso1-seleccion').style.display='block';
   document.getElementById('tramite').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+
 function actualizarReqs(id){
   const sec=document.getElementById('seccion-documentos');
   document.querySelectorAll('[id^="grupo-"]').forEach(g=>{g.style.display='none';});
@@ -745,6 +782,11 @@ function actualizarReqs(id){
   if(id === 8){
     // Anuncios Publicitarios: optional for empresas
     ['poder_notariado','acta_constitutiva'].forEach(d=>{const g=document.getElementById('grupo-'+d);if(g)g.style.display='block';});
+  }
+  if(id === 7){
+    // Licencia de Construcción: datos de obra y urbanización
+    const grupoObra=document.getElementById('grupo-datos_obra');
+    if(grupoObra)grupoObra.style.display='block';
   }
 }
 
@@ -838,7 +880,7 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
 
     document.getElementById('sec_nota').value='';
     document.getElementById('sec_observaciones').textContent=d.observaciones||'Sin indicaciones del verificador.';
-    
+
     // CORRECCIÓN: Manejo de documentos
     const docs = {
       sec_doc_ine: d.ine,
@@ -855,7 +897,7 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
       sec_doc_oficio_vobo: d.oficio_vobo,
       sec_doc_oficio_visto_bueno: d.oficio
     };
-    
+
     let hayDocs = false;
     Object.entries(docs).forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -875,20 +917,20 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
         }
       }
     });
-    
+
     // Mostrar mensaje si no hay documentos
     const sinDocsEl = document.getElementById('sec_sin_docs');
     if (sinDocsEl) {
       sinDocsEl.style.display = hayDocs ? 'none' : 'block';
     }
-    
+
     // Manejo de fotografías
     ['1','2'].forEach(n => {
       const val = d['foto' + n];
       const prev = document.getElementById('sec_prev' + n);
       const cont = document.getElementById('sec_prev' + n + '_container');
       const input = document.getElementById('sec_input_foto' + n);
-      
+
       if (prev && cont) {
         if (val && val.trim() && val !== 'null' && val !== 'undefined') {
           prev.src = 'uploads/' + val;
@@ -901,7 +943,7 @@ document.querySelectorAll('.btn-editar-correccion').forEach(btn=>{
       }
       if (input) input.value = '';
     });
-    
+
     document.getElementById('sec_btn_ficha').href = 'ficha.php?folio=' + d.folio;
   });
 });
@@ -1027,7 +1069,7 @@ $(document).on('click', '.btn-constancia-sec', function(){
   _cs_folio_actual = $(this).data('folio');
   document.getElementById('cs_folio_hidden').value = _cs_folio_actual;
   document.getElementById('cs_id_hidden').value = _cs_id_actual;
-  
+
   // DATOS GENERALES
   $('#cs_folio').text($(this).data('folio'));
   $('#cs_propietario').text($(this).data('propietario'));
@@ -1171,21 +1213,21 @@ document.getElementById('formConstanciaSec')?.addEventListener('submit', functio
 document.getElementById('btnImprimirConstanciaSec')?.addEventListener('click', function() {
   const folio = _cs_folio_actual || document.getElementById('cs_folio_hidden').value;
   const folioSalida = document.getElementById('cs_folio_salida').textContent;
-  
+
   if (!folio) {
-    Swal.fire({ 
-      icon: 'error', 
-      title: 'Error', 
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
       text: 'No se pudo obtener el folio del trámite.',
-      confirmButtonColor: '#7b0f2b' 
+      confirmButtonColor: '#7b0f2b'
     });
     return;
   }
 
   // VALIDAR QUE TENGA FOLIO DE SALIDA
   if (!folioSalida || folioSalida === '—') {
-    Swal.fire({ 
-      icon: 'warning', 
+    Swal.fire({
+      icon: 'warning',
       title: 'Sin folio de salida',
       text: 'Este trámite aún no ha sido firmado por el Director. No se puede generar la constancia.',
       confirmButtonColor: '#7b0f2b',
@@ -1197,11 +1239,11 @@ document.getElementById('btnImprimirConstanciaSec')?.addEventListener('click', f
   }
 
   if (!_cs_croquis_guardado) {
-    Swal.fire({ 
-      icon: 'warning', 
+    Swal.fire({
+      icon: 'warning',
       title: 'Croquis requerido',
       text: 'La constancia requiere un croquis guardado para poder imprimirse.',
-      confirmButtonColor: '#7b0f2b' 
+      confirmButtonColor: '#7b0f2b'
     });
     return;
   }
@@ -1497,7 +1539,7 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
     document.querySelector('input[name="solicitante"]').value = tramite.solicitante || '';
     document.querySelector('input[name="telefono"]').value = tramite.telefono || '';
     document.querySelector('input[name="correo"]').value = tramite.correo || '';
-    
+
     // Mostrar loading mientras se copian los documentos
     Swal.fire({
         title: 'Copiando documentos...',
@@ -1505,12 +1547,12 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
-    
+
     // Obtener el folio actual del nuevo trámite
     const folioNumero = document.querySelector('input[name="folio_numero"]').value;
     const folioAnio = document.querySelector('input[name="folio_anio"]').value;
     const folioDestino = `${String(folioNumero).padStart(3, '0')}/${folioAnio}`;
-    
+
     // Copiar los documentos del trámite anterior al nuevo
     fetch('php/copiar_documentos_tramite.php', {
         method: 'POST',
@@ -1520,11 +1562,11 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
     .then(response => response.json())
     .then(data => {
         Swal.close();
-        
+
         if (data.success) {
             // Mostrar alerta corta
             let mensajeCorto = 'Documentos copiados correctamente.';
-            
+
             // Mostrar información de constancia de forma más compacta
             if (tramite.constancia) {
                 Swal.fire({
@@ -1545,10 +1587,10 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
                     showConfirmButton: false
                 });
             }
-            
+
             // Mostrar enlaces a los documentos copiados en el formulario
             mostrarDocumentosCopiados(data.archivos_copiados, folioOrigen);
-            
+
         } else {
             Swal.fire({
                 icon: 'error',
@@ -1572,16 +1614,16 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
 // ── FUNCIÓN PARA MOSTRAR DOCUMENTOS COPIADOS CON OPCIÓN DE DESCARGAR ──
 function mostrarDocumentosCopiados(archivos, tramiteOrigen) {
     if (!archivos) return;
-    
+
     const nombres = {
         'ine': 'INE',
         'escritura': 'Escritura/Título',
         'predial': 'Boleta Predial',
     };
-    
+
     // Crear o actualizar una sección para mostrar los documentos copiados
     let seccionDocs = document.getElementById('documentos-copiados');
-    
+
     if (!seccionDocs) {
         // Crear la sección si no existe
         const seccionDocumentos = document.getElementById('seccion-documentos');
@@ -1604,13 +1646,13 @@ function mostrarDocumentosCopiados(archivos, tramiteOrigen) {
             seccionDocs = div;
         }
     }
-    
+
     if (seccionDocs) {
         const lista = document.getElementById('lista-docs-copiados');
         if (lista) {
             lista.innerHTML = '';
             let documentos = [];
-            
+
             for (const [tipo, archivo] of Object.entries(archivos)) {
                 if (archivo) {
                     const nombreDoc = nombres[tipo] || tipo;
@@ -1622,8 +1664,8 @@ function mostrarDocumentosCopiados(archivos, tramiteOrigen) {
                             <strong>${nombreDoc}</strong>
                             <small class="text-muted ms-2">(${archivo})</small>
                         </div>
-                        <a href="uploads/${encodeURIComponent(archivo)}" 
-                           download 
+                        <a href="uploads/${encodeURIComponent(archivo)}"
+                           download
                            class="btn btn-sm btn-outline-primary"
                            target="_blank">
                             <i class="bi bi-download me-1"></i>Descargar
@@ -1633,10 +1675,10 @@ function mostrarDocumentosCopiados(archivos, tramiteOrigen) {
                     documentos.push({ tipo: nombreDoc, archivo: archivo });
                 }
             }
-            
+
             // Guardar la lista de documentos para la función de descargar todos
             window.documentosCopiados = documentos;
-            
+
             if (documentos.length === 0) {
                 lista.innerHTML = '<div class="text-muted text-center py-2">No se copiaron documentos</div>';
             }
@@ -1656,14 +1698,14 @@ function descargarTodosDocumentos() {
         });
         return;
     }
-    
+
     Swal.fire({
         title: 'Preparando descarga...',
         text: 'Los documentos se descargarán individualmente. Revisa tu carpeta de descargas.',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
-    
+
     // Descargar cada documento individualmente con un pequeño retraso
     let i = 0;
     function descargarSiguiente() {
@@ -1678,7 +1720,7 @@ function descargarTodosDocumentos() {
             });
             return;
         }
-        
+
         const doc = window.documentosCopiados[i];
         const link = document.createElement('a');
         link.href = 'uploads/' + encodeURIComponent(doc.archivo);
@@ -1686,30 +1728,30 @@ function descargarTodosDocumentos() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         i++;
         setTimeout(descargarSiguiente, 800);
     }
-    
+
     descargarSiguiente();
 }
 // ── EVENTO PARA BUSCAR POR PROPIETARIO ──
 document.getElementById('btnBuscarTramiteAnterior')?.addEventListener('click', function() {
     const propietario = document.getElementById('propietario_input').value.trim();
     const tipoTramiteId = document.getElementById('tipo_tramite_id_hidden').value;
-    
+
     if (!propietario) {
         Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'Escribe el nombre del propietario primero.', confirmButtonColor: '#7b0f2b' });
         return;
     }
-    
+
     if (!tipoTramiteId) {
         Swal.fire({ icon: 'warning', title: 'Tipo de trámite', text: 'Selecciona el tipo de trámite primero.', confirmButtonColor: '#7b0f2b' });
         return;
     }
-    
+
     Swal.fire({ title: 'Buscando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-    
+
     fetch(`php/obtener_tramite_anterior.php?propietario=${encodeURIComponent(propietario)}&tipo_tramite_id=${tipoTramiteId}&incluir_constancia=true`)
         .then(response => response.json())
         .then(data => {
@@ -1937,3 +1979,577 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarCalles();
     mostrarAlertaNumerosOficiales();
 });
+
+/*    =====================================================
+
+
+            MODAL SOLICITUD LICENCIA DE CONSTRUCCIÓN
+
+
+      =====================================================
+*/
+
+// Función auxiliar: limpia todos los campos del modal
+function limpiarModalLC() {
+    document.getElementById('slc_tramite_id').value        = '';
+    document.getElementById('slc_solicitud_id').value      = '';
+    document.getElementById('slc_folio_label').textContent = '';
+    const folioSlc = document.getElementById('slc_folio_solicitud_label');
+    if (folioSlc) { folioSlc.textContent = ''; folioSlc.style.display = 'none'; }
+    // Ocultar botón imprimir hasta que haya datos guardados
+    const btnImprimir = document.getElementById('btnImprimirLC');
+    if (btnImprimir) btnImprimir.style.display = 'none';
+
+    // Ocultar badge de estatus y botón Aprobar (aún no hay solicitud guardada)
+    actualizarEstatusLC(null, null);
+
+    document.getElementById('slc_descripcion_obra').value  = '';
+    document.getElementById('slc_tipo_obra').value         = '';
+
+    // Limpiar superficies y resetear unidades a m²
+    ['sotano','planta_baja','primer_nivel','segundo_nivel','tercer_nivel'].forEach(k => {
+        const inp = document.getElementById('slc_' + k);
+        if (inp) inp.value = '';
+        const radio = document.getElementById('m2_' + k);
+        if (radio) radio.checked = true;
+    });
+    // otra_area es textarea de texto libre
+    const otraAreaEl = document.getElementById('slc_otra_area');
+    if (otraAreaEl) otraAreaEl.value = '';
+
+    // Resetear peritos (nombre, registro, cedula)
+    limpiarPeritosLC();
+
+    document.querySelectorAll('.slc-urb').forEach(cb => cb.checked = false);
+    const alerta = document.getElementById('slc_alerta');
+    if (alerta) { alerta.className = 'alert d-none'; alerta.textContent = ''; }
+
+    // Ocultar sección de peritos hasta que las superficies lo ameriten
+    evaluarPeritosLC();
+}
+
+// campos y "es el mismo" de los peritos
+function limpiarPeritosLC() {
+    ['dro','estructural','especialista'].forEach(p => {
+        const chk = document.getElementById('chk_' + p);
+        const campos = document.getElementById('campos_' + p);
+        if (chk) chk.checked = false;
+        if (campos) campos.style.display = 'none';
+        ['nombre','registro','cedula'].forEach(f => {
+            const inp = document.getElementById('slc_' + p + '_' + f);
+            if (inp) { inp.value = ''; inp.disabled = false; }
+        });
+    });
+    ['estructural','especialista'].forEach(p => {
+        const wrap = document.getElementById('mismo_' + p + '_wrap');
+        const chk  = document.getElementById('mismo_' + p);
+        if (wrap) wrap.style.display = 'none';
+        if (chk)  chk.checked = false;
+    });
+}
+
+//  pre-llena el modal con datos existentes
+function llenarModalLC(data) {
+    if (!data) return;
+
+    // Guardar id de la solicitud y mostrar botón imprimir
+    const idSol = document.getElementById('slc_solicitud_id');
+    const btnImprimir = document.getElementById('btnImprimirLC');
+    if (idSol) idSol.value = data.id ?? '';
+    if (btnImprimir) btnImprimir.style.display = data.id ? 'inline-block' : 'none';
+
+    // Badge de estatus y botón Aprobar
+    actualizarEstatusLC(data.estatus, data.id);
+
+    // Folio de solicitud
+    const folioSlc = document.getElementById('slc_folio_solicitud_label');
+    if (folioSlc && data.folio_solicitud) {
+        folioSlc.textContent = 'Folio LC: ' + data.folio_solicitud;
+        folioSlc.style.display = 'inline-block';
+    } else if (folioSlc) {
+        folioSlc.style.display = 'none';
+    }
+
+    document.getElementById('slc_descripcion_obra').value = data.descripcion_obra ?? '';
+    document.getElementById('slc_tipo_obra').value        = data.tipo_obra        ?? '';
+
+    // Superficies con unidades: cada campo guarda {valor, unidad}
+    const sup = data.superficies ?? {};
+    ['sotano','planta_baja','primer_nivel','segundo_nivel','tercer_nivel'].forEach(k => {
+        const obj    = sup[k] ?? {};
+        const valor  = typeof obj === 'object' ? (obj.valor  ?? '') : (obj ?? '');
+        const unidad = typeof obj === 'object' ? (obj.unidad ?? 'm2') : 'm2';
+        const inp    = document.getElementById('slc_' + k);
+        const radio  = document.getElementById(unidad + '_' + k);
+        if (inp)   inp.value = valor;
+        if (radio) radio.checked = true;
+    });
+    // otra_area es texto libre
+    const otraAreaEl = document.getElementById('slc_otra_area');
+    if (otraAreaEl) {
+        const otraObj = sup['otra_area'] ?? '';
+        otraAreaEl.value = typeof otraObj === 'object' ? (otraObj.valor ?? '') : (otraObj ?? '');
+    }
+
+    // Peritos: leer del objeto JSON data.peritos
+    const peritos = data.peritos ?? {};
+    ['dro','estructural','especialista'].forEach(p => {
+        const obj = peritos[p] ?? {};
+        const nombre = obj.nombre ?? '';
+        if (!nombre) return;
+        const chk    = document.getElementById('chk_' + p);
+        const campos = document.getElementById('campos_' + p);
+        if (chk)    chk.checked = true;
+        if (campos) campos.style.display = 'block';
+        ['nombre','registro','cedula'].forEach(f => {
+            const inp = document.getElementById('slc_' + p + '_' + f);
+            if (inp) inp.value = obj[f] ?? '';
+        });
+    });
+    // Mostrar "Es el mismo" si el perito está marcado y tiene anterior
+    ['estructural','especialista'].forEach(p => {
+        const chk  = document.getElementById('chk_' + p);
+        const wrap = document.getElementById('mismo_' + p + '_wrap');
+        if (chk && chk.checked && wrap) wrap.style.display = 'flex';
+    });
+
+    // Urbanización
+    const urb = Array.isArray(data.urbanizacion) ? data.urbanizacion : [];
+    document.querySelectorAll('.slc-urb').forEach(cb => {
+        cb.checked = urb.includes(cb.value);
+    });
+
+    // Evaluar reglas de peritos con los datos recién cargados
+    evaluarPeritosLC();
+}
+
+/*
+ Nota: Reglas para mostrar o ocultar la sección de Peritos
+Se muestra si:
+primer_nivel > 60 (unidad m2)
+segundo_nivel > 18 (unidad m2)
+cualquier campo numérico de superficie > 2.5 estando en unidad MLin
+*/
+const SLC_SUPERFICIE_KEYS   = ['sotano', 'planta_baja', 'primer_nivel', 'segundo_nivel', 'tercer_nivel'];
+const SLC_UMBRAL_M2         = { primer_nivel: 60, segundo_nivel: 18 };
+const SLC_UMBRAL_MLIN       = 2.5;
+
+function evaluarPeritosLC() {
+    let mostrar = false;
+
+    SLC_SUPERFICIE_KEYS.forEach(k => {
+        const inp = document.getElementById('slc_' + k);
+        if (!inp) return;
+        const val = parseFloat(inp.value);
+        if (isNaN(val)) return;
+
+        const radioMlin = document.getElementById('mlin_' + k);
+        const esMlin = !!(radioMlin && radioMlin.checked);
+
+        if (esMlin) {
+            if (val > SLC_UMBRAL_MLIN) mostrar = true;
+        } else if (SLC_UMBRAL_M2[k] !== undefined) {
+            if (val > SLC_UMBRAL_M2[k]) mostrar = true;
+        }
+    });
+
+    const wrap = document.getElementById('slc_peritos_wrap');
+    if (!wrap) return;
+
+    const estabaVisible = wrap.style.display !== 'none';
+
+    if (mostrar) {
+        wrap.style.display = 'block';
+    } else {
+        wrap.style.display = 'none';
+        // Si se acaba de ocultar (dejó de cumplir las reglas), limpiar los datos capturados
+        if (estabaVisible) limpiarPeritosLC();
+    }
+}
+
+//  Badge de estatus y botón Aprobar
+// estatus: 'Pendiente' | 'Aprobada' | null
+function actualizarEstatusLC(estatus, solicitudId) {
+    const badge = document.getElementById('slc_estatus_badge');
+    const btnAprobar = document.getElementById('btnAprobar');
+    const btnGuardar = document.getElementById('btnGuardarLC');
+    const estatusHidden = document.getElementById('slc_estatus_actual');
+
+    if (estatusHidden) estatusHidden.value = estatus || '';
+
+    if (!estatus || !solicitudId) {
+        if (badge) badge.style.display = 'none';
+        if (btnAprobar) btnAprobar.style.display = 'none';
+        if (btnGuardar) btnGuardar.disabled = false;
+        return;
+    }
+
+    if (badge) {
+        badge.style.display = 'inline-block';
+        if (estatus === 'Aprobada') {
+            badge.className = 'badge bg-success';
+            badge.textContent = 'Aprobada';
+        } else {
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Pendiente';
+        }
+    }
+
+    // Solo se puede aprobar si aún está Pendiente
+    if (btnAprobar) btnAprobar.style.display = (estatus === 'Pendiente') ? 'inline-block' : 'none';
+    if (btnGuardar) btnGuardar.disabled = estatus === 'Aprobada';
+}
+
+/*
+ Aprobar la solicitud LC actual (cambia Pendiente a Aprobada)
+Validación compartida: descripción y tipo de obra deben estar llenos
+Se usa antes de Imprimir y de Aprobar, para no permitir ninguna de las dos acciones sobre una solicitud incompleta.
+*/
+function camposObligatoriosLC() {
+    const descripcion = (document.getElementById('slc_descripcion_obra').value || '').trim();
+    const tipoObra     = document.getElementById('slc_tipo_obra').value || '';
+
+    if (!descripcion) return { ok: false, campo: 'descripcion', mensaje: 'Falta capturar la descripción de la obra.' };
+    if (!tipoObra)     return { ok: false, campo: 'tipo_obra',   mensaje: 'Falta seleccionar el tipo de obra.' };
+    return { ok: true };
+}
+
+function aprobarSolicitudLC() {
+    const solicitudId = document.getElementById('slc_solicitud_id').value;
+    if (!solicitudId) {
+        Swal.fire({icon: 'warning', title: 'Guarda primero', text: 'Debes guardar la solicitud antes de poder aprobarla.'});
+        return;
+    }
+
+    const estatusActual = document.getElementById('slc_estatus_actual').value;
+    if (estatusActual === 'Aprobada') {
+        Swal.fire({icon: 'info', title: 'Ya está aprobada', text: 'Esta solicitud ya fue aprobada anteriormente.'});
+        return;
+    }
+
+    const validacion = camposObligatoriosLC();
+    if (!validacion.ok) {
+        Swal.fire({icon: 'warning', title: 'Solicitud incompleta', text: validacion.mensaje + ' Guárdala antes de aprobar.'});
+        return;
+    }
+
+    Swal.fire({
+        title: '¿Aprobar esta solicitud?',
+        text: 'Una vez aprobada no podrá revertirse desde este formulario.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, aprobar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+
+        const btnAprobar = document.getElementById('btnAprobar');
+        const textoOriginal = btnAprobar.innerHTML;
+        btnAprobar.disabled = true;
+        btnAprobar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Aprobando...';
+
+        const fd = new FormData();
+        fd.append('solicitud_id', solicitudId);
+        fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
+
+        fetch('php/aprobar_solicitud_lc.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    actualizarEstatusLC('Aprobada', solicitudId);
+                    Swal.fire({icon: 'success', title: 'Solicitud aprobada', timer: 1800, showConfirmButton: false});
+                } else {
+                    Swal.fire({icon: 'error', title: 'No se pudo aprobar', text: data.message || 'Intenta de nuevo.'});
+                }
+            })
+            .catch(err => {
+                Swal.fire({icon: 'error', title: 'Error de conexión', text: err.message});
+            })
+            .finally(() => {
+                btnAprobar.disabled = false;
+                btnAprobar.innerHTML = textoOriginal;
+            });
+    });
+}
+
+// Escuchar cambios en los inputs y radios de superficie
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.slc-superficie').forEach(inp => {
+        inp.addEventListener('input', evaluarPeritosLC);
+    });
+    document.querySelectorAll('.slc-unidad').forEach(radio => {
+        radio.addEventListener('change', evaluarPeritosLC);
+    });
+});
+
+//  Lógica de checkboxes de peritos
+document.addEventListener('DOMContentLoaded', function() {
+
+    const ordenPeritos = ['dro', 'estructural', 'especialista'];
+
+    // Obtiene el último perito marcado antes del perito dado
+    function getPeritoAnterior(perito) {
+        const idx = ordenPeritos.indexOf(perito);
+        for (let i = idx - 1; i >= 0; i--) {
+            const chk = document.getElementById('chk_' + ordenPeritos[i]);
+            if (chk && chk.checked) return ordenPeritos[i];
+        }
+        return null;
+    }
+
+    // Actualiza el label y comportamiento de "Es el mismo" para un perito
+    function actualizarMismo(perito) {
+        const wrap  = document.getElementById('mismo_' + perito + '_wrap');
+        const label = wrap ? wrap.querySelector('label') : null;
+        const chkM  = document.getElementById('mismo_' + perito);
+        const inp   = document.getElementById('slc_' + perito);
+        const chk   = document.getElementById('chk_' + perito);
+
+        if (!wrap) return;
+
+        const anterior = getPeritoAnterior(perito);
+
+        if (chk && chk.checked && anterior) {
+            const labels = { dro: 'D.R.O.', estructural: 'Estructural' };
+            if (label) label.textContent = 'Es el mismo que ' + (labels[anterior] || anterior);
+            wrap.style.display = 'flex';
+        } else {
+            wrap.style.display = 'none';
+            if (chkM) chkM.checked = false;
+            if (inp)  { inp.disabled = false; }
+        }
+    }
+
+    // Al marcar e desmarcar cualquier perito
+    ordenPeritos.forEach(p => {
+        const chk    = document.getElementById('chk_' + p);
+        const campos = document.getElementById('campos_' + p);
+        if (!chk || !campos) return;
+
+        chk.addEventListener('change', function() {
+            campos.style.display = this.checked ? 'block' : 'none';
+
+            if (!this.checked) {
+                ['nombre','registro','cedula'].forEach(f => {
+                    const inp = document.getElementById('slc_' + p + '_' + f);
+                    if (inp) { inp.value = ''; inp.disabled = false; }
+                });
+                const chkM = document.getElementById('mismo_' + p);
+                if (chkM) chkM.checked = false;
+            }
+
+            // Actualizar "es el mismo" de todos los peritos que vienen después
+            const idx = ordenPeritos.indexOf(p);
+            for (let i = idx + 1; i < ordenPeritos.length; i++) {
+                actualizarMismo(ordenPeritos[i]);
+                if (!this.checked) {
+                    const chkSig  = document.getElementById('chk_' + ordenPeritos[i]);
+                    const chkMSig = document.getElementById('mismo_' + ordenPeritos[i]);
+                    if (chkSig && chkSig.checked && chkMSig && chkMSig.checked) {
+                        chkMSig.checked = false;
+                        ['nombre','registro','cedula'].forEach(f => {
+                            const inpSig = document.getElementById('slc_' + ordenPeritos[i] + '_' + f);
+                            if (inpSig) { inpSig.disabled = false; inpSig.value = ''; }
+                        });
+                        actualizarMismo(ordenPeritos[i]);
+                    }
+                }
+            }
+
+            if (this.checked) actualizarMismo(p);
+        });
+    });
+
+    // copiar los 3 campos del anterior y bloquear
+    ['estructural', 'especialista'].forEach(p => {
+        const chkMismo = document.getElementById('mismo_' + p);
+        if (!chkMismo) return;
+        chkMismo.addEventListener('change', function() {
+            const anterior = getPeritoAnterior(p);
+            ['nombre','registro','cedula'].forEach(f => {
+                const inpActual   = document.getElementById('slc_' + p + '_' + f);
+                const inpAnterior = anterior ? document.getElementById('slc_' + anterior + '_' + f) : null;
+                if (!inpActual) return;
+                if (this.checked) {
+                    inpActual.value    = inpAnterior ? inpAnterior.value : '';
+                    inpActual.disabled = true;
+                } else {
+                    inpActual.value    = '';
+                    inpActual.disabled = false;
+                }
+            });
+        });
+    });
+
+}); // fin DOMContentLoaded de peritos
+
+// Clic en botón "Solicitud LC" de la tabla de seguimiento
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-solicitud-lc');
+    if (!btn) return;
+
+    const tramiteId = btn.dataset.tramiteId;
+    const folio     = btn.dataset.folio;
+
+    limpiarModalLC();
+    document.getElementById('slc_tramite_id').value        = tramiteId;
+    document.getElementById('slc_folio_label').textContent = 'Folio: ' + folio;
+
+    // Mostrar mientras carga
+    const btnGuardar = document.getElementById('btnGuardarLC');
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cargando...';
+
+    // Cargar datos existentes de solicitud_LC
+    fetch('php/obtener_solicitud_lc.php?tramite_id=' + tramiteId)
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                llenarModalLC(resp.data); // data puede ser null si no hay datos aún
+            }
+        })
+        .catch(() => {
+            // Si falla la carga, abrimos el modal en blanco igual
+        })
+        .finally(() => {
+            btnGuardar.disabled = document.getElementById('slc_estatus_actual')?.value === 'Aprobada';
+            btnGuardar.innerHTML = '<i class="bi bi-save me-1"></i>Guardar solicitud';
+            // Abrir el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalSolicitudLC'));
+            modal.show();
+        });
+});
+
+// Clic en "Guardar solicitud" dentro del modal
+document.getElementById('btnGuardarLC').addEventListener('click', function() {
+    const tramiteId = document.getElementById('slc_tramite_id').value;
+    if (!tramiteId) return;
+
+    //  Validación de campos obligatorios
+    const descripcionEl = document.getElementById('slc_descripcion_obra');
+    const tipoObraEl     = document.getElementById('slc_tipo_obra');
+
+    if (!descripcionEl.value.trim()) {
+        Swal.fire({icon: 'warning', title: 'Falta la descripción', text: 'Debes capturar la descripción de la obra.'});
+        descripcionEl.focus();
+        return;
+    }
+    if (!tipoObraEl.value) {
+        Swal.fire({icon: 'warning', title: 'Falta el tipo de obra', text: 'Debes seleccionar el tipo de obra.'});
+        tipoObraEl.focus();
+        return;
+    }
+
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
+    // Recoger urbanización marcada
+    const urbSeleccionada = [];
+    document.querySelectorAll('.slc-urb:checked').forEach(cb => {
+        urbSeleccionada.push(cb.value);
+    });
+
+    // Recoger superficies con su unidad
+    const superficiesKeys = ['sotano','planta_baja','primer_nivel','segundo_nivel','tercer_nivel'];
+    const superficies = {};
+    superficiesKeys.forEach(k => {
+        const inp    = document.getElementById('slc_' + k);
+        const unidad = document.querySelector('input[name="unidad_' + k + '"]:checked');
+        superficies[k] = {
+            valor:  inp    ? inp.value    : '',
+            unidad: unidad ? unidad.value : 'm2'
+        };
+    });
+    // otra_area como texto libre
+    const otraAreaEl = document.getElementById('slc_otra_area');
+    superficies['otra_area'] = otraAreaEl ? otraAreaEl.value.trim() : '';
+
+    // Recoger peritos como objeto JSON
+    const peritosCap = {};
+    ['dro','estructural','especialista'].forEach(p => {
+        const chk = document.getElementById('chk_' + p);
+        if (chk && chk.checked) {
+            peritosCap[p] = {
+                nombre:   (document.getElementById('slc_' + p + '_nombre')   || {value:''}).value.trim(),
+                registro: (document.getElementById('slc_' + p + '_registro') || {value:''}).value.trim(),
+                cedula:   (document.getElementById('slc_' + p + '_cedula')   || {value:''}).value.trim(),
+            };
+        } else {
+            peritosCap[p] = { nombre: '', registro: '', cedula: '' };
+        }
+    });
+
+    // Construir FormData
+    const fd = new FormData();
+    fd.append('tramite_id',       tramiteId);
+    fd.append('csrf_token',       document.querySelector('input[name="csrf_token"]')?.value || '');
+    fd.append('descripcion_obra', document.getElementById('slc_descripcion_obra').value.trim());
+    fd.append('tipo_obra',        document.getElementById('slc_tipo_obra').value);
+    fd.append('superficies',      JSON.stringify(superficies));
+    fd.append('peritos',          JSON.stringify(peritosCap));
+    urbSeleccionada.forEach(v => fd.append('urbanizacion[]', v));
+
+    fetch('php/guardar_solicitud_lc.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                const modalEl   = document.getElementById('modalSolicitudLC');
+                const modalInst = bootstrap.Modal.getInstance(modalEl);
+                modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Guardado!',
+                        text: 'Solicitud de Licencia de Construcción guardada correctamente.',
+                        confirmButtonColor: '#7b0f2b',
+                        timer: 2500,
+                        timerProgressBar: true
+                    });
+                }, { once: true });
+                modalInst.hide();
+            } else {
+                const alerta = document.getElementById('slc_alerta');
+                alerta.className = 'alert alert-danger mt-3';
+                alerta.textContent = '✗ ' + resp.message;
+            }
+        })
+        .catch(() => {
+            const alerta = document.getElementById('slc_alerta');
+            alerta.className = 'alert alert-danger mt-3';
+            alerta.textContent = '✗ Error de conexión. Intenta de nuevo.';
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-save me-1"></i>Guardar solicitud';
+        });
+});
+
+//  Imprimir solicitud LC
+function imprimirSolicitudLC() {
+    const solicitudId = document.getElementById('slc_solicitud_id').value;
+    if (!solicitudId) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Sin datos',
+            text: 'Primero guarda la solicitud antes de imprimir.',
+            confirmButtonColor: '#7b0f2b'
+        });
+        return;
+    }
+
+    const validacion = camposObligatoriosLC();
+    if (!validacion.ok) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Solicitud incompleta',
+            text: validacion.mensaje + ' Guarda los cambios antes de imprimir.',
+            confirmButtonColor: '#7b0f2b'
+        });
+        return;
+    }
+
+    window.open('solicitud_lc.php?id=' + solicitudId, '_blank');
+}
