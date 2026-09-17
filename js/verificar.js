@@ -802,8 +802,7 @@ function ver_subirCroquis() {
 }
 
 // =====================================================
-// PEGAR IMÁGENES CON CTRL+V
-// Permite pegar imágenes directamente en áreas de carga
+// PEGAR IMÁGENES CON CTRL+V DENTRO DEL SISTEMA
 // =====================================================
 
 // Función auxiliar para manejar pegado de imágenes
@@ -892,9 +891,9 @@ document.addEventListener('paste', function(e) {
     if (pegado) return;
   }
 
-  // Intentar pegar en fotos si estamos en modal de detalle
+  // pegar en fotos si estamos en modal de detalle
   if (enModalDetalle) {
-    // Primero intentar foto1
+    // Primero foto1
     const pegado1 = manejarPegadoImagen(e, 'input_foto1', null, null);
     if (pegado1) return;
 
@@ -916,7 +915,7 @@ $(document).ready(function() {
       ordering: true,
       order: [],
       responsive: true,
-      columnDefs: [{ orderable: false, targets: -1 }], // Columna "Acciones" no ordenable
+      columnDefs: [{ orderable: false, targets: -1 }], 
       language: {
         paginate: { previous: 'Anterior', next: 'Siguiente' },
         info:         'Mostrando _START_ a _END_ de _TOTAL_ trámites',
@@ -1632,7 +1631,6 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
 
 // =====================================================
 // CROQUIS CON OPENLAYERS
-// Sustituye las funciones Leaflet anteriores para el modal de constancia.
 // =====================================================
 (function() {
   let map = null;

@@ -129,10 +129,6 @@ if ($detalle_seleccionado !== null) {
 $cuenta = substr($cuenta, 0, 50);
 $origen = substr($origen !== '' ? $origen : 'seleccionado', 0, 40);
 
-if (in_array($origen, ['catastro', 'catastro-copia'], true) && $cuenta === '') {
-    echo json_encode(['success' => false, 'message' => 'El predio seleccionado no tiene una clave catastral valida']);
-    exit;
-}
 if ($utm_vertices !== '' && json_decode($utm_vertices, true) === null) {
     echo json_encode(['success' => false, 'message' => 'Coordenadas UTM invalidas']);
     exit;
@@ -140,7 +136,7 @@ if ($utm_vertices !== '' && json_decode($utm_vertices, true) === null) {
 if ($georeferencia !== '' && json_decode($georeferencia, true) === null) {
     echo json_encode(['success' => false, 'message' => 'Georeferencia invalida']);
     exit;
-}
+} 
 
 $tmp = $_FILES['croquis']['tmp_name'];
 $validacionCroquis = validarArchivo($_FILES['croquis'], ['png', 'jpg', 'jpeg', 'webp']);
@@ -326,7 +322,7 @@ try {
     $stmtDetalle->close();
 
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-    $predio_log = $cuenta !== '' ? $cuenta : 'sin-clave (dibujado)';
+    $predio_log = $cuenta !== '' ? $cuenta : 'sin-clave';
     $det = "Croquis de mapa guardado para tramite ID: {$tramite_id} | Predio: {$predio_log} | Archivo: {$relative_path}";
     $stmtLog = $conn->prepare("INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, detalles, ip_address) VALUES (?, 'Croquis mapa', 'croquis_poligonos', ?, ?)");
     if ($stmtLog) {
