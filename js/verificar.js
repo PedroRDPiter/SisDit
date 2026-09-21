@@ -1137,7 +1137,7 @@ function ver_usarPoligonoCatastro(layer) {
   const props = Object.assign({}, geojson.properties || {}, layer.feature?.properties || {});
   geojson.properties = props;
 
-  const cloneGroup = L.geoJSON(geojson, {
+  L.geoJSON(geojson, {
     style: verCroquisSelectedStyle,
     onEachFeature: function(feature, editableLayer) {
       editableLayer._croquisSource = 'catastro-copia';

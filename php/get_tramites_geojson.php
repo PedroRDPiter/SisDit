@@ -11,7 +11,7 @@ if (!isset($_SESSION['id']) || !esPersonalAutorizado()) {
 }
 
 // Función para convertir lat/lng a UTM (zona 13)
-function latLngToUtm($lat, $lon, $zone = 13) {
+function latLngToUtm(float $lat, float $lon, int $zone = 13): array {
     $a = 6378137.0;
     $f = 1/298.257223563;
     $k0 = 0.9996;
@@ -35,7 +35,7 @@ function latLngToUtm($lat, $lon, $zone = 13) {
     return [$utmE, $utmN];
 }
 
-function utmToLatLng($easting, $northing, $zone = 13) {
+function utmToLatLng(float $easting, float $northing, int $zone = 13): array {
     $a = 6378137.0;
     $f = 1 / 298.257223563;
     $k0 = 0.9996;

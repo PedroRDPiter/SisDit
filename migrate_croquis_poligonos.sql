@@ -58,6 +58,3 @@ CREATE TABLE IF NOT EXISTS `croquis_poligono_detalles` (
   CONSTRAINT `fk_croquis_detalles_usuario` FOREIGN KEY (`creado_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-ALTER TABLE `croquis_poligono_detalles`
-  ADD COLUMN IF NOT EXISTS `numero_poligono` varchar(80) DEFAULT NULL AFTER `feature_uid`,
-  ADD KEY IF NOT EXISTS `idx_croquis_detalles_numero` (`numero_poligono`);

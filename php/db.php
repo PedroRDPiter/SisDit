@@ -57,10 +57,10 @@ function cerrarConexion() {
     if ($conn instanceof mysqli) {
         try {
             // Verificar que la conexión sigue activa antes de cerrarla
-            if ($conn->connect_errno === 0 && mysqli_ping($conn)) {
+            if ($conn->connect_errno === 0) {
                 $conn->close();
             }
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             // Ya estaba cerrada o hubo error — ignorar
         }
     }
@@ -72,7 +72,7 @@ function cerrarConexion() {
 // Función de utilidad para hacer queries más seguras.
 // Uso: ejecutarQuery("SELECT * FROM tabla WHERE id = ?", [$id], "i")
 // =====================================================
-function ejecutarQuery($sql, $params = [], $types = "") {
+function ejecutarQuery(string $sql, array $params = [], string $types = "") {
     global $conn;
 
     $stmt = $conn->prepare($sql);
@@ -101,7 +101,7 @@ function ejecutarQuery($sql, $params = [], $types = "") {
 // La tabla configuracion_sistema guarda valores como
 // el nombre del municipio, el director, límites, etc.
 // =====================================================
-function obtenerConfiguracion($clave) {
+function obtenerConfiguracion(string $clave) {
     global $conn;
 
     $stmt = $conn->prepare("SELECT valor, tipo FROM configuracion_sistema WHERE clave = ?");

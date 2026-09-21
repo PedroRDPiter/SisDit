@@ -85,7 +85,7 @@ if (!in_array($documentType, $allowedTypes, true)) {
 $folio_numero = (int) $partes[0];
 $folio_anio = (int) $partes[1];
 
-function uploadPath($path) {
+function uploadPath(string $path): string {
     $path = ltrim(str_replace('\\', '/', $path), '/');
     $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
     return str_starts_with($path, 'uploads/') ? $encoded : 'uploads/' . $encoded;
@@ -138,9 +138,6 @@ if ($archivo['size'] > $maxSize) {
 
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mimeType = $finfo ? finfo_file($finfo, $archivo['tmp_name']) : '';
-if ($finfo) {
-    finfo_close($finfo);
-}
 
 if (!in_array($mimeType, $allowedMimesByExtension[$extension], true)) {
     http_response_code(400);

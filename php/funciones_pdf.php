@@ -53,7 +53,10 @@ function generarPDFNumeroOficial(int $tramite_id): string {
     $director_cargo = obtenerConfiguracion('director_cargo');
 
     // Crear instancia de mPDF
-    $mpdf = new Mpdf([
+    // Instanciación dinámica para evitar errores del analizador cuando la
+    // dependencia de mPDF se carga mediante Composer en tiempo de ejecución.
+    $mpdfClass = 'Mpdf\\Mpdf';
+    $mpdf = new $mpdfClass([
         'format' => 'Letter',
         'margin_left' => 20,
         'margin_right' => 20,
@@ -79,7 +82,7 @@ function generarPDFNumeroOficial(int $tramite_id): string {
         mkdir($rutaPDF, 0755, true);
     }
 
-    $mpdf->Output($rutaPDF . $nombreArchivo, Destination::FILE);
+    $mpdf->Output($rutaPDF . $nombreArchivo, 'F');
 
     return $nombreArchivo;
 }
@@ -347,7 +350,7 @@ function generarPDFVOBO(int $_tramite_id): string {
  * Recibe el id del registro en solicitud_LC (no el tramite_id)
  *
  */
-function generarPDFSolicitudLC($solicitud_id) {
+function generarPDFSolicitudLC(int $solicitud_id): string {
     global $conn;
 
     // Traer solicitud + datos del trámite ligado
@@ -377,10 +380,10 @@ function generarPDFSolicitudLC($solicitud_id) {
 
     // Configuración del municipio
     $municipio = obtenerConfiguracion('municipio_nombre') ?? 'RINCÓN DE ROMOS';
-    $director  = obtenerConfiguracion('director_nombre')  ?? '';
 
     // Crear instancia mPDF — carta, márgenes ajustados para el formato
-    $mpdf = new \Mpdf\Mpdf([
+    $mpdfClass = 'Mpdf\\Mpdf';
+    $mpdf = new $mpdfClass([
         'format'        => 'Letter',
         'margin_left'   => 15,
         'margin_right'  => 15,
@@ -388,7 +391,7 @@ function generarPDFSolicitudLC($solicitud_id) {
         'margin_bottom' => 12,
     ]);
 
-    $html = construirHTMLSolicitudLC($row, $superficies, $urbanizacion, $peritos, $municipio, $director);
+    $html = construirHTMLSolicitudLC($row, $superficies, $urbanizacion, $peritos, $municipio);
     $mpdf->WriteHTML($html);
 
     // Guardar en disco
@@ -397,7 +400,7 @@ function generarPDFSolicitudLC($solicitud_id) {
 
     $folioSol = str_pad($row['folio_numero'], 3, '0', STR_PAD_LEFT) . '-' . $row['folio_anio'];
     $nombreArchivo = "solicitud_lc_{$folioSol}.pdf";
-    $mpdf->Output($rutaPDF . $nombreArchivo, \Mpdf\Output\Destination::FILE);
+    $mpdf->Output($rutaPDF . $nombreArchivo, 'F');
 
     return $nombreArchivo;
 }
@@ -405,7 +408,13 @@ function generarPDFSolicitudLC($solicitud_id) {
 /**
  * Construir HTML para Solicitud de Licencia de Construcción
  */
-function construirHTMLSolicitudLC($row, $superficies, $urbanizacion, $peritos, $municipio, $director) {
+function construirHTMLSolicitudLC(
+  array $row,
+  array $superficies,
+  array $urbanizacion,
+  array $peritos,
+  string $municipio
+): string {
 
     // Folio de solicitud y del trámite
     $folioSol    = str_pad($row['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $row['folio_anio'];

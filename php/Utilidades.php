@@ -63,7 +63,7 @@ final class Utilidades
         try {
             $mime = (string) finfo_file($finfo, $temporal);
         } finally {
-            finfo_close($finfo);
+            unset($finfo);
         }
         if (!in_array($mime, self::MIMES_POR_EXTENSION[$extension], true)) {
             throw new ArchivoException('El contenido del archivo no corresponde con la extensión .' . $extension . '.');
@@ -96,12 +96,12 @@ final class Utilidades
         return $prefijo . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(6)) . '.' . strtolower($extension);
     }
 
-    public static function normalizarCuentaCatastral($cuenta): string
+    public static function normalizarCuentaCatastral(mixed $cuenta): string
     {
         return strtoupper(trim((string) $cuenta));
     }
 
-    public static function normalizarEstatus($estatus): string
+    public static function normalizarEstatus(mixed $estatus): string
     {
         $valor = trim(mb_strtolower((string) $estatus, 'UTF-8'));
         $valor = strtr($valor, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
@@ -111,7 +111,7 @@ final class Utilidades
         return trim(preg_replace('/\s+/', ' ', (string) $normalizado));
     }
 
-    public static function esEstatusAprobadoParaVentanilla($estatus): bool
+    public static function esEstatusAprobadoParaVentanilla(mixed $estatus): bool
     {
         return in_array(self::normalizarEstatus($estatus), self::ESTATUS_APROBADOS_VENTANILLA, true);
     }

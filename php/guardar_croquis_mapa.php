@@ -107,10 +107,10 @@ if ($detalle_seleccionado !== null) {
         $cuenta_seleccionada = trim((string)$detalle_seleccionado['numero_poligono']);
     }
     if ($cuenta_seleccionada !== '') {
-        $cuenta = substr($cuenta_seleccionada, 0, 50);
+        $cuenta = $cuenta_seleccionada;
     }
     if (isset($detalle_seleccionado['origen'])) {
-        $origen = substr(trim((string)$detalle_seleccionado['origen']), 0, 40);
+        $origen = trim((string)$detalle_seleccionado['origen']);
     }
     if (array_key_exists('texto_poligono', $detalle_seleccionado)) {
         $texto = trim((string)$detalle_seleccionado['texto_poligono']);
@@ -136,7 +136,7 @@ if ($utm_vertices !== '' && json_decode($utm_vertices, true) === null) {
 if ($georeferencia !== '' && json_decode($georeferencia, true) === null) {
     echo json_encode(['success' => false, 'message' => 'Georeferencia invalida']);
     exit;
-} 
+}
 
 $tmp = $_FILES['croquis']['tmp_name'];
 $validacionCroquis = validarArchivo($_FILES['croquis'], ['png', 'jpg', 'jpeg', 'webp']);
@@ -292,10 +292,10 @@ try {
         $detalle_utm = isset($detalle['utm_vertices']) ? json_encode($detalle['utm_vertices'], JSON_UNESCAPED_UNICODE) : null;
         if ($detalle_geojson === '' || json_decode($detalle_geojson, true) === null) continue;
         if ($detalle_utm !== null && json_decode($detalle_utm, true) === null) $detalle_utm = null;
-        $detalle_utm_x = (isset($detalle['utm_centro_x']) && $detalle['utm_centro_x'] !== '' && $detalle['utm_centro_x'] !== null) ? (float)$detalle['utm_centro_x'] : null;
-        $detalle_utm_y = (isset($detalle['utm_centro_y']) && $detalle['utm_centro_y'] !== '' && $detalle['utm_centro_y'] !== null) ? (float)$detalle['utm_centro_y'] : null;
-        $detalle_label_lng = (isset($detalle['label_lng']) && $detalle['label_lng'] !== '' && $detalle['label_lng'] !== null) ? (float)$detalle['label_lng'] : null;
-        $detalle_label_lat = (isset($detalle['label_lat']) && $detalle['label_lat'] !== '' && $detalle['label_lat'] !== null) ? (float)$detalle['label_lat'] : null;
+        $detalle_utm_x = (isset($detalle['utm_centro_x']) && $detalle['utm_centro_x'] !== '') ? (float)$detalle['utm_centro_x'] : null;
+        $detalle_utm_y = (isset($detalle['utm_centro_y']) && $detalle['utm_centro_y'] !== '') ? (float)$detalle['utm_centro_y'] : null;
+        $detalle_label_lng = (isset($detalle['label_lng']) && $detalle['label_lng'] !== '') ? (float)$detalle['label_lng'] : null;
+        $detalle_label_lat = (isset($detalle['label_lat']) && $detalle['label_lat'] !== '') ? (float)$detalle['label_lat'] : null;
         $detalle_seleccionado = !empty($detalle['seleccionado']) ? 1 : 0;
 
         $stmtDetalle->bind_param(

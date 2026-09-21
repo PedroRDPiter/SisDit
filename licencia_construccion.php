@@ -69,7 +69,7 @@ $folioLic = $l['folio_salida_numero'] !== null
     : '';
 
 // Helpers de fecha: parten "YYYY-MM-DD" en DIA/MES/AÑO para las cajitas del formato
-function partirFecha($f) {
+function partirFecha(?string $f): array {
     if (empty($f)) return ['', '', ''];
     $p = explode('-', substr($f, 0, 10));
     if (count($p) !== 3) return ['', '', ''];

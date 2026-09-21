@@ -44,6 +44,8 @@ if (!in_array($accion, array('aprobar','rechazar')) || $sol_id <= 0) {
     exit;
 }
 
+$transaccionIniciada = false;
+
 try {
     // Obtener solicitud
     $stmt = $conn->prepare("SELECT * FROM solicitudes_registro WHERE id = ? AND estado = 'Pendiente' LIMIT 1");
@@ -70,6 +72,7 @@ try {
         }
         $chk->close();
         $conn->begin_transaction();
+        $transaccionIniciada = true;
         // Crear usuario activo
         $ins = $conn->prepare("INSERT INTO usuarios (nombre, apellidos, correo, password, rol, activo) VALUES (?, ?, ?, ?, ?, 1)");
         $ins->bind_param("sssss", $sol['nombre'], $sol['apellidos'], $sol['correo'], $sol['password_hash'], $sol['rol']);
@@ -91,6 +94,7 @@ try {
         $log->close();
 
         $conn->commit();
+        $transaccionIniciada = false;
 
         // Generar links de notificacion
         $nombre_completo = $sol['nombre'] . ' ' . $sol['apellidos'];
@@ -164,7 +168,7 @@ try {
     }
 
 } catch (Exception $e) {
-    if ($conn->in_transaction) $conn->rollback();
+    if ($transaccionIniciada) $conn->rollback();
     error_log("gestion_solicitudes: " . $e->getMessage());
     echo json_encode(array('success'=>false,'message'=>$e->getMessage()));
 }

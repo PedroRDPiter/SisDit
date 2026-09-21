@@ -1564,9 +1564,6 @@ function cargarDatosTramiteVentanilla(tramite, folioOrigen) {
         Swal.close();
 
         if (data.success) {
-            // Mostrar alerta corta
-            let mensajeCorto = 'Documentos copiados correctamente.';
-
             // Mostrar información de constancia de forma más compacta
             if (tramite.constancia) {
                 Swal.fire({

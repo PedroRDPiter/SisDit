@@ -71,7 +71,7 @@ $tipos = "";
 $archivos_copiados = [];
 
 // Función para copiar archivo
-function copiarArchivo($archivo_origen, $destino_dir, $folio_destino) {
+function copiarArchivo(string $archivo_origen, string $destino_dir, string $folio_destino): ?string {
     if (empty($archivo_origen)) return null;
     
     $ruta_origen = $destino_dir . $archivo_origen;

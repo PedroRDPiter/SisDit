@@ -67,7 +67,7 @@ $docMap = [
     'foto2' => ['label' => 'Fotografía 2 del Inmueble', 'campo' => 'foto2_archivo'],
 ];
 
-function uploadPath($path) {
+function uploadPath(string $path): string {
     $path = ltrim(str_replace('\\', '/', $path), '/');
     $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
     return str_starts_with($path, 'uploads/') ? $encoded : 'uploads/' . $encoded;

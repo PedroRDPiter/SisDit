@@ -12,7 +12,7 @@ if (function_exists('mysqli_report')) {
     mysqli_report(MYSQLI_REPORT_OFF);
 }
 
-function responder_json($payload, $status_code = 200) {
+function responder_json(array $payload, int $status_code = 200) {
     if (ob_get_length()) {
         ob_clean();
     }

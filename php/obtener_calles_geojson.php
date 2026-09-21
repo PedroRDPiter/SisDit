@@ -35,15 +35,15 @@ if ($binary === false || strlen($binary) < 100) {
     exit;
 }
 
-function shpInt32LE($data, $offset) {
+function shpInt32LE(string $data, int $offset): int {
     return unpack('V', substr($data, $offset, 4))[1];
 }
 
-function shpInt32BE($data, $offset) {
+function shpInt32BE(string $data, int $offset): int {
     return unpack('N', substr($data, $offset, 4))[1];
 }
 
-function shpDoubleLE($data, $offset) {
+function shpDoubleLE(string $data, int $offset): float {
     return unpack('e', substr($data, $offset, 8))[1];
 }
 

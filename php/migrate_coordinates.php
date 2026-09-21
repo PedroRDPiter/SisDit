@@ -5,7 +5,7 @@ require_once "db.php";
 header('Content-Type: text/plain; charset=utf-8');
 
 // Función para convertir UTM a lat/lng (zona 13)
-function utmToLatLng($easting, $northing, $zone = 13) {
+function utmToLatLng(float $easting, float $northing, int $zone = 13): array {
     $a = 6378137.0;
     $f = 1/298.257223563;
     $k0 = 0.9996;
