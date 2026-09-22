@@ -15,11 +15,15 @@ if(!isset($_SESSION['rol']) || ($_SESSION['rol'] !== 'Calificador' && $_SESSION[
 
 require_once "php/db.php";
 
-// ── Configuración del sistema ──
+// ── Cargar la configuración editable de la constancia ──
+// Estos valores se reutilizan en el formulario de configuración inferior.
 $cfg = [];
 $resCfgV = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 while ($rowCfgV = $resCfgV->fetch_assoc()) $cfg[$rowCfgV['clave']] = $rowCfgV['valor'];
 
+// ── Consulta principal del tablero ──
+// Se obtienen únicamente los trámites que puede revisar el calificador.
+// Los filtros se agregan con parámetros enlazados para evitar inyección SQL.
 $sql = "SELECT t.*, tt.nombre as tipo_tramite_nombre,
         (SELECT COUNT(*) FROM tramites t2 WHERE t2.folio_numero = t.folio_numero AND t2.folio_anio = t.folio_anio) as grupo_count,
         c.folio_salida_numero, c.folio_salida_anio, c.fecha_salida,
@@ -307,7 +311,8 @@ window.onpopstate = function () {
 <!-- ESTADÍSTICAS RÁPIDAS -->
 <div class="row g-3 mb-4">
     <?php
-    // Obtener estadísticas
+    // Obtener estadísticas resumidas para las tarjetas superiores.
+    // Los conteos se calculan sobre los trámites de compatibilidad y licencia.
     $total_tramites = $conn->query("SELECT COUNT(*) AS total FROM tramites WHERE tipo_tramite_id IN (2, 7)")->fetch_assoc()['total'];
     $en_revision = $conn->query(
         "SELECT COUNT(*) AS total
@@ -366,7 +371,7 @@ window.onpopstate = function () {
     </div>
 </div>
 
-<!-- SEGUIMIENTO -->
+<!-- SEGUIMIENTO: filtros, resultados y acciones disponibles para cada trámite -->
 <section id="seguimiento" class="tramite-box mb-4">
 <div class="seguimiento-header d-flex justify-content-between align-items-center mb-3">
     <h4 class="text-primary m-0"><i class="bi bi-search"></i> Seguimiento de Trámites</h4>
@@ -683,7 +688,8 @@ window.onpopstate = function () {
 
 
 
-<!-- MODAL: CONSTANCIA DE NUMERO OFICIAL -->
+<!-- MODAL: CONSTANCIA DE NUMERO OFICIAL
+  Permite completar, guardar e imprimir los datos de la constancia. -->
 <div class="modal fade" id="modalConstancia" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-lg">
     <div class="modal-content shadow" style="max-height: 80vh; overflow-y: auto;">
@@ -905,7 +911,8 @@ window.onpopstate = function () {
 </div>
 
 
-<!-- MODAL: NOTIFICACIÓN AL CIUDADANO -->
+<!-- MODAL: NOTIFICACIÓN AL CIUDADANO
+  Muestra enlaces preparados para WhatsApp y correo electrónico. -->
 <div class="modal fade" id="notifModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content shadow border-0">
@@ -958,7 +965,8 @@ window.onpopstate = function () {
 </div>
 
 <!-- ===================================== -->
-<!-- MODAL DE CALIFICACIÓN (Licencia de Construcción) -->
+<!-- MODAL DE CALIFICACIÓN (Licencia de Construcción)
+  El contenido se carga dinámicamente según el trámite seleccionado. -->
 <!-- ===================================== -->
 <div class="modal fade" id="modalCalificacion" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -1233,6 +1241,8 @@ window.onpopstate = function () {
 </div>
 
 <script>
+// ── Consulta de trámites históricos de licencia ──
+// Este modal es de solo lectura y conserva compatibilidad con registros antiguos.
 
 let verlcMapaInstance = null;
 
@@ -1325,7 +1335,7 @@ document.getElementById('modalVerLC').addEventListener('hidden.bs.modal', functi
 <script src="js/verificar.js?v=<?= filemtime(__DIR__ . '/js/verificar.js') ?>"></script>
 
 <script>
-// Mostrar alertas con SweetAlert2 - SOLO para errores del sistema, NO para validación de campos
+// Mostrar alertas con SweetAlert2 - SOLO para errores del sistema, NO para validación de campos.
 document.addEventListener('DOMContentLoaded', () => {
   <?php if(isset($_GET['error']) && $_GET['error'] !== 'sin_numero_asignado'): ?>
     let errorMsg = '';
@@ -1386,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <?php endif; ?>
 });
 
-// Guardar configuración de constancia
+// Guardar configuración de constancia mediante una petición AJAX.
 function guardarConfigConstanciaVer() {
   var form = document.getElementById('formConfigConstanciaVer');
   var msg  = document.getElementById('msg-config-constancia-ver');
@@ -1421,7 +1431,7 @@ function guardarConfigConstanciaVer() {
   });
 }
 
-    // Función para abrir modal de constancia
+    // Abrir el modal y precargar los datos de la fila seleccionada.
     function abrirModalConstancia(btn) {
     const folio = btn.getAttribute('data-folio');
     const tramiteId = btn.getAttribute('data-id') || '';
@@ -1518,7 +1528,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Cargar datos de número oficial anterior en modal constancia (verificador)
+// Cargar datos de número oficial anterior en el modal de constancia.
+// También permite reutilizar el croquis asociado al trámite encontrado.
 function cargarDatosAnterioresVer() {
   const folio      = document.getElementById('c_buscar_folio').value.trim();
   const propietario = document.getElementById('c_buscar_propietario').value.trim();
@@ -1673,6 +1684,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 ============================================================ -->
 <script>
+// ── Calificación dinámica de trámites ──
+// Administra la carga de datos, validaciones, guardado e impresión.
 <?php
 /*
 Lista de reglamentos disponibles para Licencia de Construcción (tipo_tramite_id = 7),

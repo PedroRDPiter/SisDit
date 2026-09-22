@@ -1,4 +1,5 @@
 <?php
+// Configurar una respuesta JSON silenciosa para evitar errores visibles en el cliente.
 error_reporting(0);
 ini_set('display_errors', 0);
 if (ob_get_length()) ob_clean();
@@ -9,6 +10,7 @@ require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Verificar que exista una sesión activa y que el usuario tenga permisos.
 if (!isset($_SESSION['id'])) {
     echo json_encode(['success' => false, 'message' => 'Sesion expirada']);
     exit;
@@ -19,6 +21,7 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     exit;
 }
 
+// Obtener el último estatus registrado para cada cuenta o número de polígono.
 $stmt = $conn->prepare("
     SELECT
         d.cuenta_catastral_origen,
@@ -48,6 +51,7 @@ if (!$stmt || !$stmt->execute()) {
 $predios = [];
 $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) {
+    // Usar la cuenta catastral como clave principal y el polígono como alternativa.
     $clave = trim((string)($row['cuenta_catastral_origen'] ?: $row['numero_poligono']));
     if ($clave === '' || isset($predios[$clave])) continue;
 
@@ -60,8 +64,8 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
-// Completar el semaforo con los tramites asociados directamente por cuenta
-// catastral, aunque todavia no tengan un croquis guardado.
+// Completar el semáforo con trámites asociados directamente por cuenta catastral,
+// aunque todavía no tengan un croquis guardado.
 $directos = $conn->query("
     SELECT id, cuenta_catastral, estatus, numero_asignado, updated_at
     FROM tramites
@@ -70,6 +74,7 @@ $directos = $conn->query("
 ");
 if ($directos) {
     while ($row = $directos->fetch_assoc()) {
+        // No reemplazar los registros que ya fueron obtenidos desde el croquis.
         $clave = trim((string) $row['cuenta_catastral']);
         if ($clave === '' || isset($predios[$clave])) continue;
         $predios[$clave] = [
@@ -88,6 +93,7 @@ $resumen_tramites = [
     'Firmado' => 0,
     'Entregado y archivado' => 0
 ];
+// Contabilizar los trámites agrupándolos por su estatus actual.
 $resConteos = $conn->query("
     SELECT estatus, COUNT(*) AS total
     FROM tramites
@@ -95,6 +101,7 @@ $resConteos = $conn->query("
 ");
 if ($resConteos) {
     while ($conteo = $resConteos->fetch_assoc()) {
+        // Agregar también estatus nuevos sin alterar los valores iniciales.
         $resumen_tramites[$conteo['estatus']] = (int)$conteo['total'];
     }
 }

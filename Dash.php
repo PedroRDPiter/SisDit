@@ -18,6 +18,7 @@ $esUsuario = ($_SESSION['rol'] === 'Usuario');
 
 require_once "php/db.php";
 
+// Consulta principal del tablero: obtiene los trámites y el usuario que los creó.
 // ✅ DESPUÉS (filtra según rol)
 $sql = "SELECT t.*, tt.nombre as tipo_tramite_nombre, 
         u.nombre as creador_nombre, u.apellidos as creador_apellidos
@@ -31,6 +32,7 @@ $types = "";
 
 // USUARIOS solo ven sus propios trámites
 if ($esUsuario && !$esAdmin && !$esVentanilla) {
+    // Restringe la información para evitar que un usuario consulte trámites ajenos.
     $sql .= " AND t.usuario_creador_id = ?";
     $params[] = $_SESSION['id'];
     $types .= "i";
@@ -101,7 +103,8 @@ if (isset($_GET['sin_foto']) && $_GET['sin_foto'] !== '') {
         $sql .= " AND (t.foto1_archivo IS NOT NULL AND t.foto1_archivo != '')";
     }
 }
-// ── Todos los trámites (seguimiento) ──
+// ── Consulta independiente para la tabla de seguimiento ──
+// Esta consulta usa los mismos filtros visibles para mostrar el estado de cada trámite.
 $sql_seg = "SELECT t.*, tt.nombre AS tipo_tramite_nombre FROM tramites t
             LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id WHERE 1=1";
 $params_seg = []; $types_seg = "";
@@ -160,7 +163,7 @@ $stmt->close();
 /* formato 001 */
 $siguiente_folio = str_pad($siguiente_folio, 3, "0", STR_PAD_LEFT);
 
-// ✅ FUNCIÓN: Calcular días hábiles entre dos fechas
+// Calcula los días hábiles restantes, sin contar sábados ni domingos.
 function calcularDiasHabilesPHP(DateTime $fechaInicio, DateTime $fechaFin): int {
     $diasHabiles = 0;
     $currentDate = clone $fechaInicio;
@@ -203,7 +206,7 @@ function calcularDiasHabilesPHP(DateTime $fechaInicio, DateTime $fechaFin): int 
  <link rel="stylesheet" href="./css/style.css?v=<?= time() ?>">
 <style>
 /* ================= VARIABLES ================= */
-:root{
+    :root{
     --vino:#7b0f2b;
     --vino-oscuro:#5e0b20;
     --vino-claro:#a61c3c;
@@ -642,6 +645,7 @@ window.onpopstate = function () {
         </p>
    
 <!-- ================================================ -->
+<!-- Encabezado y navegación principal del sistema   -->
 <!-- SEGUIMIENTO DE TODOS LOS TRÁMITES                -->
 <!-- ================================================ -->
 <section id="seguimiento" class="tramite-box mb-4">
@@ -710,7 +714,7 @@ window.onpopstate = function () {
                 <tr><td colspan="9"><div class="text-center text-muted py-5"><i class="bi bi-inbox me-2" style="font-size:2rem;"></i><p>No se encontraron trámites.</p></div></td></tr>
             <?php else:
                 while($t=$seg_res->fetch_assoc()):
-                    // Calcular días restantes para el semáforo
+                    // Calcula los días restantes para determinar el color del semáforo.
                     $fecha_entrega_dt = !empty($t['fecha_entrega']) ? new DateTime($t['fecha_entrega']) : null;
                     $hoy_dt = new DateTime();
                     $dias_restantes = 'N/A';
@@ -793,7 +797,7 @@ $dias_restantes = calcularDiasHabilesPHP($hoy_dt, $fecha_entrega_dt);
 
 
 // ==========================================
-// FECHAS — entrega AUTOMÁTICA 10 días hábiles
+// FECHAS — entrega automática en 10 días hábiles
 // ==========================================
 const hoy = new Date();
 const yyyy = hoy.getFullYear();
@@ -970,7 +974,7 @@ document.getElementById("cuenta_catastral")?.addEventListener("input", function(
 });
 
 // ==========================================
-// MODAL DETALLE TRÁMITE
+// MODAL: carga la información y documentos del trámite seleccionado.
 // ==========================================
 function initDash() {
     document.querySelectorAll('[data-bs-target="#detalleTramite"]').forEach(btn => {
@@ -1080,6 +1084,7 @@ function initDash() {
 }
 
 function actualizarSemaforos() {
+    // Aplica el color correspondiente a cada registro después de cargar la página.
     document.querySelectorAll('[id^="semaforo_"]').forEach(span => {
         const text = span.textContent.trim();
         const diasRestantes = parseInt(text);
@@ -1106,7 +1111,7 @@ function semaforo(diasRestantes, elementId, rowElement = null){
     const element = document.getElementById(elementId);
     if (!element) return;
 
-   // Remove all previous classes
+    // Elimina colores anteriores antes de aplicar el nuevo estado.
     element.classList.remove('semaforo-verde', 'semaforo-naranja', 'semaforo-rojo');
     if (rowElement) {
         rowElement.classList.remove('semaforo-fila-verde', 'semaforo-fila-naranja', 'semaforo-fila-rojo');

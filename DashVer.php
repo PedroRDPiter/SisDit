@@ -15,6 +15,7 @@ if(!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'Verificador'){
 
 require_once "php/db.php";
 
+// Cargar la configuración general utilizada por el formulario de constancia.
 // ── Configuración del sistema ──
 $cfg = [];
 $resCfgV = $conn->query("SELECT clave, valor FROM configuracion_sistema");
@@ -30,6 +31,7 @@ $types = "";
 
 // consulta base para obtener trámites, con posibilidad de agregar filtros dinámicos según los parámetros GET recibidos. Se construye la consulta SQL y se preparan los parámetros para evitar inyecciones SQL.
 
+// Obtener direcciones y colonias existentes para las sugerencias del formulario.
 $cfg = [];
 $resCfg = $conn->query("SELECT direccion, colonia FROM tramites");
 while ($rowCfg = $resCfg->fetch_assoc()) {
@@ -94,6 +96,7 @@ if (isset($_GET['sin_foto']) && $_GET['sin_foto'] !== '') {
 
 $sql .= " ORDER BY COALESCE(t.created_at, t.tiempo_ingreso, t.fecha_ingreso) DESC, t.id DESC";
 
+// Preparar y ejecutar la consulta con los filtros recibidos por GET.
 $stmt = $conn->prepare($sql);
 
 if (!empty($params)) {
@@ -394,7 +397,7 @@ window.onpopstate = function () {
     </div>
 </section>
 
-<!-- ESTADÍSTICAS RÁPIDAS -->
+<!-- ESTADÍSTICAS RÁPIDAS: resumen de trámites para el verificador -->
 <div class="row g-3 mb-4">
     <?php
     // Obtener estadísticas
@@ -461,7 +464,7 @@ window.onpopstate = function () {
     </div>
 </div>
 
-<!-- SEGUIMIENTO -->
+<!-- SEGUIMIENTO: filtros, listado y acciones disponibles por trámite -->
 <section id="seguimiento" class="tramite-box mb-4">
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="text-primary m-0"><i class="bi bi-search"></i> Seguimiento de Trámites</h4>
@@ -1104,7 +1107,7 @@ window.onpopstate = function () {
 </div>
 
 
-<!-- MODAL: CONSTANCIA DE NUMERO OFICIAL -->
+<!-- MODAL: CONSTANCIA DE NUMERO OFICIAL; permite capturar y guardar sus datos -->
 <div class="modal fade" id="modalConstancia" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-xl">
     <div class="modal-content shadow" style="max-height: 90vh; overflow-y: auto;">
@@ -1452,7 +1455,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <?php endif; ?>
 });
 
-// Guardar configuración de constancia
+// Guardar mediante AJAX el nombre del director y los reglamentos de la constancia.
 function guardarConfigConstanciaVer() {
   var form = document.getElementById('formConfigConstanciaVer');
   var msg  = document.getElementById('msg-config-constancia-ver');
@@ -1487,6 +1490,7 @@ function guardarConfigConstanciaVer() {
   });
 }
 
+// Agregar una colonia manualmente a la lista de sugerencias sin duplicarla.
 function agregarOpcionColoniaConstancia(valor) {
     const input = document.getElementById('c_colonia_constancia');
     const lista = document.getElementById('c_colonias_lista');
@@ -1504,6 +1508,7 @@ function agregarOpcionColoniaConstancia(valor) {
 
 let cColoniasSolicitud = 0;
 
+// Consultar las colonias asociadas al código postal y conservar la selección actual.
 async function cargarColoniasConstancia(cp, coloniaSeleccionada = '') {
     const input = document.getElementById('c_colonia_constancia');
     const lista = document.getElementById('c_colonias_lista');
@@ -1566,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-    // Función para abrir modal de constancia
+    // Abrir el modal y cargar los datos del trámite seleccionado.
     function abrirModalConstancia(btn) {
     const folio = btn.getAttribute('data-folio');
     const tramiteId = btn.getAttribute('data-id') || '';
@@ -1667,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Cargar datos de número oficial anterior en modal constancia (verificador)
+// Buscar y reutilizar los datos de un trámite anterior en la constancia actual.
 function cargarDatosAnterioresVer() {
   const folio      = document.getElementById('c_buscar_folio').value.trim();
   const propietario = document.getElementById('c_buscar_propietario').value.trim();
@@ -1779,7 +1784,7 @@ document.getElementById('modalConstancia').addEventListener('show.bs.modal', fun
   msg.textContent   = '';
 });
 
-// Cuando se abre el modal de detalle, cargar los datos
+// Al abrir el detalle, cargar el grupo completo de subtrámites del mismo folio.
 let grupoSubtramitesActual = [];
 
 document.getElementById('detalleTramite').addEventListener('show.bs.modal', function (event) {
@@ -1851,6 +1856,7 @@ document.getElementById('detalleTramite').addEventListener('show.bs.modal', func
         });
 });
 
+// Refrescar el formulario del modal con el subtrámite seleccionado.
 function cargarSubtramiteEnFormulario(tramite, folio, buttonFallback = null) {
     // Actualizar campos visibles del modal
     document.getElementById('m_folio').textContent = folio;

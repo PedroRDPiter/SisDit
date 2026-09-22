@@ -13,6 +13,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 if (ob_get_length()) ob_clean();
 
+// Configurar la sesión y cargar las dependencias necesarias.
 ini_set('session.cookie_httponly', 1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -21,6 +22,7 @@ require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Verificar que exista una sesión activa y que el usuario sea administrador.
 if (!isset($_SESSION['id'])) {
     echo json_encode(array('success'=>false,'message'=>'Sesion expirada'));
     exit;
@@ -35,6 +37,7 @@ if (!validarCSRF()) {
     exit;
 }
 
+// Leer y validar los datos enviados por la solicitud AJAX.
 $accion    = isset($_POST['accion'])    ? trim($_POST['accion'])    : '';
 $sol_id    = isset($_POST['sol_id'])    ? (int)$_POST['sol_id']    : 0;
 $motivo    = isset($_POST['motivo'])    ? trim($_POST['motivo'])    : '';
@@ -47,7 +50,7 @@ if (!in_array($accion, array('aprobar','rechazar')) || $sol_id <= 0) {
 $transaccionIniciada = false;
 
 try {
-    // Obtener solicitud
+    // Obtener únicamente una solicitud que todavía esté pendiente.
     $stmt = $conn->prepare("SELECT * FROM solicitudes_registro WHERE id = ? AND estado = 'Pendiente' LIMIT 1");
     $stmt->bind_param("i", $sol_id);
     $stmt->execute();
@@ -62,7 +65,7 @@ try {
     $admin_id = (int)$_SESSION['id'];
 
     if ($accion === 'aprobar') {
-        // Verificar que el correo no exista ya en usuarios
+        // Evitar crear cuentas duplicadas con el mismo correo electrónico.
         $chk = $conn->prepare("SELECT id FROM usuarios WHERE correo = ?");
         $chk->bind_param("s", $sol['correo']);
         $chk->execute();
@@ -73,18 +76,18 @@ try {
         $chk->close();
         $conn->begin_transaction();
         $transaccionIniciada = true;
-        // Crear usuario activo
+        // Crear el usuario activo usando los datos de la solicitud.
         $ins = $conn->prepare("INSERT INTO usuarios (nombre, apellidos, correo, password, rol, activo) VALUES (?, ?, ?, ?, ?, 1)");
         $ins->bind_param("sssss", $sol['nombre'], $sol['apellidos'], $sol['correo'], $sol['password_hash'], $sol['rol']);
         if (!$ins->execute()) throw new Exception("Error al crear usuario: " . $conn->error);
         $nuevo_id = $ins->insert_id;
         $ins->close();
-        // Actualizar solicitud
+        // Marcar la solicitud como aprobada y guardar quién la resolvió.
         $upd = $conn->prepare("UPDATE solicitudes_registro SET estado='Aprobado', fecha_resolucion=NOW(), resuelto_por=? WHERE id=?");
         $upd->bind_param("ii", $admin_id, $sol_id);
         $upd->execute();
         $upd->close();
-        // Log
+        // Registrar la aprobación en el historial de actividad.
         $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
         $ua = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
         $det = "Solicitud aprobada: " . $sol['nombre'] . " " . $sol['apellidos'] . " / Rol: " . $sol['rol'];
@@ -96,7 +99,7 @@ try {
         $conn->commit();
         $transaccionIniciada = false;
 
-        // Generar links de notificacion
+        // Generar los enlaces de WhatsApp y correo para notificar al solicitante.
         $nombre_completo = $sol['nombre'] . ' ' . $sol['apellidos'];
         $primer_nombre   = explode(' ', $sol['nombre'])[0];
         $msg = "Hola " . $primer_nombre . ", tu solicitud para acceder al Sistema Georreferenciado fue APROBADA.\n\n" .
@@ -127,7 +130,7 @@ try {
         ));
 
     } else {
-        // RECHAZAR
+        // RECHAZAR: actualizar el estado y guardar el motivo proporcionado.
         $upd = $conn->prepare("UPDATE solicitudes_registro SET estado='Rechazado', motivo_rechazo=?, fecha_resolucion=NOW(), resuelto_por=? WHERE id=?");
         $upd->bind_param("sii", $motivo, $admin_id, $sol_id);
         $upd->execute();
@@ -141,7 +144,7 @@ try {
         $log->execute();
         $log->close();
 
-        // Notificacion de rechazo
+        // Registrar el rechazo y preparar los enlaces de notificación.
         $primer_nombre = explode(' ', $sol['nombre'])[0];
         $msg_rec = "Hola " . $primer_nombre . ", lamentamos informarte que tu solicitud para el rol de " . $sol['rol'] .
                    " en el Sistema Georreferenciado fue RECHAZADA." .
@@ -168,6 +171,7 @@ try {
     }
 
 } catch (Exception $e) {
+    // Deshacer los cambios si ocurrió un error durante la aprobación.
     if ($transaccionIniciada) $conn->rollback();
     error_log("gestion_solicitudes: " . $e->getMessage());
     echo json_encode(array('success'=>false,'message'=>$e->getMessage()));

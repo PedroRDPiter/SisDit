@@ -1,7 +1,9 @@
 <?php
+// Cargar la sesión y las funciones comunes de seguridad.
 require "seguridad.php";
 require_once "php/funciones_seguridad.php";
 
+// Restringir el acceso a usuarios de Ventanilla y Administradores.
 if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Administrador'])) {
     header("Location: acceso.php?error=no_autorizado");
     exit();
@@ -25,7 +27,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
     </style>
 </head>
 <body>
-    <!-- NAVBAR -->
+    <!-- Barra de navegación principal. -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="DashVentanilla.php">
@@ -52,7 +54,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
         </div>
     </nav>
 
-    <!-- CONTENIDO -->
+    <!-- Contenedor principal del mapa y su información introductoria. -->
     <div class="container-fluid mt-4">
         <section class="tramite-box">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -65,39 +67,43 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
         </section>
     </div>
 
-    <!-- SCRIPTS -->
+    <!-- Librerías externas utilizadas por el mapa y la interfaz. -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/proj4@2.9.0/dist/proj4.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.js"></script>
 
     <script>
-        // Centro del municipio
+        // Coordenadas iniciales del centro del municipio.
         const CENTRO_MUNICIPIO = [22.228, -102.320];
 
-        // Inicializar mapa
+        // Crear el mapa y establecer su nivel de zoom inicial.
         const mapaTramites = L.map('mapaTramites', { preferCanvas: true }).setView(CENTRO_MUNICIPIO, 12);
 
-        // Capa base
+        // Agregar la capa base de OpenStreetMap.
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(mapaTramites);
 
         function escaparHtml(valor) {
+            // Evitar que valores provenientes de la base de datos se interpreten como HTML.
             const div = document.createElement('div');
             div.textContent = String(valor ?? '');
             return div.innerHTML;
         }
 
-        // Mantener los predios debajo de los marcadores de trámites.
+        // Crear un panel para mantener los predios debajo de los marcadores de trámites.
         mapaTramites.createPane('predios');
         mapaTramites.getPane('predios').style.zIndex = 350;
+
+        // Cargar y mostrar los polígonos catastrales del municipio.
         fetch('./Geojson/TRAMITES_reprojected.geojson', { cache: 'no-cache' })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
             })
             .then(data => {
+                // Configurar el estilo y la ventana informativa de cada predio.
                 const predios = L.geoJSON(data, {
                     pane: 'predios',
                     style: { color: '#7b0f2b', weight: 1, fillOpacity: 0.08 },
@@ -108,6 +114,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                             : 'Predio sin clave catastral en la capa disponible');
                     }
                 }).addTo(mapaTramites);
+                // Permitir al usuario activar o desactivar la capa de predios.
                 L.control.layers(null, { 'Predios del municipio': predios }).addTo(mapaTramites);
             })
             .catch(error => {
@@ -115,7 +122,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                 Swal.fire({ icon: 'error', title: 'Polígonos no disponibles', text: 'No se pudieron cargar los predios del municipio.' });
             });
 
-        // Cargar los trámites actuales desde la base de datos.
+        // Obtener los trámites actuales desde la base de datos en formato GeoJSON.
         fetch('./php/get_tramites_geojson.php', { credentials: 'same-origin', cache: 'no-store' })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -123,9 +130,13 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
             })
             .then(data => {
                 L.geoJSON(data, {
+                    // Representar cada trámite como un marcador circular.
                     pointToLayer: function(feature, latlng) {
                         const props = feature.properties;
+                        // Un mismo predio puede contener varios trámites agrupados.
                         const tramites = Array.isArray(props.TRAMITES) && props.TRAMITES.length ? props.TRAMITES : [props];
+
+                        // Normalizar el estatus para asignar un color consistente.
                         const estado = String(props.ESTATUS || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                         const color = estado === 'en revision' ? '#dc3545'
                             : (estado === 'pendiente por firmar' ? '#ffc107'
@@ -134,6 +145,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                             radius: 7, color: '#fff', weight: 2,
                             fillColor: color, fillOpacity: .92
                         });
+                        // Mostrar los datos principales del trámite en la ventana emergente.
                         let popupContent = `
                             <div style="max-width: 300px;">
                                 <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Trámite ${escaparHtml(props.FOLIO_INGR || 'N/A')}</h6>
@@ -150,6 +162,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                             </div>
                         `;
                         if (tramites.length > 1) {
+                            // Crear una lista cuando existen varios trámites en la misma cuenta.
                             const lista = tramites.map((tramite, indice) => `
                                 <div class="${indice ? 'border-top mt-2 pt-2' : ''}">
                                     <strong>Folio:</strong> ${escaparHtml(tramite.FOLIO_INGR || 'N/A')}<br>

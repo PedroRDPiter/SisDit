@@ -3,17 +3,20 @@
 /** Localiza la constancia o licencia escaneada que se muestra desde el mapa. */
 function obtenerDocumentoEscaneadoTramite(array $tramite): array
 {
+    // Las licencias usan tipos de archivo distintos a las constancias.
     $esLicencia = (int)($tramite['tipo_tramite_id'] ?? 0) === 7;
     $tiposAceptados = $esLicencia
         ? ['licencia_de_construccion', 'licencia_construccion', 'licencia']
         : ['formato', 'formato_constancia', 'constancia'];
 
     $archivo = '';
+    // Busca primero en los archivos adicionales, conservando el más reciente.
     $otros = json_decode((string)($tramite['otros_archivos'] ?? ''), true);
     if (is_array($otros)) {
         // El ultimo archivo del mismo tipo es el reemplazo mas reciente.
         foreach (array_reverse($otros) as $documento) {
             if (!is_array($documento)) continue;
+            // Se aceptan variantes del tipo y coincidencias en la etiqueta.
             $tipo = strtolower(trim((string)($documento['tipo'] ?? '')));
             $etiqueta = strtolower(trim((string)($documento['label'] ?? '')));
             $coincideEtiqueta = $esLicencia
@@ -27,6 +30,7 @@ function obtenerDocumentoEscaneadoTramite(array $tramite): array
     }
 
     if (!$esLicencia && $archivo === '') {
+        // Compatibilidad con constancias guardadas en el campo antiguo.
         $archivo = trim((string)($tramite['formato_constancia'] ?? ''));
     }
 
@@ -41,6 +45,7 @@ function obtenerDocumentoEscaneadoTramite(array $tramite): array
 
 function rutaPublicaDocumentoEscaneado(string $archivo): string
 {
+    // Normaliza separadores y elimina el prefijo relativo antes de validar.
     $archivo = str_replace('\\', '/', trim($archivo));
     $archivo = preg_replace('#^\./#', '', $archivo);
     if ($archivo === '' || strpos($archivo, '..') !== false) return '';
@@ -51,6 +56,7 @@ function rutaPublicaDocumentoEscaneado(string $archivo): string
     $relativa = ltrim($relativa, '/');
     if ($relativa === '') return '';
 
+    // Verifica que el archivo exista y permanezca dentro de la carpeta uploads.
     $base = realpath(__DIR__ . '/../uploads');
     $real = realpath(__DIR__ . '/../uploads/' . $relativa);
     if ($base === false || $real === false || !is_file($real)) return '';

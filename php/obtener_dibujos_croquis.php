@@ -1,4 +1,5 @@
 <?php
+// Configura una respuesta silenciosa en formato JSON y prepara la sesión.
 error_reporting(0);
 ini_set('display_errors', 0);
 if (ob_get_length()) ob_clean();
@@ -10,18 +11,21 @@ require_once 'documento_escaneado.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Valida que exista una sesión activa antes de consultar los dibujos.
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Sesion expirada']);
     exit;
 }
 
+// Solo los perfiles autorizados pueden consultar los croquis.
 if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Sin permisos']);
     exit;
 }
 
+// Obtiene únicamente dibujos activos, válidos y asociados a trámites permitidos.
 $sql = "
     SELECT
         d.id,
@@ -61,12 +65,14 @@ if (!$result) {
 
 $features = [];
 while ($row = $result->fetch_assoc()) {
+    // Convierte el GeoJSON almacenado y descarta geometrías incompletas o no compatibles.
     $feature = json_decode((string)$row['geojson'], true);
     if (!is_array($feature) || ($feature['type'] ?? '') !== 'Feature' || empty($feature['geometry'])) continue;
 
     $geometryType = $feature['geometry']['type'] ?? '';
     if (!in_array($geometryType, ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'], true)) continue;
 
+    // Agrega al GeoJSON los datos necesarios para mostrar y consultar cada dibujo.
     $documento = obtenerDocumentoEscaneadoTramite($row);
     $feature['properties'] = [
         'detalle_id' => (int)$row['id'],
@@ -88,6 +94,7 @@ while ($row = $result->fetch_assoc()) {
     $features[] = $feature;
 }
 
+// Devuelve todos los dibujos como una colección de características GeoJSON.
 echo json_encode([
     'success' => true,
     'type' => 'FeatureCollection',

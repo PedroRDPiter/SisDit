@@ -3,6 +3,7 @@ require "seguridad.php";
 require_once "php/db.php";
 require_once "php/funciones_seguridad.php";
 
+// Restringir esta funcionalidad exclusivamente a usuarios administradores.
 if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Administrador'])) {
     header("Location: acceso.php?error=no_autorizado");
     exit();
@@ -10,10 +11,13 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Administrador'])) 
 
 $mensaje = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
+    // Validar el token antes de procesar cualquier archivo enviado.
     if (!validarCSRF()) {
         http_response_code(403);
         exit('Token de seguridad invalido');
     }
+
+    // Comprobar extensión, tipo y tamaño permitido del archivo CSV.
     $validacionArchivo = validarArchivo($_FILES['archivo'], ['csv'], 5242880);
     if (!$validacionArchivo['valido']) {
         $mensaje = $validacionArchivo['mensaje'];
@@ -22,13 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
     $file = $mensaje === '' ? $_FILES['archivo']['tmp_name'] : '';
     $tipo = $_POST['tipo_import'];
 
+    // Abrir el archivo temporal generado por PHP para leerlo fila por fila.
     if ($file !== '' && ($handle = fopen($file, "r")) !== FALSE) {
         $row = 0;
         $imported = 0;
         while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
             $row++;
             if ($row == 1) continue; // Skip header
-            // Convert encoding to UTF-8 (assuming input is ISO-8859-1)
+            // Convertir la codificación a UTF-8 (se asume que el archivo usa ISO-8859-1).
             $data = array_map('utf8_encode', $data);
 
             if ($tipo == 'cp') {
@@ -74,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
             }
         }
         fclose($handle);
+        // Registrar el resultado de la importación para fines de auditoría.
         registrarLog($conn, (int) $_SESSION['id'], 'Importacion CSV', $tipo, null, 'Filas procesadas: ' . max(0, $row - 1) . '; importadas: ' . $imported);
         $mensaje = "Importación completada. Filas leídas: " . ($row - 1) . ", importadas exitosamente: $imported.";
     } elseif ($mensaje === '') {

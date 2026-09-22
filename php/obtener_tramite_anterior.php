@@ -5,6 +5,7 @@
 // =====================================================
 
 ob_start();
+// Evita que avisos o errores se mezclen con la respuesta JSON del endpoint.
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
@@ -13,6 +14,7 @@ if (function_exists('mysqli_report')) {
 }
 
 function responder_json(array $payload, int $status_code = 200) {
+    // Centraliza el formato de respuesta y el código HTTP de todas las salidas.
     if (ob_get_length()) {
         ob_clean();
     }
@@ -23,6 +25,7 @@ function responder_json(array $payload, int $status_code = 200) {
 }
 
 session_start();
+// Carga la conexión a la base de datos y las funciones de autorización.
 require_once "db.php";
 require_once "funciones_seguridad.php";
 
@@ -33,6 +36,7 @@ if (!esPersonalAutorizado()) {
     responder_json(['error' => 'Acceso denegado'], 403);
 }
 
+// Obtiene los criterios de búsqueda enviados por la solicitud AJAX.
 $folio = isset($_GET['folio']) ? trim($_GET['folio']) : '';
 $propietario = isset($_GET['propietario']) ? trim($_GET['propietario']) : '';
 $tipo_tramite_id = isset($_GET['tipo_tramite_id']) ? intval($_GET['tipo_tramite_id']) : 0;
@@ -43,6 +47,7 @@ if (empty($folio) && empty($propietario)) {
     responder_json(['error' => 'Se requiere folio o propietario'], 400);
 }
 
+// Consulta los datos del trámite y genera sus folios en un formato legible.
 $sql = "SELECT
             t.*,
             CONCAT(LPAD(t.folio_numero, 3, '0'), '/', t.folio_anio) as folio_formateado,
@@ -59,6 +64,7 @@ $params = [];
 $types = "";
 
 if (!empty($folio)) {
+    // Cuando se recibe un folio, busca por folio de entrada o de salida.
     $partes = explode('/', $folio);
     if (count($partes) !== 2) {
         responder_json(['error' => 'Formato de folio invalido'], 400);
@@ -73,6 +79,7 @@ if (!empty($folio)) {
     $params[] = intval($partes[1]);
     $types .= "ii";
 } elseif (!empty($propietario) && $tipo_tramite_id > 0) {
+    // Como alternativa, busca el trámite aprobado más reciente del propietario.
     $sql .= " AND t.propietario LIKE ? AND t.tipo_tramite_id = ?
               AND t.estatus IN ('Aprobado', 'Firmado', 'Entregado y archivado')";
     $params[] = '%' . $propietario . '%';
@@ -82,8 +89,10 @@ if (!empty($folio)) {
     responder_json(['error' => 'Parametros insuficientes'], 400);
 }
 
+// Devuelve únicamente el trámite más reciente que coincide con los criterios.
 $sql .= " ORDER BY t.fecha_ingreso DESC, t.id DESC LIMIT 1";
 
+// Prepara y ejecuta la consulta usando parámetros para evitar inyección SQL.
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     error_log("Error en prepare obtener_tramite_anterior: " . $conn->error);
@@ -101,6 +110,7 @@ if (!$stmt->execute()) {
 }
 
 $result = $stmt->get_result();
+// Convierte el primer resultado en un arreglo asociativo.
 $tramite = $result ? $result->fetch_assoc() : null;
 $stmt->close();
 
@@ -108,6 +118,7 @@ if (!$tramite) {
     responder_json(['error' => 'No se encontro el tramite'], 404);
 }
 
+// Selecciona los campos que el cliente necesita para prellenar el formulario.
 $datos = [
     'success' => true,
     'tramite' => [
@@ -130,6 +141,8 @@ $datos = [
         'correo' => $tramite['correo'],
         'observaciones' => $tramite['observaciones'],
         'archivos' => [
+            // Conserva compatibilidad con trámites que guardaron escrituras en
+            // el campo antiguo titulo_archivo.
             'ine_archivo' => $tramite['ine_archivo'],
             'escrituras_archivo' => $tramite['escrituras_archivo'] ?: $tramite['titulo_archivo'],
             'predial_archivo' => $tramite['predial_archivo'],
@@ -138,6 +151,7 @@ $datos = [
             'foto2_archivo' => $tramite['foto2_archivo'],
             'croquis_archivo' => $tramite['croquis_archivo']
         ],
+        // Los datos de constancia se incluyen únicamente cuando se solicitan.
         'constancia' => $incluir_constancia ? [
             'numero_asignado' => $tramite['numero_asignado'],
             'tipo_asignacion' => $tramite['tipo_asignacion'],
@@ -152,5 +166,6 @@ $datos = [
     ]
 ];
 
+// Cierra la conexión antes de enviar la respuesta JSON final.
 $conn->close();
 responder_json($datos);

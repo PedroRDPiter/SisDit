@@ -4,12 +4,24 @@ El SHP municipal usa UTM zona 13 norte; el mapa requiere longitud/latitud.
 Solo recupera atributos anteriores cuando coinciden todos los vértices.
 """
 import argparse
+from importlib import import_module
 import json
 import struct
 from pathlib import Path
+from typing import Any
 
-import shapefile
 from pyproj import Transformer
+
+
+def cargar_pyshp() -> Any:
+    """Carga pyshp, cuyo módulo se importa como ``shapefile``."""
+    try:
+        return import_module('shapefile')
+    except ImportError as error:
+        raise RuntimeError(
+            'No se encontro la dependencia pyshp. '
+            'Instalala con: pip install -r scripts/requirements-poligonos.txt'
+        ) from error
 
 def vertices(coords):
     if not coords:
@@ -77,7 +89,8 @@ def convertir_shp(entrada, anterior_path, salida):
 
     features = []
     recuperados = vacios = 0
-    with entrada.open('rb') as shp_file, shapefile.Reader(shp=shp_file) as source:
+    pyshp = cargar_pyshp()
+    with entrada.open('rb') as shp_file, pyshp.Reader(shp=shp_file) as source:
         for shape in source.iterShapes():
             if shape.shapeType not in (0, 5, 15, 25):
                 raise ValueError('El archivo contiene geometrías que no son polígonos.')

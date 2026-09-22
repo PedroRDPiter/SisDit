@@ -1,8 +1,9 @@
 <?php
+// Inicializar sesión y cargar las funciones de seguridad.
 require "seguridad.php";
 require_once "php/funciones_seguridad.php";
 
-// Solo administradores pueden acceder
+// Restringir el panel exclusivamente a usuarios con rol de Administrador.
 if(!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'Administrador'){
     header("Location: acceso.php?error=no_autorizado");
     exit();
@@ -10,7 +11,7 @@ if(!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'Administrador'){
 
 require_once "php/db.php";
 
-// Obtener estadísticas generales
+// Obtener estadísticas generales de trámites y usuarios.
 $stats_tramites = $conn->query("SELECT 
     COUNT(*) as total,
     SUM(CASE WHEN estatus = 'En revisión' THEN 1 ELSE 0 END) as en_revision,
@@ -27,10 +28,10 @@ $stats_usuarios = $conn->query("SELECT
     SUM(CASE WHEN rol = 'Usuario' THEN 1 ELSE 0 END) as usuarios
     FROM usuarios")->fetch_assoc();
 
-// Obtener lista de usuarios
+// Cargar los usuarios para la tabla de gestión administrativa.
 $usuarios_query = $conn->query("SELECT * FROM usuarios ORDER BY fecha_registro DESC");
 
-// Obtener trámites aprobados
+// Cargar los trámites aprobados para imprimir sus constancias.
 $tramites_aprobados = $conn->query("
     SELECT t.*, tt.nombre AS tipo_tramite_nombre,
            u.nombre AS solicitante_nombre, u.apellidos AS solicitante_apellidos,
@@ -42,27 +43,27 @@ $tramites_aprobados = $conn->query("
     ORDER BY t.fecha_aprobacion DESC
 ");
 
-// Obtener logs recientes
+// Obtener las actividades más recientes del sistema.
 $logs_query = $conn->query("SELECT l.*, u.nombre, u.apellidos 
     FROM logs_actividad l 
     LEFT JOIN usuarios u ON l.usuario_id = u.id 
     ORDER BY l.fecha DESC 
     LIMIT 50");
 
-// Solicitudes de registro pendientes
+// Obtener solicitudes de registro y contar las que siguen pendientes.
 $solicitudes_query = $conn->query("SELECT * FROM solicitudes_registro ORDER BY FIELD(estado,'Pendiente','Aprobado','Rechazado'), fecha_solicitud DESC");
 $total_pendientes  = $conn->query("SELECT COUNT(*) as c FROM solicitudes_registro WHERE estado='Pendiente'")->fetch_assoc()['c'];
 
-// ── REPORTE: trámites por mes/año y tipo ──
+// ── REPORTE: trámites agrupados por mes, año y tipo ──
 $anio_filtro = isset($_GET['anio_reporte']) ? (int)$_GET['anio_reporte'] : (int)date('Y');
 
-// Años disponibles en la BD
+// Obtener los años disponibles para el filtro del reporte.
 $anios_res = $conn->query("SELECT DISTINCT folio_anio FROM tramites ORDER BY folio_anio DESC");
 $anios_disponibles = [];
 while ($a = $anios_res->fetch_assoc()) $anios_disponibles[] = $a['folio_anio'];
 if (empty($anios_disponibles)) $anios_disponibles[] = date('Y');
 
-// Totales por mes (todos los tipos) para el año seleccionado
+// Calcular los totales mensuales del año seleccionado.
 $reporte_mes = $conn->query("
     SELECT
         MONTH(fecha_ingreso) AS mes,
@@ -79,7 +80,7 @@ $reporte_mes = $conn->query("
 $datos_mes = [];
 while ($r = $reporte_mes->fetch_assoc()) $datos_mes[(int)$r['mes']] = $r;
 
-// Totales por tipo de trámite para el año seleccionado
+// Calcular los totales agrupados por tipo de trámite.
 $reporte_tipo = $conn->query("
     SELECT tt.nombre AS tipo,
            COUNT(*) AS total,
@@ -94,7 +95,7 @@ $reporte_tipo = $conn->query("
 $datos_tipo = [];
 while ($r = $reporte_tipo->fetch_assoc()) $datos_tipo[] = $r;
 
-// Gran total del año
+// Obtener el total anual y el total histórico.
 $gran_total = $conn->query("SELECT COUNT(*) as c FROM tramites WHERE folio_anio = $anio_filtro")->fetch_assoc()['c'];
 $total_global = $conn->query("SELECT COUNT(*) as c FROM tramites")->fetch_assoc()['c'];
 

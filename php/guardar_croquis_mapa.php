@@ -9,6 +9,7 @@ require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Verifica que la sesion, los permisos y el token CSRF sean validos.
 if (!isset($_SESSION['id'])) {
     echo json_encode(['success' => false, 'message' => 'Sesion expirada']);
     exit;
@@ -27,6 +28,7 @@ if (!validarCSRF()) {
 $id_post = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 $folio   = isset($_POST['folio']) ? trim($_POST['folio']) : '';
 
+// Resuelve el tramite por ID o, si no existe, por folio.
 if ($id_post > 0) {
     $stmt = $conn->prepare("SELECT id FROM tramites WHERE id = ? LIMIT 1");
     $stmt->bind_param("i", $id_post);
@@ -64,6 +66,7 @@ $utm_vertices = isset($_POST['utm_vertices']) ? trim($_POST['utm_vertices']) : '
 $georeferencia = isset($_POST['georeferencia']) ? trim($_POST['georeferencia']) : '';
 
 $geojson_decoded = json_decode($geojson, true);
+// El GeoJSON es obligatorio porque contiene la geometria del croquis.
 if ($geojson === '' || $geojson_decoded === null) {
     echo json_encode(['success' => false, 'message' => 'GeoJSON invalido']);
     exit;
@@ -139,6 +142,7 @@ if ($georeferencia !== '' && json_decode($georeferencia, true) === null) {
 }
 
 $tmp = $_FILES['croquis']['tmp_name'];
+// Valida extension y MIME para evitar almacenar archivos que no sean imagenes.
 $validacionCroquis = validarArchivo($_FILES['croquis'], ['png', 'jpg', 'jpeg', 'webp']);
 if (!$validacionCroquis['valido']) {
     http_response_code(400);
@@ -152,6 +156,7 @@ if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'])) {
 }
 
 $carpeta = "../.private/{$tramite_id}/croquis/";
+// Crea el directorio privado donde se almacenara la nueva captura.
 try {
     Utilidades::crearDirectorioSeguro($carpeta);
 } catch (ArchivoException $error) {
@@ -174,6 +179,7 @@ if ($handle = opendir($carpeta)) {
 $nombre = 'croquis_mapa_' . ($max_num + 1) . '.png';
 $relative_path = ".private/{$tramite_id}/croquis/{$nombre}";
 
+// Mueve el archivo temporal antes de registrar sus datos en la base.
 if (!move_uploaded_file($tmp, "../" . $relative_path)) {
     echo json_encode(['success' => false, 'message' => 'Error al guardar la imagen del mapa']);
     exit;
@@ -184,6 +190,7 @@ $usuario_id = (int)$_SESSION['id'];
 try {
     $conn->begin_transaction();
 
+    // Desactiva las versiones anteriores y registra el croquis actual.
     $stmtUp = $conn->prepare("UPDATE tramites SET croquis_archivo = ? WHERE id = ?");
     $stmtUp->bind_param("si", $relative_path, $tramite_id);
     if (!$stmtUp->execute()) throw new Exception('No se pudo actualizar el croquis del tramite');
@@ -236,6 +243,7 @@ try {
     $stmtOffDetalle->execute();
     $stmtOffDetalle->close();
 
+    // Para croquis antiguos, genera detalles a partir de las features del GeoJSON.
     if (empty($detalles_decoded) && isset($geojson_decoded['features']) && is_array($geojson_decoded['features'])) {
         foreach ($geojson_decoded['features'] as $feature) {
             $detalles_decoded[] = [
@@ -278,6 +286,7 @@ try {
     ");
     if (!$stmtDetalle) throw new Exception('No se pudo preparar el guardado de detalles de poligonos');
 
+    // Guarda cada poligono con sus coordenadas, etiquetas y estado de seleccion.
     foreach ($detalles_decoded as $detalle) {
         if (!is_array($detalle)) continue;
         $feature_uid = isset($detalle['feature_uid']) ? substr(trim((string)$detalle['feature_uid']), 0, 80) : '';
@@ -331,6 +340,7 @@ try {
         $stmtLog->close();
     }
 
+    // Confirma todos los cambios solo cuando el archivo y sus metadatos se guardaron.
     $conn->commit();
 
     echo json_encode([
@@ -341,6 +351,7 @@ try {
         'url' => $relative_path
     ]);
 } catch (Throwable $e) {
+    // Revierte la transaccion y elimina el archivo si algo falla.
     $conn->rollback();
     if (file_exists("../" . $relative_path)) unlink("../" . $relative_path);
     AppLogger::error($e, ['endpoint' => 'guardar_croquis_mapa', 'tramite_id' => $tramite_id]);

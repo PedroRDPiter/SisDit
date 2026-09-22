@@ -1,4 +1,5 @@
 <?php
+// Catálogo de trámites y requisitos que se muestran en la página.
 $tramites = [
     [
         'codigo' => 'NUM-01',
@@ -131,6 +132,7 @@ $totalTramites = count($tramites);
     <title>Requisitos para Trámites | Planeación y Desarrollo Urbano</title>
 
     <style>
+        /* Variables y estilos base del portal. */
         :root {
             --vino: #721832;
             --vino-oscuro: #4b0e22;
@@ -178,6 +180,7 @@ $totalTramites = count($tramites);
             margin-inline: auto;
         }
 
+        /* Encabezado y navegación principal. */
         .encabezado {
             position: sticky;
             z-index: 1000;
@@ -260,6 +263,7 @@ $totalTramites = count($tramites);
             border-radius: 999px;
         }
 
+        /* Presentación principal con el total de trámites. */
         .hero {
             position: relative;
             padding: clamp(76px, 10vw, 130px) 0 clamp(92px, 11vw, 145px);
@@ -372,6 +376,7 @@ $totalTramites = count($tramites);
             text-transform: uppercase;
         }
 
+        /* Buscador, tarjetas y avisos del catálogo. */
         .catalogo {
             padding: clamp(70px, 9vw, 120px) 0;
         }
@@ -653,6 +658,7 @@ $totalTramites = count($tramites);
             color: rgba(255, 255, 255, .8);
         }
 
+        /* Información de contacto y pie de página. */
         .contacto {
             padding: 0 0 clamp(70px, 9vw, 110px);
         }
@@ -754,6 +760,7 @@ $totalTramites = count($tramites);
             display: none !important;
         }
 
+        /* Ajustes responsivos para tabletas y teléfonos. */
         @media (max-width: 850px) {
             .hero-contenido,
             .barra-catalogo {
@@ -850,6 +857,7 @@ $totalTramites = count($tramites);
     </style>
 </head>
 <body>
+    <!-- Navegación global del portal. -->
     <header class="encabezado">
         <div class="contenedor navegacion">
             <a class="marca" href="index.php" aria-label="Volver al portal principal">
@@ -871,6 +879,7 @@ $totalTramites = count($tramites);
     </header>
 
     <main>
+        <!-- Resumen de la sección de requisitos. -->
         <section class="hero">
             <div class="contenedor hero-contenido">
                 <div>
@@ -885,6 +894,7 @@ $totalTramites = count($tramites);
             </div>
         </section>
 
+        <!-- Catálogo filtrable de trámites. -->
         <section class="catalogo" id="catalogo">
             <div class="contenedor">
                 <div class="barra-catalogo revelar">
@@ -958,6 +968,7 @@ $totalTramites = count($tramites);
             </div>
         </section>
 
+        <!-- Canales de atención para resolver dudas. -->
         <section class="contacto">
             <div class="contenedor contacto-panel revelar">
                 <div>
@@ -982,6 +993,7 @@ $totalTramites = count($tramites);
     <button class="volver-arriba" id="volverArriba" type="button" aria-label="Volver al inicio" title="Volver arriba">↑</button>
 
     <script>
+        // Referencias a los controles y elementos que se actualizan con JavaScript.
         const buscador = document.getElementById('buscarTramite');
         const tarjetas = Array.from(document.querySelectorAll('.tramite-card'));
         const resultado = document.getElementById('resultadoBusqueda');
@@ -994,6 +1006,7 @@ $totalTramites = count($tramites);
             .replace(/[\u0300-\u036f]/g, '')
             .trim();
 
+        // Filtra las tarjetas por nombre, descripción o requisito.
         buscador.addEventListener('input', () => {
             const consulta = normalizar(buscador.value);
             let visibles = 0;
@@ -1008,6 +1021,7 @@ $totalTramites = count($tramites);
             sinResultados.hidden = visibles !== 0;
         });
 
+        // Revela el contenido al entrar en el área visible de la pantalla.
         const elementos = document.querySelectorAll('.revelar');
         if ('IntersectionObserver' in window) {
             const observador = new IntersectionObserver((entradas, observer) => {
@@ -1024,6 +1038,7 @@ $totalTramites = count($tramites);
             elementos.forEach(elemento => elemento.classList.add('visible'));
         }
 
+        // Muestra el botón para volver al inicio después de desplazarse.
         const actualizarBoton = () => {
             volverArriba.classList.toggle('visible', window.scrollY > 420);
         };

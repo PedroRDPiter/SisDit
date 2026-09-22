@@ -10,6 +10,7 @@
  */
 error_reporting(0);
 ini_set('display_errors', 0);
+// Evitar que avisos o errores rompan la respuesta JSON esperada por AJAX.
 if (ob_get_length()) ob_clean();
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -18,6 +19,7 @@ require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Comprobar autenticación, permisos y protección CSRF antes de procesar el archivo.
 if (!isset($_SESSION['id'])) {
     echo json_encode(array('success'=>false,'message'=>'Sesion expirada'));
     exit;
@@ -32,7 +34,7 @@ if (!validarCSRF()) {
     exit;
 }
 
-// Identificación: preferir id del subtrámite (cada subtrámite tiene su propio croquis).
+// Identificación: preferir el ID del subtrámite, ya que cada uno tiene su propio croquis.
 $id_post = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 $folio   = isset($_POST['folio']) ? trim($_POST['folio']) : '';
 
@@ -46,7 +48,7 @@ if ($id_post > 0) {
     }
     $folio_numero = (int)$m[1];
     $folio_anio   = (int)$m[2];
-    // Sin id explícito: tomar la fila principal del grupo (compatibilidad)
+    // Sin ID explícito, tomar la fila principal del grupo para mantener compatibilidad.
     $stmt = $conn->prepare("SELECT id, croquis_archivo FROM tramites WHERE folio_numero=? AND folio_anio=? ORDER BY (tramite_principal_id IS NULL) DESC, id ASC LIMIT 1");
     $stmt->bind_param("ii", $folio_numero, $folio_anio);
 }
@@ -58,12 +60,13 @@ $stmt->close();
 $tramite_id = $tramite_data['id'] ?? 0;
 $current_croquis = $tramite_data['croquis_archivo'] ?? '';
 
+// Confirmar que el trámite solicitado existe antes de continuar.
 if ($tramite_id === 0) {
     echo json_encode(array('success'=>false,'message'=>'Tramite no encontrado'));
     exit;
 }
 
-// NOTA: Ya no eliminamos el croquis anterior para mantener historial de versiones
+// Conservar los archivos anteriores permite mantener un historial de versiones.
 // if (!empty($current_croquis)) {
 //     $old_path = "../" . $current_croquis;
 //     if (file_exists($old_path)) {
@@ -71,7 +74,7 @@ if ($tramite_id === 0) {
 //     }
 // }
 
-// Verificar que venga archivo
+// Verificar que la petición incluya un archivo recibido correctamente.
 if (!isset($_FILES['croquis']) || $_FILES['croquis']['error'] !== UPLOAD_ERR_OK) {
     echo json_encode(array('success'=>false,'message'=>'No se recibio imagen'));
     exit;
@@ -84,7 +87,7 @@ if (!$validacion['valido']) {
 }
 $ext = $validacion['extension'];
 
-// Usar el ID del trámite para organizar los archivos en lugar del folio
+// Organizar los archivos por ID del trámite, evitando mezclar folios o subtrámites.
 $carpeta = "../.private/{$tramite_id}/croquis/";
 try {
     Utilidades::crearDirectorioSeguro($carpeta);
@@ -95,7 +98,7 @@ try {
     exit;
 }
 
-// Encontrar el siguiente número disponible para evitar conflictos
+// Buscar el siguiente número disponible para no sobrescribir versiones existentes.
 $max_num = 0;
 if ($handle = opendir($carpeta)) {
     while (false !== ($entry = readdir($handle))) {
@@ -112,12 +115,13 @@ $next_num = $max_num + 1;
 
 $nombre = 'croquis_' . $next_num . '.' . $ext;
 $relative_path = ".private/{$tramite_id}/croquis/{$nombre}";
+// Mover el archivo temporal de PHP a la carpeta privada definitiva.
 if (!move_uploaded_file($_FILES['croquis']['tmp_name'], "../" . $relative_path)) {
     echo json_encode(array('success'=>false,'message'=>'Error al guardar la imagen'));
     exit;
 }
 
-// Actualizar en BD: SOLO la fila de este subtrámite (por id)
+// Actualizar únicamente la fila del subtrámite seleccionado.
 $stmt = $conn->prepare("UPDATE tramites SET croquis_archivo=? WHERE id=?");
 $stmt->bind_param("si", $relative_path, $tramite_id);
 if (!$stmt->execute()) {
@@ -126,7 +130,7 @@ if (!$stmt->execute()) {
 }
 $stmt->close();
 
-// Log
+// Registrar la carga para fines de auditoría.
 $uid = (int)$_SESSION['id'];
 $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
 $det = "Croquis cargado para subtramite ID: $tramite_id | Archivo: $relative_path";

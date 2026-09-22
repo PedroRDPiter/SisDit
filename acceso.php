@@ -2,6 +2,7 @@
 require_once __DIR__ . '/php/sesion.php';
 iniciarSesionSegura();
 
+// Genera el token CSRF una sola vez por sesión para proteger los formularios.
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -10,6 +11,7 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 $alerta = null;
 $mostrarRegistro = false;
 
+// Muestra mensajes de éxito después de enviar una solicitud o recuperar una cuenta.
 if (isset($_GET['ok']) && in_array($_GET['ok'], ['correo_enviado', 'correo_procesado', 'correo_dev'], true)) {
     $alerta = [
         'tipo' => 'exito',
@@ -25,6 +27,7 @@ if (isset($_GET['ok']) && in_array($_GET['ok'], ['correo_enviado', 'correo_proce
     ];
 }
 
+// Traduce los errores recibidos por redirección a mensajes claros para el usuario.
 if (isset($_GET['error'])) {
     $errorOriginal = trim(urldecode((string) $_GET['error']));
     $errorClave = strtolower($errorOriginal);
@@ -846,6 +849,7 @@ $enlaceRecuperacion = null;
                          alt="SisDiT, Sistema Único de Simplificación y Digitalización de Trámites"
                          width="1640" height="870">
 
+                    <?php // La alerta informa el resultado de la operación anterior. ?>
                     <?php if ($alerta): ?>
                         <div class="alerta alerta-<?= htmlspecialchars($alerta['tipo'], ENT_QUOTES, 'UTF-8') ?>" role="alert">
                             <span class="alerta-icono" aria-hidden="true"><?= $alerta['tipo'] === 'exito' ? '✓' : '!' ?></span>
@@ -870,6 +874,7 @@ $enlaceRecuperacion = null;
                         </button>
                     </div>
 
+                    <?php // Formulario de autenticación de usuarios existentes. ?>
                     <form class="formulario" id="loginForm" action="php/login.php" method="POST"<?= $mostrarRegistro ? ' hidden' : '' ?>>
                         <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                         <div class="formulario-cabecera">
@@ -899,6 +904,7 @@ $enlaceRecuperacion = null;
                         <p class="recuperar"><a href="#" id="forgotPassword">¿Olvidaste tu contraseña?</a></p>
                     </form>
 
+                    <?php // Formulario para solicitar una nueva cuenta institucional. ?>
                     <form class="formulario" id="registroForm" action="php/registro.php" method="POST"<?= !$mostrarRegistro ? ' hidden' : '' ?>>
                         <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                         <div class="formulario-cabecera">
@@ -988,6 +994,7 @@ $enlaceRecuperacion = null;
     </dialog>
 
     <script>
+        // Referencias a las pestañas y formularios que se alternan sin recargar la página.
         const loginForm = document.getElementById('loginForm');
         const registroForm = document.getElementById('registroForm');
         const btnLogin = document.getElementById('btnLogin');
@@ -1002,9 +1009,11 @@ $enlaceRecuperacion = null;
             btnRegistro.setAttribute('aria-selected', String(mostrarRegistro));
         }
 
+        // Cambia entre iniciar sesión y solicitar una cuenta.
         btnLogin.addEventListener('click', () => cambiarPestana(false));
         btnRegistro.addEventListener('click', () => cambiarPestana(true));
 
+        // Permite mostrar u ocultar las contraseñas mientras se escriben.
         document.querySelectorAll('.mostrar-password').forEach(boton => {
             boton.addEventListener('click', () => {
                 const input = document.getElementById(boton.dataset.password);
@@ -1015,6 +1024,7 @@ $enlaceRecuperacion = null;
             });
         });
 
+        // Normaliza nombres y apellidos a mayúsculas y elimina caracteres no permitidos.
         ['reg_nombre', 'reg_apellidos'].forEach(id => {
             document.getElementById(id).addEventListener('input', event => {
                 event.target.value = event.target.value
@@ -1033,6 +1043,7 @@ $enlaceRecuperacion = null;
             event.target.value = event.target.value.replace(/\D/g, '').slice(0, 10);
         });
 
+        // Reglas visuales y validación adicional para la contraseña de registro.
         const passwordRegistro = document.getElementById('reg_password');
         const reglas = {
             longitud: valor => valor.length >= 12,
@@ -1083,6 +1094,7 @@ $enlaceRecuperacion = null;
             notaRol.hidden = false;
         });
 
+        // Solicita confirmación antes de enviar el correo de recuperación.
         const dialogo = document.getElementById('dialogoRecuperacion');
         const correoRecuperacion = document.getElementById('correoRecuperacion');
         const forgotPassword = document.getElementById('forgotPassword');

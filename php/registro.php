@@ -7,14 +7,17 @@
 
 require "db.php";
 require "funciones_seguridad.php";
+// Ocultar errores al usuario y registrarlos internamente mediante el manejo posterior.
 error_reporting(0);
 ini_set('display_errors', 0);
 
+// Verificar que la solicitud provenga del formulario legítimo.
 if (!validarCSRF()) {
     header("Location: ../acceso.php?error=" . urlencode("Token de seguridad invalido"));
     exit;
 }
 
+// Comprobar que se hayan enviado todos los datos obligatorios.
 if (empty($_POST['nombre']) || empty($_POST['apellidos']) || empty($_POST['correo']) ||
     empty($_POST['password']) || empty($_POST['rol'])) {
     header("Location: ../acceso.php?error=" . urlencode("Completa todos los campos obligatorios"));
@@ -22,6 +25,7 @@ if (empty($_POST['nombre']) || empty($_POST['apellidos']) || empty($_POST['corre
 }
 
 try {
+    // Limpiar los datos recibidos antes de validarlos y almacenarlos.
     $nombre    = limpiarInput($_POST['nombre']);
     $apellidos = limpiarInput($_POST['apellidos']);
     $correo    = limpiarInput($_POST['correo']);
@@ -33,7 +37,7 @@ try {
         throw new Exception("El correo electronico no es valido");
     if (!soloLetras($nombre) || !soloLetras($apellidos))
         throw new Exception("Nombre y apellidos solo deben contener letras");
-    // Validación de contraseña
+    // Validar formato de contacto, nombres y complejidad de la contraseña.
     if (strlen($password) < 12)
         throw new Exception("La contraseña debe tener al menos 12 caracteres");
     if (!preg_match('/[A-Z]/', $password))
@@ -46,7 +50,7 @@ try {
         throw new Exception("La contraseña debe contener al menos un símbolo (!@#$%^&*)");
     if (!in_array($rol, array('Usuario','Ventanilla','Verificador')))
         throw new Exception("Rol no valido");
-    // Verificar correo duplicado en usuarios activos
+    // Verificar que el correo no pertenezca ya a un usuario activo.
     $chk = $conn->prepare("SELECT id FROM usuarios WHERE correo = ?");
     $chk->bind_param("s", $correo);
     $chk->execute();
@@ -56,7 +60,7 @@ try {
 
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-    // TODOS LOS ROLES: solicitud pendiente de aprobación del administrador
+    // Buscar solicitudes anteriores para evitar registros duplicados.
     $chkSol = $conn->prepare("SELECT id, estado FROM solicitudes_registro WHERE correo = ?");
     $chkSol->bind_param("s", $correo);
     $chkSol->execute();
@@ -70,13 +74,14 @@ try {
             throw new Exception("Tu solicitud fue rechazada. Contacta directamente al administrador.");
     }
 
+    // Crear la solicitud; el administrador deberá aprobarla posteriormente.
     $stmt = $conn->prepare("INSERT INTO solicitudes_registro (nombre, apellidos, correo, password_hash, telefono, rol, estado) VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')");
     $stmt->bind_param("ssssss", $nombre, $apellidos, $correo, $passwordHash, $telefono, $rol);
     if (!$stmt->execute()) throw new Exception("Error al enviar la solicitud. Intenta nuevamente");
     $solId = $conn->insert_id;
     $stmt->close();
 
-        // No registramos log para solicitudes pendientes para evitar errores de clave foránea
+    // No registrar log para solicitudes pendientes para evitar errores de clave foránea.
     // El log se registrará cuando el administrador apruebe la solicitud y cree el usuario
     
     header("Location: ../acceso.php?ok=solicitud_enviada");

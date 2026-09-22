@@ -10,12 +10,14 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+# Comprueba que ninguna instancia de MySQL/MariaDB esté activa antes de tocar los archivos.
 function ComprobarDetenido {
     if (Get-Process -Name mysqld, mariadbd -ErrorAction SilentlyContinue) {
         throw 'MySQL esta ejecutandose. Detenlo desde XAMPP antes de respaldar o rescatar. No se forzara su cierre.'
     }
 }
 
+# Copia todo el directorio y valida cada archivo mediante un hash.
 function CopiarVerificado([string]$Origen, [string]$Copia) {
     New-Item -ItemType Directory -Path $Copia -ErrorAction Stop | Out-Null
     $archivos = @(Get-ChildItem -LiteralPath $Origen -Recurse -Force -File)
@@ -36,6 +38,7 @@ function CopiarVerificado([string]$Origen, [string]$Copia) {
 }
 
 try {
+    # Localiza los binarios y el directorio de datos de la instalación de XAMPP.
     $mysqlRoot = (Resolve-Path -LiteralPath (Join-Path $Xampp 'mysql')).Path
     $datos = (Resolve-Path -LiteralPath (Join-Path $mysqlRoot 'data')).Path
     $config = Join-Path $mysqlRoot 'bin\my.ini'
@@ -46,6 +49,7 @@ try {
         if (!(Test-Path -LiteralPath $ruta -PathType Leaf)) { throw "No se encontro: $ruta" }
     }
 
+    # El menú permite ejecutar el diagnóstico o seleccionar el tipo de recuperación.
     if ($Accion -eq 'Menu') {
         Write-Host "`nRECUPERAR MYSQL DE XAMPP"
         Write-Host '1. Diagnosticar (sin cambiar datos)'
@@ -60,6 +64,7 @@ try {
         }
     }
 
+    # El diagnóstico es de solo lectura y no requiere detener el servidor.
     if ($Accion -eq 'Diagnostico') {
         Write-Host "`nProcesos MySQL:"
         Get-Process -Name mysqld, mariadbd -ErrorAction SilentlyContinue | Select-Object Name, Id, Path | Format-Table
@@ -75,7 +80,8 @@ try {
     }
 
     ComprobarDetenido
-    # Esta herramienta solo opera con la distribucion estandar de XAMPP.
+    # Esta herramienta solo opera con la distribución estándar de XAMPP.
+    # Se rechazan rutas externas y opciones especiales para evitar copias incompletas.
     $contenido = Get-Content -LiteralPath $config
     foreach ($linea in $contenido) {
         if ($linea -match '^\s*(datadir|innodb_data_home_dir|innodb_log_group_home_dir)\s*=\s*(.+?)\s*$') {
@@ -94,16 +100,19 @@ try {
     if (Get-ChildItem -LiteralPath $datos -Recurse -Force | Where-Object {
         ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $_.Extension -eq '.isl'
     }) { throw 'Hay enlaces o tablas externas en data. No se puede garantizar un respaldo completo.' }
+    # Nunca guardes el respaldo dentro de la instalación de MySQL ni del proyecto web.
     $destinoAbsoluto = [IO.Path]::GetFullPath($Destino).TrimEnd('\')
     if ($destinoAbsoluto -ieq $mysqlRoot -or $destinoAbsoluto.StartsWith($mysqlRoot + '\', [StringComparison]::OrdinalIgnoreCase) -or
         $destinoAbsoluto.StartsWith(([IO.Path]::GetFullPath((Join-Path $Xampp 'htdocs'))).TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase) -or
         $destinoAbsoluto -ieq (Join-Path $Xampp 'htdocs')) {
         throw 'Elige un destino fuera de mysql y de htdocs para proteger el respaldo.'
     }
+    # Reserva espacio para la copia original, la copia de trabajo y el SQL exportado.
     $tamano = (Get-ChildItem -LiteralPath $datos -Recurse -Force -File | Measure-Object Length -Sum).Sum
     $unidad = Get-PSDrive -Name ([IO.Path]::GetPathRoot($destinoAbsoluto).TrimEnd('\').TrimEnd(':'))
     $necesario = $tamano * 4 + 1GB
     if ($unidad.Free -lt $necesario) { throw 'No hay espacio suficiente: se requiere margen para respaldo, copia de trabajo y SQL.' }
+    # Cada ejecución usa una carpeta independiente para conservar el historial.
     $sesion = Join-Path $destinoAbsoluto ((Get-Date -Format 'yyyyMMdd_HHmmss') + '_' + [guid]::NewGuid().ToString('N').Substring(0,8))
     New-Item -ItemType Directory -Path $sesion -Force | Out-Null
     Copy-Item -LiteralPath $config -Destination (Join-Path $sesion 'my.ini')
@@ -116,6 +125,7 @@ try {
     if (Get-NetTCPConnection -State Listen -LocalPort $PuertoRescate -ErrorAction SilentlyContinue) {
         throw "El puerto de rescate $PuertoRescate esta ocupado. El respaldo se conserva en $sesion"
     }
+    # La recuperación se realiza sobre otra copia para preservar el respaldo físico.
     $trabajo = Join-Path $sesion 'data-trabajo'
     CopiarVerificado (Join-Path $sesion 'data-respaldo') $trabajo
     $logRescate = Join-Path $sesion 'rescate.log'
@@ -123,6 +133,7 @@ try {
     $cliente = @('--no-defaults', '--protocol=tcp', '--host=127.0.0.1', "--port=$PuertoRescate", "--user=$Usuario")
     if ($PedirClave) { $cliente += '--password' }
     try {
+        # Arranca una instancia aislada, local y en modo de recuperación InnoDB nivel 1.
         # --no-defaults evita que el proceso auxiliar abra data de produccion.
         $argumentos = @('--no-defaults', ('--basedir="' + $mysqlRoot + '"'), ('--datadir="' + $trabajo + '"'),
             "--port=$PuertoRescate", '--bind-address=127.0.0.1', '--innodb-force-recovery=1',
@@ -138,6 +149,7 @@ try {
             Start-Sleep -Seconds 1
         }
         if (!$listo) { throw "La copia no pudo iniciar con recuperacion nivel 1. Consulta $logRescate. No se aumentara el nivel automaticamente." }
+        # El volcado se marca como incompleto hasta que finalice correctamente.
         $parcial = Join-Path $sesion 'rescate-incompleto.sql'
         & $dump @cliente '--all-databases' '--routines' '--events' '--triggers' '--hex-blob' '--quick' '--skip-lock-tables' "--result-file=$parcial"
         if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $parcial) -or (Get-Item -LiteralPath $parcial).Length -eq 0) {
@@ -148,6 +160,7 @@ try {
         Write-Host "SQL extraido: $sqlFinal"
         Write-Host 'Importalo y comprueba las tablas en una instancia limpia compatible antes de reemplazar la original.'
     } finally {
+        # Detiene únicamente la instancia auxiliar iniciada por este script.
         if ($proceso -and !$proceso.HasExited) {
             & $admin @cliente 'shutdown'
             if (!$proceso.WaitForExit(10000)) {

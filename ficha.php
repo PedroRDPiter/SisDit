@@ -15,6 +15,7 @@ if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     exit();
 }
 
+// Cargar la conexión a la base de datos y las funciones de autorización.
 require_once "php/db.php";
 require_once "php/funciones_seguridad.php";
 
@@ -24,7 +25,7 @@ if (empty($_GET['folio'])) {
     exit;
 }
 
-// Parsear folio (formato: 001/2026)
+// Separar el número y el año del folio recibido en formato 001/2026.
 $folio_raw = $_GET['folio'];
 $partes = explode('/', $folio_raw);
 if (count($partes) !== 2) {
@@ -35,7 +36,7 @@ if (count($partes) !== 2) {
 $folio_numero = intval($partes[0]);
 $folio_anio = intval($partes[1]);
 
-// Consultar tramite con tipo
+// Obtener los datos principales del trámite, su tipo y el usuario creador.
 $sql = "SELECT t.*, tt.nombre as tipo_tramite_nombre, tt.codigo as tipo_tramite_codigo,
         u.nombre as creador_nombre, u.apellidos as creador_apellidos
         FROM tramites t
@@ -60,7 +61,7 @@ if (!puedeAccederTramite($tramite)) {
     exit('Acceso denegado');
 }
 
-// Obtener trámites adicionales (hijos) en la misma tabla via tramite_principal_id
+// Buscar los trámites adicionales relacionados con el trámite principal.
 $tas = [];
 $resTA = $conn->prepare("
     SELECT t.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
@@ -77,8 +78,8 @@ if ($resTA) {
     $resTA->close();
 }
 
-// Agrupar TODOS los trámites del grupo (principal + hijos) por tipo_tramite_id
-// Esto evita mostrar "MismoTipo (9) + MismoTipo (10)" cuando son del mismo tipo
+// Agrupar el trámite principal y sus hijos por tipo para mostrar cantidades
+// acumuladas y evitar repetir el mismo nombre varias veces.
 $tipos_agrupados = [];
 
 // Principal
@@ -102,8 +103,8 @@ foreach ($tas as $ta) {
     $tipos_agrupados[$tid]['cantidad_total'] += (int)($ta['cantidad'] ?? 1);
 }
 
-// La solicitud de LC pertenece al registro concreto, incluso cuando es un
-// tramite adicional. Conservamos cada ID para abrir el formulario correcto.
+// Conservar cada registro de tipo LC permite abrir el formulario correspondiente
+// incluso cuando la solicitud pertenece a un trámite adicional.
 $tramites_lc = [];
 if ($principal_tid === 7) {
     $tramites_lc[] = $tramite;
@@ -114,7 +115,7 @@ foreach ($tas as $ta) {
     }
 }
 
-// Obtener config del municipio
+// Leer la configuración institucional usada en el encabezado de la ficha.
 $config = [];
 $config_result = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 if ($config_result) {
@@ -127,7 +128,7 @@ $municipio = $config['municipio_nombre'] ?? 'Rincon de Romos';
 $director = $config['director_nombre'] ?? '';
 $director_cargo = $config['director_cargo'] ?? '';
 
-// Formatear fechas
+// Convertir las fechas a día, mes y año para mostrarlas en casillas separadas.
 $fecha_ingreso = $tramite['fecha_ingreso'];
 $fecha_entrega = $tramite['fecha_entrega'];
 
@@ -139,7 +140,7 @@ $dia_ent = date('d', strtotime($fecha_entrega));
 $mes_ent = date('m', strtotime($fecha_entrega));
 $anio_ent = date('y', strtotime($fecha_entrega));
 
-// Folio formateado
+// Preparar el folio visible y los enlaces utilizados por el código QR de WhatsApp.
 $folio_display = "ING." . str_pad($folio_numero, 3, '0', STR_PAD_LEFT) . "/" . $folio_anio;
 $mensaje_whatsapp = "Hola, quiero información sobre mi trámite.";
 $link_whatsapp = "https://wa.me/524498077899?text=" . urlencode($mensaje_whatsapp);
@@ -608,7 +609,10 @@ $conn->close();
 </style>
 </head>
 <body>
-<?php ob_start(); ?>
+<?php
+// Capturar una sola ficha para reutilizarla en las dos copias imprimibles.
+ob_start();
+?>
 
 <!-- BARRA ACCIONES -->
 <div class="no-print">
@@ -631,7 +635,7 @@ $conn->close();
     <button class="btn-print" onclick="window.open('documentacion.php?folio=<?= urlencode($folio_raw) ?>', '_blank')">Documentacion</button>
 </div>
 
-<!-- FICHA -->
+<!-- Contenedor de la ficha oficial que se imprimirá por duplicado. -->
 <div class="ficha-wrapper">
 <div class="ficha-container">
 
@@ -698,7 +702,7 @@ $conn->close();
                 <span style="flex:2;">Coordenadas</span>
             </div>
 
-            <!-- TIPO DE TRAMITE (agrupado correctamente, mismo tipo se suma) -->
+            <!-- Mostrar los tipos agrupados y su cantidad total. -->
             <div class="tipo-tramite-section">
                 <div class="tipo-tramite-label">Tipo de Tramite:</div>
                 <div class="tipo-tramite-value">
@@ -804,7 +808,7 @@ $conn->close();
 
         </div>
 
-        <!-- SIDEBAR -->
+        <!-- Barra lateral con información de contacto y códigos QR. -->
         <div class="ficha-sidebar">
             <div class="sidebar-label">Trámites y Servicios</div>
             <div class="qr-placeholder">
@@ -830,6 +834,7 @@ $conn->close();
 
 </div>
 <?php
+// Finalizar la captura para insertar exactamente el mismo contenido dos veces.
 $ficha_html = ob_get_clean();
 ?>
 <div class="ficha-page">

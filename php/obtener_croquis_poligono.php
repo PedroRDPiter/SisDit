@@ -1,4 +1,5 @@
 <?php
+// Configura una respuesta silenciosa en formato JSON.
 error_reporting(0);
 ini_set('display_errors', 0);
 if (ob_get_length()) ob_clean();
@@ -9,6 +10,7 @@ require_once "funciones_seguridad.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Verifica que exista una sesión activa y que el usuario tenga permisos.
 if (!isset($_SESSION['id'])) {
     echo json_encode(['success' => false, 'message' => 'Sesion expirada']);
     exit;
@@ -19,12 +21,14 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     exit;
 }
 
+// Obtiene y valida el identificador del trámite solicitado.
 $tramite_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($tramite_id <= 0) {
     echo json_encode(['success' => false, 'message' => 'Id de tramite invalido']);
     exit;
 }
 
+// Recupera el polígono activo más recientemente actualizado.
 $stmt = $conn->prepare("
     SELECT
         id,
@@ -57,10 +61,12 @@ $row = $res->fetch_assoc();
 $stmt->close();
 
 if (!$row) {
+    // El trámite no tiene un polígono activo guardado.
     echo json_encode(['success' => true, 'poligono' => null]);
     exit;
 }
 
+// Carga los polígonos detallados asociados al trámite.
 $detalles = [];
 $stmtDet = $conn->prepare("
     SELECT
@@ -87,6 +93,7 @@ if ($stmtDet) {
     $stmtDet->execute();
     $resDet = $stmtDet->get_result();
     while ($det = $resDet->fetch_assoc()) {
+        // Normaliza los campos del detalle para la respuesta JSON.
         $detalles[] = [
             'id' => (int)$det['id'],
             'feature_uid' => $det['feature_uid'],
@@ -107,6 +114,7 @@ if ($stmtDet) {
     $stmtDet->close();
 }
 
+// Devuelve el polígono principal junto con sus detalles.
 echo json_encode([
     'success' => true,
     'poligono' => [

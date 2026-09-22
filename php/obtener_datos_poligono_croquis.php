@@ -1,4 +1,5 @@
 <?php
+// Configura una respuesta silenciosa en formato JSON y garantiza una sesión activa.
 error_reporting(0);
 ini_set('display_errors', 0);
 if (ob_get_length()) ob_clean();
@@ -10,6 +11,7 @@ require_once "documento_escaneado.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Valida la sesión y los permisos necesarios para consultar la información.
 if (!isset($_SESSION['id'])) {
     echo json_encode(['success' => false, 'message' => 'Sesion expirada']);
     exit;
@@ -21,12 +23,14 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
 }
 
 $cuenta = isset($_GET['cuenta']) ? trim($_GET['cuenta']) : '';
+// Limita la entrada para evitar búsquedas vacías o excesivamente largas.
 if ($cuenta === '' || strlen($cuenta) > 50) {
     echo json_encode(['success' => false, 'message' => 'Numero de poligono invalido']);
     exit;
 }
 
 // Una cuenta catastral puede acumular varios trámites, incluso con folios distintos.
+// Se recopilan todos los trámites relacionados para mostrarlos en el resultado.
 $tramitesCuenta = [];
 $stmtTramites = $conn->prepare("
     SELECT DISTINCT t.id AS tramite_id, t.folio_numero, t.folio_anio,
@@ -57,6 +61,7 @@ if ($stmtTramites) {
 }
 
 $stmt = $conn->prepare("
+    /* Obtiene el polígono activo más relevante asociado a la cuenta consultada. */
     SELECT
         d.id,
         d.tramite_id,
@@ -98,6 +103,7 @@ $row = $res->fetch_assoc();
 $stmt->close();
 
 if (!$row) {
+    // Si no existe un detalle de polígono, intenta devolver los datos básicos del trámite.
     $fallback = $conn->prepare("
         SELECT t.id AS tramite_id, t.estatus, t.numero_asignado, t.tipo_tramite_id,
                t.formato_constancia, t.otros_archivos,
@@ -118,6 +124,7 @@ if (!$row) {
         exit;
     }
     $texto = trim((string)($tramite['numero_asignado'] ?? ''));
+    // Usa el número asignado o, en su defecto, el folio formateado como texto identificador.
     if ($texto === '') {
         $texto = str_pad((string)$tramite['folio_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_anio'];
     }
@@ -141,6 +148,7 @@ if (!$row) {
 }
 
 $documento = obtenerDocumentoEscaneadoTramite($row);
+// Devuelve el detalle del polígono junto con los trámites relacionados.
 echo json_encode([
     'success' => true,
     'poligono' => [

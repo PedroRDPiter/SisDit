@@ -1,4 +1,5 @@
 <?php
+// Configura la sesión y protege la página para usuarios autenticados.
 ini_set('session.cookie_httponly', 1);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -11,6 +12,7 @@ if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     exit();
 }
 
+// Genera el token que se enviará al servidor al subir un documento.
 $csrf = generarCSRF();
 ?>
 <!DOCTYPE html>
@@ -48,7 +50,7 @@ $csrf = generarCSRF();
     </style>
 </head>
 <body>
-        <!-- card de documentos segun los que se tienen guardados en la base de datos con apartado de anexar adicional -->
+        <!-- Contenedor de los documentos guardados y acceso para añadir uno nuevo. -->
     <div class="container">
         <div class="documentation-container">
             <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
@@ -70,6 +72,7 @@ $csrf = generarCSRF();
                     <h5 class="modal-title" id="addDocumentModalLabel">Añadir Nueva Documentación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <!-- Formulario para enviar el archivo y sus datos mediante AJAX. -->
                 <form id="uploadDocumentForm" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" id="folioInput" name="folio">
@@ -113,6 +116,7 @@ $csrf = generarCSRF();
                 uploadForm.addEventListener('submit', async function (event) {
             event.preventDefault();
 
+            // FormData permite enviar campos de texto y archivos en la misma petición.
             const formData = new FormData(this);
             const documentType = formData.get('documentType');
             // get file safely from input element
@@ -128,6 +132,7 @@ $csrf = generarCSRF();
             console.log('Uploading document:', documentType, documentFile.name);
 
             try {
+                // Guarda el documento en el servidor conservando la sesión actual.
                 const response = await fetch('save_document.php', {
                     method: 'POST',
                     body: formData,
@@ -159,6 +164,7 @@ $csrf = generarCSRF();
                     return;
                 }
 
+                // Actualiza la lista y cierra el modal cuando la carga fue exitosa.
                 if (result && result.success) {
                     alert('Documento subido exitosamente: ' + result.message);
                     if (folio) {
@@ -180,7 +186,7 @@ $csrf = generarCSRF();
         });
             }
 
-        // Get folio from URL and set it in the hidden input
+        // Obtiene el folio de la URL y lo asigna al formulario.
         const urlParams = new URLSearchParams(window.location.search);
         const folio = urlParams.get('folio');
             if (folio) {
@@ -189,6 +195,7 @@ $csrf = generarCSRF();
                 loadDocuments(folio);
             }
 
+        // Consulta y muestra los documentos asociados al folio indicado.
         async function loadDocuments(folio) {
             try {
                 const response = await fetch(`fetch_documents.php?folio=${encodeURIComponent(folio)}`);
@@ -218,6 +225,7 @@ $csrf = generarCSRF();
             }
         }
 
+        // Crea dinámicamente una tarjeta para cada documento recibido.
         function addDocumentToList(doc) {
             const list = document.getElementById('documentation-list');
             const emptyState = list.querySelector('.empty-state');
@@ -225,7 +233,7 @@ $csrf = generarCSRF();
                 emptyState.remove();
             }
 
-            // Map document types to user-friendly titles
+            // Convierte los tipos internos en títulos comprensibles para el usuario.
             const documentTypeTitles = {
                 'ine': 'INE / Identificación',
                 'escritura': 'Escritura / Título',

@@ -1,4 +1,5 @@
 <?php
+// Configura la respuesta como JSON y habilita una sesión segura para validar el acceso.
 header('Content-Type: application/json; charset=utf-8');
 
 ini_set('session.cookie_httponly', 1);
@@ -8,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once 'php/db.php';
 
+// Solo los usuarios autenticados pueden consultar los documentos del trámite.
 if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'No autorizado']);
@@ -16,6 +18,7 @@ if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
 
 $folio_raw = trim($_GET['folio'] ?? '');
 $partes = explode('/', $folio_raw);
+// El folio debe recibirse con el formato número/año.
 if (count($partes) !== 2 || !ctype_digit($partes[0]) || !ctype_digit($partes[1])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Folio inválido']);
@@ -37,6 +40,7 @@ $stmt->execute();
 $tramite = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// Verifica que exista el trámite solicitado antes de continuar.
 if (!$tramite) {
     http_response_code(404);
     echo json_encode(['success' => false, 'message' => 'Trámite no encontrado']);
@@ -44,6 +48,7 @@ if (!$tramite) {
 }
 
 require_once 'php/funciones_seguridad.php';
+// Aplica las reglas de seguridad específicas para el trámite encontrado.
 if (!puedeAccederTramite($tramite)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
@@ -51,6 +56,7 @@ if (!puedeAccederTramite($tramite)) {
 }
 
 $docMap = [
+    // Relaciona cada tipo de documento con su etiqueta y campo en la base de datos.
     'ine' => ['label' => 'INE / Identificación', 'campo' => 'ine_archivo'],
     'escritura' => ['label' => 'Escritura / Título', 'campo' => 'escrituras_archivo'],
     'predial' => ['label' => 'Boleta Predial', 'campo' => 'predial_archivo'],
@@ -68,6 +74,7 @@ $docMap = [
 ];
 
 function uploadPath(string $path): string {
+    // Normaliza la ruta y codifica sus segmentos para usarla correctamente en una URL.
     $path = ltrim(str_replace('\\', '/', $path), '/');
     $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
     return str_starts_with($path, 'uploads/') ? $encoded : 'uploads/' . $encoded;
@@ -75,6 +82,7 @@ function uploadPath(string $path): string {
 
 $documents = [];
 foreach ($docMap as $type => $info) {
+    // Agrega los documentos definidos en columnas independientes del trámite.
     $archivo = isset($tramite[$info['campo']]) ? $tramite[$info['campo']] : '';
     if (empty($archivo)) {
         continue;
@@ -92,6 +100,7 @@ $otros = isset($tramite['otros_archivos']) && trim($tramite['otros_archivos']) !
     ? json_decode($tramite['otros_archivos'], true)
     : [];
 
+// Agrega los documentos adicionales almacenados como JSON.
 if (is_array($otros)) {
     foreach ($otros as $index => $doc) {
         if (!is_array($doc) || empty($doc['archivo'])) {
@@ -109,9 +118,11 @@ if (is_array($otros)) {
 }
 
 usort($documents, static function ($a, $b) {
+    // Conserva el orden indicado para documentos adicionales.
     return ($a['sort'] ?? 1000) <=> ($b['sort'] ?? 1000);
 });
 
+// Devuelve la información del trámite y las rutas de sus documentos.
 echo json_encode([
     'success' => true,
     'documents' => $documents,

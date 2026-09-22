@@ -8,6 +8,7 @@
     <title>Portal del Personal | Mejora Regulatoria</title>
 
     <style>
+        /* Variables de diseño reutilizables para mantener una identidad visual consistente. */
         :root {
             --vino: #721832;
             --vino-oscuro: #4b0e22;
@@ -204,6 +205,7 @@
             transition: transform .25s ease, opacity .25s ease;
         }
 
+        /* Portada principal con llamada a la acción e imagen institucional. */
         .hero {
             position: relative;
             min-height: 760px;
@@ -559,6 +561,7 @@
             font-size: 14px;
         }
 
+        /* Tarjetas de acceso a las herramientas internas del portal. */
         .servicios {
             background: var(--blanco);
         }
@@ -973,6 +976,7 @@
             outline-offset: 4px;
         }
 
+        /* Animaciones de entrada activadas mediante IntersectionObserver. */
         .revelar {
             opacity: 0;
             filter: blur(7px);
@@ -1286,6 +1290,7 @@
 </head>
 
 <body>
+    <!-- Encabezado fijo con navegación principal y menú adaptable a dispositivos móviles. -->
     <header class="encabezado" id="encabezado">
         <div class="contenedor navegacion">
             <a class="marca" href="#inicio" aria-label="Ir al inicio">
@@ -1315,6 +1320,7 @@
     </header>
 
     <main>
+        <!-- Presentación del portal y acceso rápido al inicio de sesión. -->
         <section class="hero" id="inicio">
             <div class="contenedor hero-contenido">
                 <div class="hero-texto">
@@ -1342,6 +1348,7 @@
             <span class="hero-indicador" aria-hidden="true">Descubre</span>
         </section>
 
+        <!-- Principios resumidos del Departamento de Mejora Regulatoria. -->
         <section class="franja" aria-label="Principios del departamento">
             <div class="contenedor franja-grid">
                 <div class="franja-item revelar">
@@ -1359,6 +1366,7 @@
             </div>
         </section>
 
+        <!-- Objetivo institucional y valores que orientan el portal. -->
         <section class="seccion" id="objetivo">
             <div class="contenedor nosotros-grid">
                 <div class="imagen-secundaria revelar">
@@ -1402,6 +1410,7 @@
             </div>
         </section>
 
+        <!-- Enlaces hacia los sistemas y recursos internos disponibles. -->
         <section class="seccion servicios" id="herramientas">
             <div class="contenedor">
                 <div class="seccion-cabecera centrada revelar">
@@ -1438,6 +1447,7 @@
             </div>
         </section>
 
+        <!-- Información de contacto para solicitar apoyo al personal. -->
         <section class="seccion" id="soporte">
             <div class="contenedor">
                 <div class="seccion-cabecera revelar">
@@ -1490,10 +1500,12 @@
     </button>
 
     <script>
+        // Referencias a los controles interactivos del encabezado y del botón de retorno.
         const encabezado = document.getElementById('encabezado');
         const menuToggle = document.getElementById('menuToggle');
         const menuPrincipal = document.getElementById('menuPrincipal');
         const volverArriba = document.getElementById('volverArriba');
+        // Actualiza el estado visual del encabezado y muestra el botón "volver arriba".
         const actualizarInterfazScroll = () => {
             encabezado.classList.toggle('scrolled', window.scrollY > 24);
 
@@ -1502,6 +1514,7 @@
             volverArriba.setAttribute('aria-hidden', String(!mostrarBoton));
         };
 
+        // Cierra el menú móvil y restaura sus atributos de accesibilidad.
         const cerrarMenu = () => {
             menuToggle.classList.remove('activo');
             menuPrincipal.classList.remove('abierto');
@@ -1536,6 +1549,7 @@
         });
         actualizarInterfazScroll();
 
+        // Revela los elementos cuando entran en el área visible de la pantalla.
         const elementos = document.querySelectorAll('.revelar');
 
         if ('IntersectionObserver' in window) {

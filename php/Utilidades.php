@@ -5,8 +5,10 @@ class ArchivoException extends ValidacionException {}
 
 final class Utilidades
 {
+    // Límite predeterminado para los archivos recibidos por formulario.
     public const TAMANO_MAXIMO_ARCHIVO = 10485760; // 10 MiB
 
+    // Tipos MIME aceptados para cada extensión permitida.
     private const MIMES_POR_EXTENSION = [
         'pdf' => ['application/pdf'],
         'jpg' => ['image/jpeg', 'image/pjpeg'],
@@ -28,6 +30,7 @@ final class Utilidades
         array $extensionesPermitidas = ['pdf', 'jpg', 'jpeg', 'png'],
         int $tamanoMaximo = self::TAMANO_MAXIMO_ARCHIVO
     ): array {
+        // Primero se valida el código de carga enviado por PHP.
         $error = isset($archivo['error']) ? (int) $archivo['error'] : UPLOAD_ERR_NO_FILE;
         if ($error !== UPLOAD_ERR_OK) {
             $mensajes = [
@@ -42,22 +45,26 @@ final class Utilidades
             throw new ArchivoException($mensajes[$error] ?? 'Error desconocido al recibir el archivo.');
         }
 
+        // Comprueba que el archivo tenga contenido y no supere el límite configurado.
         $tamano = (int) ($archivo['size'] ?? 0);
         if ($tamano <= 0) throw new ArchivoException('El archivo está vacío.');
         if ($tamano > $tamanoMaximo) {
             throw new ArchivoException('El archivo excede el tamaño máximo de ' . self::formatearBytes($tamanoMaximo) . '.');
         }
 
+        // La extensión se valida contra la lista explícita de formatos permitidos.
         $extension = strtolower(pathinfo((string) ($archivo['name'] ?? ''), PATHINFO_EXTENSION));
         $permitidas = array_values(array_unique(array_map('strtolower', $extensionesPermitidas)));
         if ($extension === '' || !in_array($extension, $permitidas, true) || !isset(self::MIMES_POR_EXTENSION[$extension])) {
             throw new ArchivoException('Tipo de archivo no permitido. Formatos válidos: ' . implode(', ', $permitidas) . '.');
         }
 
+        // Verifica que el archivo temporal exista antes de inspeccionar su contenido.
         $temporal = (string) ($archivo['tmp_name'] ?? '');
         if ($temporal === '' || !is_file($temporal) || !is_readable($temporal)) {
             throw new ArchivoException('El archivo temporal no está disponible.');
         }
+        // El MIME real se obtiene del contenido, no del nombre proporcionado por el usuario.
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         if ($finfo === false) throw new ArchivoException('No fue posible verificar el tipo MIME del archivo.');
         try {
@@ -68,6 +75,7 @@ final class Utilidades
         if (!in_array($mime, self::MIMES_POR_EXTENSION[$extension], true)) {
             throw new ArchivoException('El contenido del archivo no corresponde con la extensión .' . $extension . '.');
         }
+        // Para imágenes, confirma además que la estructura sea válida.
         if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) && @getimagesize($temporal) === false) {
             throw new ArchivoException('El archivo no contiene una imagen válida.');
         }
@@ -76,11 +84,13 @@ final class Utilidades
 
     public static function crearDirectorioSeguro(string $ruta): void
     {
+        // Crea el directorio si es necesario y evita listar su contenido.
         $ruta = rtrim($ruta, '/\\') . DIRECTORY_SEPARATOR;
         if (!is_dir($ruta) && !mkdir($ruta, 0755, true) && !is_dir($ruta)) {
             throw new ArchivoException('No fue posible crear el directorio de archivos.');
         }
         if (!is_writable($ruta)) throw new ArchivoException('El directorio de archivos no tiene permisos de escritura.');
+        // Desactiva la ejecución de scripts en el directorio de archivos subidos.
         $proteccion = $ruta . '.htaccess';
         if (!is_file($proteccion)) {
             $contenido = "Options -Indexes\nAddType application/octet-stream .php .phtml .php3 .php4 .php5\nphp_flag engine off\n";
@@ -92,17 +102,20 @@ final class Utilidades
 
     public static function generarNombreArchivo(string $prefijo, string $extension): string
     {
+        // Limpia el prefijo y agrega fecha y aleatoriedad para evitar colisiones.
         $prefijo = preg_replace('/[^a-zA-Z0-9_-]/', '_', $prefijo) ?: 'archivo';
         return $prefijo . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(6)) . '.' . strtolower($extension);
     }
 
     public static function normalizarCuentaCatastral(mixed $cuenta): string
     {
+        // Unifica el formato de las cuentas para búsquedas y agrupaciones.
         return strtoupper(trim((string) $cuenta));
     }
 
     public static function normalizarEstatus(mixed $estatus): string
     {
+        // Convierte acentos, mayúsculas y separadores a un formato comparable.
         $valor = trim(mb_strtolower((string) $estatus, 'UTF-8'));
         $valor = strtr($valor, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
         $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $valor);
@@ -113,11 +126,13 @@ final class Utilidades
 
     public static function esEstatusAprobadoParaVentanilla(mixed $estatus): bool
     {
+        // Compara el estatus ya normalizado con los estados autorizados.
         return in_array(self::normalizarEstatus($estatus), self::ESTATUS_APROBADOS_VENTANILLA, true);
     }
 
     public static function agruparTramitesPorCuenta(array $tramites): array
     {
+        // Descarta entradas inválidas y agrupa los trámites por cuenta catastral.
         $grupos = [];
         foreach ($tramites as $tramite) {
             if (!is_array($tramite)) continue;
@@ -129,6 +144,7 @@ final class Utilidades
 
     private static function formatearBytes(int $bytes): string
     {
+        // Presenta el tamaño máximo en megabytes para los mensajes de error.
         return $bytes % 1048576 === 0 ? ($bytes / 1048576) . ' MB' : number_format($bytes / 1048576, 1) . ' MB';
     }
 }

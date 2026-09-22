@@ -2,6 +2,7 @@
 require "seguridad.php";
 require_once "php/funciones_seguridad.php";
 
+// Restringe el panel a usuarios con funciones de ventanilla o administración.
 if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Administrador'])) {
     header("Location: acceso.php?error=no_autorizado");
     exit();
@@ -9,7 +10,8 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
 
 require_once "php/db.php";
 
-// ── Estadísticas ──
+// ── Estadísticas generales del tablero ──
+// Se calculan en una sola consulta para mostrar los contadores principales.
 $stats = $conn->query("
     SELECT
         SUM(CASE WHEN estatus = 'En corrección' THEN 1 ELSE 0 END) AS correccion,
@@ -21,7 +23,8 @@ $total_correccion = $stats['correccion'];
 $total_revision = $stats['revision'];
 $total_todos = $stats['total'];
 
-// ── Reporte (igual que DashAdmin) ──
+// ── Reporte anual (igual que DashAdmin) ──
+// El año puede cambiarse desde el selector del reporte.
 $anio_filtro = isset($_GET['anio_reporte']) ? (int)$_GET['anio_reporte'] : (int)date('Y');
 $anios_res = $conn->query("SELECT DISTINCT folio_anio FROM tramites ORDER BY folio_anio DESC");
 $anios_disponibles = [];
@@ -117,6 +120,7 @@ $correccion_res = $conn->query("
 ");
 
 // ── Todos los trámites (seguimiento) ──
+// La consulta se arma con parámetros para mantener seguros los filtros de búsqueda.
 $sql_seg = "SELECT t.*, tt.nombre AS tipo_tramite_nombre,
                    s.folio_numero AS lc_folio_numero, s.folio_anio AS lc_folio_anio,
                    ts.id AS calificacion_id, ts.estatus AS calificacion_estatus,
@@ -129,6 +133,7 @@ $sql_seg = "SELECT t.*, tt.nombre AS tipo_tramite_nombre,
             WHERE 1=1";
 $params_seg = []; $types_seg = "";
 if (!empty($_GET['folio'])) {
+  // Acepta tanto el folio completo (001/2026) como una búsqueda parcial.
     if (str_contains($_GET['folio'],'/')) {
         [$fn,$fa] = explode('/',$_GET['folio']);
         $sql_seg .= " AND t.folio_numero=? AND t.folio_anio=?";
@@ -139,10 +144,12 @@ if (!empty($_GET['folio'])) {
     }
 }
 if (!empty($_GET['nombre'])) {
+  // Busca coincidencias en el propietario o en el solicitante.
     $sql_seg .= " AND (t.propietario LIKE ? OR t.solicitante LIKE ?)";
     $params_seg[]='%'.$_GET['nombre'].'%'; $params_seg[]='%'.$_GET['nombre'].'%'; $types_seg.="ss";
 }
 if (!empty($_GET['estatus'])) {
+  // Filtra por un estatus exacto seleccionado por el usuario.
     $sql_seg .= " AND t.estatus=?"; $params_seg[]=$_GET['estatus']; $types_seg.="s";
 }
 $sql_seg .= " ORDER BY t.created_at DESC";

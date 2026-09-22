@@ -22,6 +22,7 @@ if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
 require "php/db.php";
 require "php/funciones_seguridad.php";
 
+// Solo los perfiles autorizados pueden consultar o imprimir una licencia.
 if (!esCalificador() && !esVerificador() && !esVentanilla() && !esAdministrador()) {
     header("Location: acceso.php"); exit;
 }
@@ -47,6 +48,7 @@ $stmt->execute();
 $l = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// La impresión requiere un registro de salida existente y aprobado por ambas etapas.
 if (!$l) die("Licencia no encontrada");
 
 if ($l['estatus'] !== 'Aprobado') {
@@ -68,6 +70,7 @@ $folioLic = $l['folio_salida_numero'] !== null
     ? str_pad($l['folio_salida_numero'], 3, '0', STR_PAD_LEFT) . '/' . $l['folio_salida_anio']
     : '';
 
+// Convierte una fecha de base de datos al orden visual DIA/MES/AÑO.
 // Helpers de fecha: parten "YYYY-MM-DD" en DIA/MES/AÑO para las cajitas del formato
 function partirFecha(?string $f): array {
     if (empty($f)) return ['', '', ''];
@@ -121,6 +124,7 @@ if (isset($superficies['otra_area'])) {
 
 $tipo_obra = $l['tipo_obra'] ?? '';
 
+// Los datos de configuración se utilizan para completar el texto del reglamento.
 /* Configuración general (para placeholders del reglamento) */
 $config = [];
 $resConfig = $conn->query("SELECT clave, valor FROM configuracion_sistema");
@@ -173,6 +177,7 @@ if ($tipo_obra === 'Demolición') {
     $autorizacion_especifica = '';
 }
 
+// Sustituye los marcadores del reglamento antes de enviarlo al reverso de la licencia.
 // ── Reemplazo de placeholders del reglamento ──
 $reglamentoHtml = strtr($reglamento['contenido'], [
     '{{director_nombre}}'         => htmlspecialchars($director_nombre),

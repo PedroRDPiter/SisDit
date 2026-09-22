@@ -1,4 +1,5 @@
 <?php
+// Evita que los errores internos se mezclen con la respuesta JSON.
 error_reporting(0);
 ini_set('display_errors', 0);
 if (ob_get_length()) ob_clean();
@@ -9,6 +10,7 @@ require_once "funciones_seguridad.php";
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
+// Verifica que exista una sesión activa y que el usuario tenga permisos.
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Sesion expirada']);
@@ -21,6 +23,7 @@ if (!esVerificador() && !esAdministrador() && !esVentanilla()) {
     exit;
 }
 
+// Ubica y valida el archivo principal del shapefile.
 $path = __DIR__ . '/../Geojson/calles.shp';
 if (!is_file($path)) {
     http_response_code(404);
@@ -47,6 +50,7 @@ function shpDoubleLE(string $data, int $offset): float {
     return unpack('e', substr($data, $offset, 8))[1];
 }
 
+// Lee los registros del shapefile y convierte sus geometrías a GeoJSON.
 $features = [];
 $offset = 100;
 $length = strlen($binary);
@@ -58,6 +62,7 @@ $isGeographic = $xmin >= -180 && $xmax <= 180 && $ymin >= -90 && $ymax <= 90;
 $dataProjection = $isGeographic ? 'EPSG:4326' : 'EPSG:32613';
 
 while ($offset + 8 <= $length) {
+    // Cada registro incluye un encabezado big-endian y contenido little-endian.
     $recordNumber = shpInt32BE($binary, $offset);
     $contentBytes = shpInt32BE($binary, $offset + 4) * 2;
     $contentOffset = $offset + 8;
@@ -70,6 +75,7 @@ while ($offset + 8 <= $length) {
     $isPolygon = in_array($shapeType, [5, 15, 25], true);
 
     if (($isPolyline || $isPolygon) && $contentBytes >= 44) {
+        // Obtiene las partes y los puntos definidos por el registro.
         $numParts = shpInt32LE($binary, $contentOffset + 36);
         $numPoints = shpInt32LE($binary, $contentOffset + 40);
         $partsOffset = $contentOffset + 44;
@@ -84,6 +90,7 @@ while ($offset + 8 <= $length) {
 
             $parts = [];
             for ($part = 0; $part < $numParts; $part++) {
+                // Convierte cada punto X/Y a un par de coordenadas GeoJSON.
                 $coordinates = [];
                 for ($point = $partStarts[$part]; $point < $partStarts[$part + 1]; $point++) {
                     $pointOffset = $pointsOffset + ($point * 16);

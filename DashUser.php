@@ -5,11 +5,13 @@ ini_set('display_errors', 1);
 require_once "seguridad.php";
 require_once "php/db.php";
 
+// Verificar que exista una sesión activa antes de cargar el panel.
 if (!isset($_SESSION['id'])) {
     header("Location: acceso.php");
     exit();
 }
 
+// Impedir que los usuarios accedan al panel destinado a administradores.
 if ($_SESSION['rol'] !== 'Usuario') {
     header("Location: DashAdmin.php");
     exit();
@@ -17,6 +19,8 @@ if ($_SESSION['rol'] !== 'Usuario') {
 
 $usuario_id = intval($_SESSION['id']);
 
+// Obtener únicamente los trámites creados por el usuario autenticado.
+// El subquery recupera el estatus más reciente registrado en el historial.
 $sql = "
 SELECT t.*, 
        (SELECT h.estatus_nuevo 
@@ -43,6 +47,7 @@ $stats = [
 
 $tramites = [];
 
+// Construir la lista de trámites y calcular los totales para las tarjetas.
 while ($row = $result->fetch_assoc()) {
     $tramites[] = $row;
     $stats['total']++;
@@ -54,7 +59,7 @@ while ($row = $result->fetch_assoc()) {
 
 $stmt->close();
 
-// ===== MENSAJE AUTOMÁTICO WHATSAPP =====
+// Preparar el mensaje y el número de contacto para WhatsApp.
 $mensaje_whatsapp = urlencode("Hola, soy " . ($_SESSION['usuario'] ?? '') . " y necesito información sobre mi trámite.");
 $numero_whatsapp = "5214491234567"; // <-- CAMBIA ESTE NÚMERO
 ?>
@@ -125,6 +130,7 @@ body{
 
 <body>
 
+<!-- Barra superior con el nombre del usuario y la opción para cerrar sesión. -->
 <nav class="navbar navbar-guindo navbar-dark">
 <div class="container-fluid">
 <span class="navbar-brand">
@@ -141,6 +147,7 @@ body{
 
 <div class="container mt-4">
 
+<!-- Resumen de los trámites del usuario por estado. -->
 <div class="row mb-4">
 
 <div class="col-md-3">
@@ -185,6 +192,7 @@ Rechazados
 <div class="card-body">
 <h5 class="mb-3">Mis Trámites</h5>
 
+<!-- Tabla con el detalle de cada trámite registrado. -->
 <table class="table table-bordered table-hover">
 <thead>
 <tr>
@@ -199,6 +207,7 @@ Rechazados
 <?php if (!empty($tramites)): ?>
 <?php foreach ($tramites as $t): 
 
+// Asignar el color de la etiqueta según el estatus actual.
 $color = "secondary";
 if ($t['estatus_actual'] == "En revisión") $color = "warning";
 if (in_array($t['estatus_actual'], ['Aprobado', 'Firmado', 'Entregado y archivado'], true)) $color = "success";
@@ -234,7 +243,7 @@ No tienes trámites registrados
 
 </div>
 
-<!-- BOTÓN FLOTANTE WHATSAPP -->
+<!-- Botón flotante para solicitar información por WhatsApp. -->
 <a href="https://wa.me/<?= $numero_whatsapp ?>?text=<?= $mensaje_whatsapp ?>"
    class="whatsapp-float"
    target="_blank">

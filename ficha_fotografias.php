@@ -12,6 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Validar sesión manualmente
 if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
+    // Redirigir a la pantalla de acceso cuando no existe una sesión válida.
     header("Location: acceso.php");
     exit();
 }
@@ -21,14 +22,16 @@ require_once "php/funciones_seguridad.php";
 
 // Verificar que se recibió el folio
 if (empty($_GET['folio'])) {
+    // Sin folio no es posible identificar el trámite que se debe mostrar.
     header("Location: DashVer.php");
     exit;
 }
 
-// Parsear folio (formato: 001/2026)
+// Separar el número y el año del folio (formato esperado: 001/2026).
 $folio_raw = $_GET['folio'];
 $partes = explode('/', $folio_raw);
 if (count($partes) !== 2) {
+    // Evitar consultas con un folio que no cumple el formato requerido.
     header("Location: DashVer.php?error=folio_invalido");
     exit;
 }
@@ -52,11 +55,12 @@ $tramite = $result->fetch_assoc();
 $stmt->close();
 
 if (!$tramite) {
+    // Informar al usuario si el folio no corresponde a ningún trámite.
     header("Location: DashVer.php?error=tramite_no_encontrado");
     exit;
 }
 
-// Obtener config del municipio
+// Cargar la configuración general para mostrar el nombre del municipio.
 $config = [];
 $config_result = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 if ($config_result) {
@@ -75,7 +79,7 @@ $tipo_trabajo = $tramite['tipo_tramite_nombre'] ?? 'Sin tipo';
 $reporta = $realizo;
 $fecha_ingreso = $tramite['fecha_ingreso'];
 
-// Formatear fecha en español
+// Convertir la fecha de ingreso al formato utilizado en la ficha impresa.
 $meses = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 $dia = date('d', strtotime($fecha_ingreso));
 $mes = $meses[intval(date('m', strtotime($fecha_ingreso)))];
@@ -87,6 +91,7 @@ $observaciones = $tramite['observaciones'] ?? '';
 $foto1 = $tramite['foto1_archivo'] ?? '';
 $foto2 = $tramite['foto2_archivo'] ?? '';
 
+// Cerrar la conexión antes de generar la respuesta HTML.
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -409,27 +414,27 @@ $conn->close();
 </head>
 <body>
 
-<!-- BARRA ACCIONES -->
+<!-- Controles visibles en pantalla; se ocultan al imprimir. -->
 <div class="no-print">
     <button class="btn-print" onclick="window.print()">Imprimir Ficha</button>
     <button class="btn-back" onclick="history.back()">Regresar</button>
 </div>
 
-<!-- FICHA DE FOTOGRAFIAS -->
+<!-- Contenedor principal de la ficha de fotografías. -->
 <div class="ficha">
 
-    <!-- TITULO -->
+    <!-- Encabezado institucional de la ficha. -->
     <div class="ficha-titulo">
         <h1>Planeación y Desarrollo<br>Urbano <?= htmlspecialchars($municipio) ?>, Ags.</h1>
     </div>
 
-    <!-- CUERPO -->
+    <!-- Cuerpo con información, fotografías y datos del trámite. -->
     <div class="ficha-cuerpo">
 
-        <!-- SECCION SUPERIOR: INFO + FOTOS -->
+        <!-- Sección superior: datos del inmueble y fotografías. -->
         <div class="seccion-superior">
 
-            <!-- INFO LATERAL -->
+            <!-- Información básica del inmueble y del usuario. -->
             <div class="info-lateral">
                 <div class="info-campo">
                     <span class="label">Inmueble:</span>
@@ -449,7 +454,7 @@ $conn->close();
                 </div>
             </div>
 
-            <!-- ZONA DE FOTOS -->
+            <!-- Espacios destinados a las dos fotografías del inmueble. -->
             <div class="zona-fotos">
                 <div class="foto-titulo">Fotografías</div>
                 <div class="fotos-contenedor">
@@ -472,7 +477,7 @@ $conn->close();
 
         </div>
 
-        <!-- DATOS: HOJA, DE, FECHA -->
+        <!-- Datos de control de la hoja y fecha de ingreso. -->
         <div class="seccion-datos">
             <div class="dato-grupo">
                 <div class="dato-label">Hoja No.:</div>
@@ -488,19 +493,19 @@ $conn->close();
             </div>
         </div>
 
-        <!-- TIPO DE TRABAJO -->
+        <!-- Tipo de trámite o trabajo solicitado. -->
         <div class="seccion-tipo-trabajo">
             <div class="tipo-label">Tipo de Trabajo:</div>
             <div class="tipo-valor"><?= htmlspecialchars($tipo_trabajo) ?></div>
         </div>
 
-        <!-- REPORTA -->
+        <!-- Usuario que reporta o registra el trámite. -->
         <div class="seccion-reporta">
             <div class="reporta-label">Reporta:</div>
             <div class="reporta-valor"><?= htmlspecialchars($reporta) ?></div>
         </div>
 
-        <!-- OBSERVACIONES -->
+        <!-- Observaciones adicionales asociadas al trámite. -->
         <div class="seccion-observaciones">
             <div class="obs-titulo">Observaciones:</div>
             <div class="obs-contenido"><?= nl2br(htmlspecialchars($observaciones)) ?></div>

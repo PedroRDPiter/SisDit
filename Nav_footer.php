@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Configuración básica del documento y compatibilidad con dispositivos móviles -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sis Dit</title>
 
 <style>
 /* ======= RESET ======= */
+/* Normaliza márgenes, rellenos y el modelo de caja en todos los elementos */
 *{
     margin:0;
     padding:0;
@@ -15,6 +17,7 @@
 }
 
 /* ===== HEADER ===== */
+/* Estilos generales de la barra de navegación superior */
 .header{
     background:#7b0f2b;
     color:white;
@@ -22,6 +25,7 @@
 }
 
 .nav-container{
+    /* Distribuye el logotipo y el menú en los extremos del encabezado */
     display:flex;
     justify-content:space-between;
     align-items:center;
@@ -29,6 +33,7 @@
 }
 
 .logo-area{
+    /* Agrupa el logotipo institucional y el nombre de la presidencia */
     display:flex;
     align-items:center;
     gap:10px;
@@ -39,6 +44,7 @@
 }
 
 nav ul{
+    /* Organiza los enlaces de navegación horizontalmente */
     display:flex;
     gap:25px;
     list-style:none;
@@ -51,12 +57,14 @@ nav a{
 }
 
 .btn-nav{
+    /* Resalta el enlace de acceso al sistema */
     background:#2e7d6f;
     padding:8px 15px;
     border-radius:6px;
 }
 
 /* ===== FOOTER ===== */
+/* Estilos del pie de página institucional */
 .footer{
     background:#7b0f2b;
     color:white;
@@ -70,6 +78,7 @@ nav a{
 }
 
 /* ===== RESPONSIVO ===== */
+/* Ajustes para pantallas pequeñas */
 @media(max-width:768px){
     nav ul{
         flex-direction:column;
@@ -87,14 +96,17 @@ nav a{
 
 <body>
 
+<!-- Encabezado con identidad institucional y enlaces principales -->
 <header class="header">
     <div class="nav-container">
         <div class="logo-area">
+            <!-- Logotipo de la Presidencia Municipal -->
             <img src="logos/logo_presi.jpeg">
             <span>Presidencia <br>Rincón de Romos</span>
         </div>
 
         <nav>
+            <!-- Menú principal del sitio -->
             <ul>
                 <li><a href="index.php">Inicio</a></li>
                 <li><a href="requisitos.php">Requisitos</a></li>
@@ -107,8 +119,10 @@ nav a{
 
 <!-- CONTENIDO PRINCIPAL AQUÍ -->
 
+<!-- Pie de página con logotipos y datos institucionales -->
 <footer class="footer">
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap: wrap;">
+        <!-- Logotipos de las instituciones participantes -->
         <img src="logos/logoDPDU.png" alt="Dirección de Planeación y Desarrollo Urbano" style="height:100px; vertical-align:middle; margin-right:5px;">
         <img src="logos/logo_presi.jpeg" alt="Presidencia Municipal de Rincón de Romos" style="height:100px; vertical-align:middle; margin-left:5px;">
 

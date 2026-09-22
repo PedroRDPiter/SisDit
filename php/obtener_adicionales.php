@@ -2,16 +2,22 @@
 require "db.php";
 require "funciones_seguridad.php";
 
+// Indicar que la respuesta del endpoint se devolverá en formato JSON.
 header('Content-Type: application/json');
 
+// Verificar que exista una sesión autenticada.
 if (!isset($_SESSION['id'])) {
     echo json_encode(['error' => 'No autorizado']);
     exit;
 }
 
 $tramite_id = null;
+
+// Obtener el trámite directamente mediante su identificador.
 if (isset($_GET['tramite_id']) && is_numeric($_GET['tramite_id'])) {
     $tramite_id = (int)$_GET['tramite_id'];
+
+// Como alternativa, localizar el trámite usando su folio con formato número/año.
 } elseif (isset($_GET['folio']) && !empty($_GET['folio'])) {
     $folio = $_GET['folio'];
     $partes = explode('/', $folio);
@@ -20,6 +26,7 @@ if (isset($_GET['tramite_id']) && is_numeric($_GET['tramite_id'])) {
         $folio_anio = (int)$partes[1];
         $stmt = $conn->prepare("SELECT id FROM tramites WHERE folio_numero = ? AND folio_anio = ?");
         if ($stmt) {
+            // Usar parámetros enlazados para evitar inyección SQL.
             $stmt->bind_param("ii", $folio_numero, $folio_anio);
             $stmt->execute();
             $res = $stmt->get_result();
@@ -32,11 +39,13 @@ if (isset($_GET['tramite_id']) && is_numeric($_GET['tramite_id'])) {
     }
 }
 
+// Detener la ejecución si no se recibió un trámite válido.
 if (!$tramite_id) {
     echo json_encode(['error' => 'ID de trámite no proporcionado o no válido']);
     exit;
 }
 
+// Consultar el creador del trámite para validar los permisos de acceso.
 $permisoStmt = $conn->prepare("SELECT usuario_creador_id FROM tramites WHERE id = ? LIMIT 1");
 $permisoStmt->bind_param("i", $tramite_id);
 $permisoStmt->execute();
@@ -48,6 +57,7 @@ if (!$tramitePermiso || !puedeAccederTramite($tramitePermiso)) {
     exit;
 }
 
+// Obtener los trámites adicionales asociados al trámite principal.
 $stmt = $conn->prepare("
     SELECT ta.*, tt.nombre AS tipo_tramite_nombre, tt.codigo AS tipo_tramite_codigo
     FROM tramites_adicionales ta
@@ -59,15 +69,19 @@ if (!$stmt) {
     echo json_encode(['error' => 'Error de preparación: ' . $conn->error]);
     exit;
 }
+
+// Ejecutar la consulta usando el identificador validado del trámite.
 $stmt->bind_param("i", $tramite_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
 $adicionales = [];
 while ($row = $result->fetch_assoc()) {
+    // Acumular cada registro para incluirlo en la respuesta JSON.
     $adicionales[] = $row;
 }
 $stmt->close();
 
+// Devolver la lista de trámites adicionales.
 echo json_encode(['adicionales' => $adicionales]);
 ?>

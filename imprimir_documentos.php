@@ -6,6 +6,7 @@
 ini_set('session.cookie_httponly', 1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Verificar que exista una sesión activa antes de mostrar los documentos.
 if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     header("Location: acceso.php"); exit();
 }
@@ -13,6 +14,7 @@ if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
 require_once "php/db.php";
 require_once "php/funciones_seguridad.php";
 
+// Solo los perfiles autorizados pueden consultar e imprimir documentos.
 if (!esVentanilla() && !esAdministrador() && !esVerificador()) {
     header("Location: acceso.php"); exit();
 }
@@ -28,6 +30,7 @@ if (count($partes) !== 2) { header("Location: DashVentanilla.php"); exit(); }
 $folio_numero = intval($partes[0]);
 $folio_anio   = intval($partes[1]);
 
+// Obtener el trámite y el nombre del tipo de trámite asociado.
 $stmt = $conn->prepare("
     SELECT t.*, tt.nombre AS tipo_tramite_nombre
     FROM tramites t
@@ -46,7 +49,7 @@ $config = [];
 $res = $conn->query("SELECT clave, valor FROM configuracion_sistema");
 while ($row = $res->fetch_assoc()) $config[$row['clave']] = $row['valor'];
 
-// Documentos disponibles
+// Construir la lista de documentos adjuntos disponibles para este trámite.
 $docs = [];
 if (!empty($t['ine_archivo']))          $docs['ine']        = ['label'=>'INE / Identificación',       'archivo'=>$t['ine_archivo']];
 if (!empty($t['escrituras_archivo']))   $docs['escritura']  = ['label'=>'Escritura / Título',          'archivo'=>$t['escrituras_archivo']];
@@ -59,7 +62,7 @@ if (!empty($t['foto2_archivo']))        $docs['foto2']      = ['label'=>'Fotogra
 $tiene_constancia = !empty($t['numero_asignado']);
 $folio_display    = "ING." . str_pad($folio_numero, 3,'0',STR_PAD_LEFT) . "/" . $folio_anio;
 
-// Determinar URL de regreso
+// Determinar el panel al que regresará el usuario según su perfil.
 $back = esAdministrador() ? 'DashAdmin.php' : (esVentanilla() ? 'DashVentanilla.php' : 'DashVer.php');
 ?>
 <!DOCTYPE html>
@@ -147,7 +150,7 @@ $back = esAdministrador() ? 'DashAdmin.php' : (esVentanilla() ? 'DashVentanilla.
     border-bottom: 2px solid #e0b3bf; padding-bottom: 6px; margin-bottom: 14px;
   }
 
-  /* Print styles */
+  /* Estilos aplicados únicamente durante la impresión. */
   @media print {
     .no-print { display: none !important; }
     body { background: #fff; }
@@ -369,7 +372,7 @@ $back = esAdministrador() ? 'DashAdmin.php' : (esVentanilla() ? 'DashVentanilla.
 </div><!-- /content -->
 
 
-<!-- PÁGINAS DE IMPRESIÓN (solo visibles al imprimir) -->
+<!-- PÁGINAS DE IMPRESIÓN: se genera una página por cada imagen seleccionable. -->
 <div id="zona-impresion">
   <?php foreach ($docs as $key => $doc):
     $archivo = $doc['archivo'];
@@ -388,7 +391,7 @@ $back = esAdministrador() ? 'DashAdmin.php' : (esVentanilla() ? 'DashVentanilla.
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Estado de selección
+// Estado de selección de cada documento y su tipo de archivo.
 var seleccion = {};
 var tipoDoc   = {};
 
@@ -399,7 +402,7 @@ tipoDoc['<?= $key ?>'] = '<?= (strtolower(pathinfo($doc['archivo'], PATHINFO_EXT
 
 function toggleDoc(key, tipo, url) {
   if (tipo === 'pdf') {
-    // Para PDFs, abrir directo en nueva pestaña
+    // Los PDF no se imprimen desde esta página; se abren en otra pestaña.
     window.open(url, '_blank');
     return;
   }
@@ -421,6 +424,7 @@ function toggleDoc(key, tipo, url) {
 }
 
 function actualizarBoton() {
+  // El botón solo se habilita cuando hay al menos una imagen seleccionada.
   var haySeleccion = Object.keys(seleccion).some(function(k) {
     return seleccion[k] && tipoDoc[k] === 'img';
   });
@@ -432,6 +436,7 @@ function actualizarBoton() {
 }
 
 function seleccionarTodos() {
+  // Seleccionar todas las imágenes; los PDF conservan su comportamiento de apertura.
   Object.keys(seleccion).forEach(function(key) {
     if (tipoDoc[key] !== 'pdf') {
       seleccion[key] = true;
@@ -445,6 +450,7 @@ function seleccionarTodos() {
 }
 
 function deseleccionarTodos() {
+  // Quitar la selección visual y lógica de todos los documentos.
   Object.keys(seleccion).forEach(function(key) {
     seleccion[key] = false;
     var card = document.getElementById('card-' + key);
@@ -456,7 +462,7 @@ function deseleccionarTodos() {
 }
 
 function imprimirSeleccionados() {
-  // Mostrar solo las páginas de los docs seleccionados
+  // Mostrar temporalmente solo las páginas correspondientes a las imágenes seleccionadas.
   Object.keys(seleccion).forEach(function(key) {
     var pag = document.getElementById('pag-' + key);
     if (pag) {
@@ -464,7 +470,7 @@ function imprimirSeleccionados() {
     }
   });
   window.print();
-  // Después de imprimir, ocultar todo de nuevo
+  // Restaurar el estado oculto al terminar la ventana de impresión.
   setTimeout(function() {
     Object.keys(seleccion).forEach(function(key) {
       var pag = document.getElementById('pag-' + key);

@@ -5,6 +5,7 @@
 ini_set('session.cookie_httponly', 1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Verificar que la sesión pertenezca a un usuario autenticado.
 if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
     header('Location: acceso.php');
     exit;
@@ -13,6 +14,7 @@ if (!isset($_SESSION['id']) || !isset($_SESSION['usuario'])) {
 require 'php/db.php';
 require 'php/funciones_seguridad.php';
 
+// Restringir la consulta de constancias a los perfiles autorizados.
 if (!esCalificador() && !esVerificador() && !esVentanilla() && !esAdministrador()) {
     header('Location: acceso.php');
     exit;
@@ -21,6 +23,7 @@ if (!esCalificador() && !esVerificador() && !esVentanilla() && !esAdministrador(
 $salida_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($salida_id <= 0) die('ID de constancia inválido.');
 
+// Obtener la constancia junto con los datos del trámite y de los responsables.
 $stmt = $conn->prepare("
     SELECT ts.*, t.id AS tramite_id, t.tipo_tramite_id, t.estatus AS tramite_estatus,
            t.folio_numero AS folio_ingreso_numero, t.folio_anio AS folio_ingreso_anio,
@@ -44,11 +47,13 @@ $stmt->close();
 
 if (!$c) die('Constancia de Compatibilidad Urbanística no encontrada.');
 
+// Solo permitir la impresión cuando la salida y el trámite estén aprobados.
 $estatusVerificadorPermitido = ['Pendiente por firmar', 'Firmado', 'Entregado y archivado', 'Aprobado por Verificador', 'Aprobado'];
 if ($c['estatus'] !== 'Aprobado' || !in_array($c['tramite_estatus'], $estatusVerificadorPermitido, true)) {
     die('La constancia debe estar aprobada por Verificador y Calificador antes de imprimirse.');
 }
 
+// Cargar la información institucional configurable para el documento.
 $config = [];
 $resConfig = $conn->query('SELECT clave, valor FROM configuracion_sistema');
 while ($fila = $resConfig->fetch_assoc()) $config[$fila['clave']] = $fila['valor'];
@@ -66,6 +71,7 @@ $fechaTexto = (int)$fechaPartes[2] . ' DE ' . $meses[(int)$fechaPartes[1]] . ' D
 $dictamen = trim((string)($c['comentarios'] ?: $c['observaciones_verificador']));
 if ($dictamen === '') $dictamen = 'COMPATIBLE CONFORME A LA REVISIÓN TÉCNICA DEL EXPEDIENTE.';
 
+// Determinar el panel al que regresará el usuario.
 if (esAdministrador()) $back = 'DashAdmin.php';
 elseif (esCalificador()) $back = 'DashCalf.php';
 elseif (esVerificador()) $back = 'DashVer.php';
@@ -79,6 +85,7 @@ else $back = 'DashVentanilla.php';
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Constancia de Compatibilidad Urbanística - <?= e($folioSalida) ?></title>
 <style>
+/* Estilos de impresión y presentación de la constancia. */
 @page { size: letter; margin: 1.4cm 1.7cm; }
 * { box-sizing: border-box; }
 body { margin: 0; color: #171717; background: #fff; font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; }
@@ -108,6 +115,7 @@ h1 { margin: 20px 0 12px; color: #7b0f2b; text-align: center; font-size: 16pt; l
 </style>
 </head>
 <body>
+<!-- Barra de acciones visible en pantalla y oculta al imprimir. -->
 <div class="barra no-print">
   <strong>Constancia <?= e($folioSalida) ?></strong>
   <button class="imprimir" onclick="window.print()">Imprimir</button>
@@ -115,6 +123,7 @@ h1 { margin: 20px 0 12px; color: #7b0f2b; text-align: center; font-size: 16pt; l
 </div>
 
 <main class="hoja">
+  <!-- Encabezado institucional con los logotipos oficiales. -->
   <header class="encabezado">
     <img src="logos/logoPresi.png" alt="Presidencia Municipal">
     <div class="dependencia">DIRECCIÓN DE PLANEACIÓN<br>Y DESARROLLO URBANO</div>
@@ -131,6 +140,7 @@ h1 { margin: 20px 0 12px; color: #7b0f2b; text-align: center; font-size: 16pt; l
   <p class="texto">A QUIEN CORRESPONDA:</p>
   <p class="texto">Por medio de la presente se hace constar el resultado de la revisión de compatibilidad urbanística del predio cuyos datos se describen a continuación:</p>
 
+  <!-- Datos principales del predio asociado al trámite. -->
   <table class="datos">
     <tr><th>Propietario</th><td><?= e(strtoupper($c['propietario'])) ?></td></tr>
     <tr><th>Solicitante</th><td><?= e(strtoupper($c['solicitante'])) ?></td></tr>
@@ -141,9 +151,11 @@ h1 { margin: 20px 0 12px; color: #7b0f2b; text-align: center; font-size: 16pt; l
     <tr><th>Superficie</th><td><?= e($c['superficie'] ?: 'No especificada') ?></td></tr>
   </table>
 
+  <!-- Resultado de la revisión de compatibilidad urbanística. -->
   <div class="dictamen"><strong>DICTAMEN:</strong><br><?= e(strtoupper($dictamen)) ?></div>
   <p class="nota">La presente constancia se expide con base en la información y documentación integrada al expediente. No acredita propiedad ni sustituye las licencias, permisos o autorizaciones que resulten aplicables.</p>
 
+  <!-- Firmas de verificación, calificación y dirección responsable. -->
   <section class="firmas">
     <div class="firma"><strong><?= e(strtoupper($c['verificador_nombre'] ?: 'VERIFICADOR')) ?></strong><br>VERIFICO</div>
     <div class="firma"><strong><?= e(strtoupper(trim($c['calificado_por_nombre'] ?: 'CALIFICADOR'))) ?></strong><br>CALIFICO</div>

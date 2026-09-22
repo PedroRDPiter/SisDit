@@ -12,8 +12,10 @@
 require_once "db.php";
 require_once "funciones_seguridad.php";
 
+// Todas las respuestas de este endpoint se envían en formato JSON.
 header('Content-Type: application/json; charset=utf-8');
 
+// Verificar que exista una sesión activa antes de consultar información.
 if (!isset($_SESSION['id'])) {
     echo json_encode(['success' => false, 'message' => 'Sesión expirada']);
     exit;
@@ -24,6 +26,7 @@ if (!isset($_GET['folio'])) {
     exit;
 }
 
+// El folio debe tener el formato número/año, por ejemplo: 123/2024.
 $folio = $_GET['folio'];
 
 // Validar formato folio
@@ -37,6 +40,7 @@ $folio_anio = (int) $matches[2];
 
 // Obtener TODOS los trámites (principal + subtramites) que comparten el mismo folio
 // (después del refactor, los adicionales comparten el folio_numero/folio_anio exacto)
+// Se utiliza una consulta preparada para evitar inyección SQL.
 $sql = "SELECT 
             t.id, t.usuario_creador_id, t.folio_numero, t.folio_anio, t.estatus,
             t.propietario, t.direccion, t.localidad, t.telefono, t.correo,
@@ -60,6 +64,7 @@ $stmt->bind_param("ii", $folio_numero, $folio_anio);
 $stmt->execute();
 $result = $stmt->get_result();
 
+// Informar si no existe ningún trámite con el folio solicitado.
 if ($result->num_rows === 0) {
     echo json_encode(['success' => false, 'message' => 'Trámite no encontrado']);
     exit;
@@ -67,6 +72,7 @@ if ($result->num_rows === 0) {
 
 $tramites = [];
 while ($row = $result->fetch_assoc()) {
+    // Comprobar los permisos de cada trámite, incluidos los subtrámites.
     if (!puedeAccederTramite($row)) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
@@ -75,6 +81,7 @@ while ($row = $result->fetch_assoc()) {
     $tramites[] = $row;
 }
 
+// Devolver el listado y la cantidad total de registros encontrados.
 echo json_encode([
     'success' => true,
     'tramites' => $tramites,
