@@ -1,0 +1,252 @@
+/* Ajustes de Administración sobre el mismo tema utilizado por Ventanilla. */
+.dashboard-admin .sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 1000;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.dashboard-admin .sidebar > * { flex-shrink: 0; }
+.dashboard-admin .sidebar h5::after { content: "Administración y control"; }
+.dashboard-admin .sidebar a.text-danger { margin-top: auto !important; }
+.dashboard-admin .content > section > .d-flex:first-child { flex-wrap: wrap; gap: 12px; }
+.dashboard-admin .text-primary { color: var(--vino) !important; }
+.dashboard-admin .text-success { color: var(--verde) !important; }
+
+/* La bandeja de firmas conserva su distribución y adopta la paleta común. */
+.dashboard-admin .oficios-panel {
+  border: 1px solid rgba(114,24,50,.075);
+  border-radius: var(--radio-panel);
+  box-shadow: var(--sombra-suave);
+  background: rgba(255,255,255,.95);
+}
+.dashboard-admin .oficios-cabecera { background: #faf8f5; border-bottom: 1px solid var(--linea); }
+.dashboard-admin .oficios-cabecera h2 { color: var(--vino); font-size: clamp(1.05rem,2vw,1.3rem); letter-spacing: -.02em; }
+.dashboard-admin .oficios-eyebrow { color: var(--gris); font-size: .65rem; }
+.dashboard-admin .oficios-sello { color: var(--vino); border-color: var(--linea); }
+.dashboard-admin .oficios-filtro { border-color: var(--linea); border-radius: 15px; }
+.dashboard-admin .oficios-filtro.activo { background: #f6ecef; border-color: var(--vino); color: var(--vino); }
+.dashboard-admin .oficios-filtro strong { color: var(--tinta); }
+.dashboard-admin .oficio-ficha { background: var(--crema); }
+.dashboard-admin #modalOficioAdmin .modal-header { background: var(--vino-oscuro); color: white; }
+.dashboard-admin #modalOficioAdmin .modal-title { color: white; }
+.dashboard-admin #modalOficioAdmin #oficioReferencia { color: rgba(255,255,255,.75) !important; }
+.dashboard-admin #modalOficioAdmin .modal-header .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+
+/* Mantener los controles de DataTables dentro de sus paneles. */
+.dashboard-admin .dataTables_wrapper { padding: 16px; }
+.dashboard-admin .dataTables_wrapper > .row { margin-left: 0; margin-right: 0; }
+.dashboard-admin .dataTables_wrapper > .row > div { padding-left: 0; padding-right: 0; min-width: 0; }
+.dashboard-admin .dataTables_filter input { max-width: 100%; }
+.dashboard-admin #estadisticas .card { height: 100%; box-shadow: none; }
+.dashboard-admin #estadisticas .card-title { color: var(--gris); font-size: .95rem; }
+
+@media (max-width: 991.98px) {
+  .dashboard-admin .navbar.d-lg-none { z-index: 1030; }
+  .dashboard-admin section[id] { scroll-margin-top: 84px; }
+}
+@media (max-width: 575.98px) {
+  .dashboard-admin .oficios-panel { border-radius: 18px; }
+  .dashboard-admin .dataTables_wrapper { padding: 12px; }
+  .dashboard-admin .dataTables_wrapper .dataTables_filter { text-align: left; }
+  .dashboard-admin .dataTables_wrapper .dataTables_filter label { display: block; }
+  .dashboard-admin .dataTables_wrapper .dataTables_filter input { width: 100%; margin: 6px 0 0; }
+  .dashboard-admin #tablaOficiosAdmin > tbody > tr > td { padding: 4px; }
+}
+
+
+/* Ajustes existentes de las tarjetas y graficas del administrador. */
+/* Mantener las tarjetas del panel uniformes y evitar desbordamientos. */
+    .dashboard-admin .row.g-3 > [class*="col-"] {
+        display: flex;
+    }
+
+    .dashboard-admin .row.g-3 > [class*="col-"] > .card {
+        width: 100%;
+        min-height: 118px;
+    }
+
+    .dashboard-admin .row.g-3 > [class*="col-"] > .card .card-body {
+        min-width: 0;
+    }
+
+    .dashboard-admin .row.g-3 > [class*="col-"] > .card h3,
+    .dashboard-admin .row.g-3 > [class*="col-"] > .card .fs-1 {
+        overflow-wrap: anywhere;
+    }
+
+    /* Cards adaptables: igualar alturas sin forzar desbordamientos. */
+    .dashboard-admin .row.g-3 > [class*="col-"] {
+        min-width: 0;
+    }
+
+    .dashboard-admin .row.g-3 > [class*="col-"] > .card {
+        height: 100%;
+    }
+
+    .dashboard-admin .card .card-body {
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-admin #estadisticas .row > [class*="col-"] {
+        display: flex;
+    }
+
+    .dashboard-admin #estadisticas .card {
+        width: 100%;
+    }
+
+    .dashboard-admin #estadisticas canvas {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    /* Reducir la tarjeta de distribución sin afectar la de usuarios. */
+    .dashboard-admin .card-distribucion {
+        max-width: 430px;
+        margin-inline: auto;
+    }
+
+    /* Reducir también la tarjeta de usuarios por rol. */
+    .dashboard-admin .card-usuarios-rol {
+        max-width: 430px;
+        margin-inline: auto;
+    }
+
+    @media (max-width: 575.98px) {
+        .dashboard-admin .row.g-3 > [class*="col-"] > .card {
+            min-height: 104px;
+        }
+
+        .dashboard-admin .row.g-3 > [class*="col-"] > .card .card-body {
+            padding: .85rem .7rem;
+        }
+
+        .dashboard-admin .row.g-3 > [class*="col-"] > .card .fs-1 {
+            font-size: 2rem !important;
+        }
+
+        .dashboard-admin .row.g-3 {
+            --bs-gutter-x: .75rem;
+            --bs-gutter-y: .75rem;
+        }
+
+        .dashboard-admin .row.g-3 > .col-6 > .card .card-body {
+            gap: .5rem;
+        }
+
+        .dashboard-admin .row.g-3 > .col-6 > .card .card-body > i {
+            font-size: 1.75rem !important;
+        }
+
+        .dashboard-admin .row.g-3 > .col-6 > .card h3 {
+            font-size: 1.35rem;
+        }
+
+        .dashboard-admin .card-distribucion,
+        .dashboard-admin .card-usuarios-rol {
+            max-width: none;
+        }
+
+        .dashboard-admin #estadisticas .card-body {
+            padding: 1rem .75rem;
+        }
+    }
+
+    @media (min-width: 576px) and (max-width: 991.98px) {
+        .dashboard-admin .card-distribucion,
+        .dashboard-admin .card-usuarios-rol {
+            max-width: 100%;
+        }
+    }
+
+/* Cuadrícula explícita: evita columnas comprimidas por el menú lateral. */
+.dashboard-admin .row.admin-resumen,
+.dashboard-admin .row.admin-graficas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 24px;
+}
+.dashboard-admin .row.admin-resumen > [class*="col-"],
+.dashboard-admin .row.admin-graficas > [class*="col-"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-admin .row.admin-resumen > .col-6 > .card {
+  height: 100%;
+  min-height: 124px;
+}
+.dashboard-admin #estadisticas .card { max-width: none; margin: 0; }
+.dashboard-admin #estadisticas .card-body { display: flex; flex-direction: column; min-width: 0; }
+.dashboard-admin #estadisticas .card-body > p { min-height: 40px; margin-bottom: 16px; }
+.dashboard-admin .admin-grafica-canvas { position: relative; height: 310px; min-width: 0; margin-top: auto; }
+.dashboard-admin .admin-grafica-vacia { position: absolute; inset: 30% 12px auto; text-align: center; color: #777; font-size: .85rem; }
+.dashboard-admin .row.admin-resumen > .col-6 > .card .card-body {
+  gap: 12px;
+  padding: 20px !important;
+  min-width: 0;
+}
+.dashboard-admin .admin-resumen .card-body > div { min-width: 0; }
+.dashboard-admin .admin-resumen .card-body p { overflow-wrap: normal; line-height: 1.4; }
+.dashboard-admin .row.admin-resumen > .col-6 > .card .card-body > i {
+  flex-shrink: 0;
+  font-size: 1.4rem !important;
+  padding: 9px;
+}
+.dashboard-admin .row.admin-resumen > .col-6 > .card h3 {
+  margin-top: 4px;
+  font-size: clamp(1.55rem, 2.3vw, 1.95rem);
+  line-height: 1.15;
+}
+.dashboard-admin .oficios-resumen { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dashboard-admin .oficios-filtro { min-width: 0; }
+.dashboard-admin .oficios-filtro > span { min-width: 0; overflow-wrap: normal; }
+.dashboard-admin .oficios-filtro > i { flex-shrink: 0; }
+
+@media (min-width: 1280px) {
+  .dashboard-admin .row.admin-resumen { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 767.98px) {
+  .dashboard-admin .row.admin-graficas { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 575.98px) {
+  .dashboard-admin .row.admin-resumen { gap: 12px; }
+  .dashboard-admin .row.admin-resumen > .col-6 > .card { min-height: 120px; }
+  .dashboard-admin .row.admin-resumen > .col-6 > .card .card-body {
+    display: block !important;
+    position: relative;
+    padding: 16px !important;
+  }
+  .dashboard-admin .row.admin-resumen > .col-6 > .card .card-body > i {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 1rem !important;
+    padding: 6px;
+  }
+  .dashboard-admin .admin-resumen .card-body p {
+    min-height: 36px;
+    padding-right: 30px;
+    font-size: .65rem !important;
+    letter-spacing: .02em;
+  }
+  .dashboard-admin .row.admin-resumen > .col-6 > .card h3 { font-size: 1.7rem; }
+  .dashboard-admin .oficios-resumen { gap: 8px; padding: 14px 12px 0; }
+  .dashboard-admin .oficios-filtro { padding: 12px 8px; }
+  .dashboard-admin .oficios-filtro > span { font-size: .7rem; }
+  .dashboard-admin .oficios-filtro strong { margin-top: 5px; font-size: 1.6rem; }
+  .dashboard-admin #tablaOficiosAdmin_wrapper .dataTables_filter label { display: block !important; white-space: normal; }
+  .dashboard-admin #tablaOficiosAdmin_wrapper .dataTables_filter input { display: block; width: 100% !important; margin: 6px 0 0; }
+}
+@media (max-width: 359.98px) {
+  .dashboard-admin .row.admin-resumen { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-admin .oficios-resumen { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-admin .oficios-filtro > span { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .dashboard-admin .oficios-filtro strong { margin-top: 0; }
+}

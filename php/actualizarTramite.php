@@ -17,6 +17,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once "db.php";
 require_once "funciones_seguridad.php";
+require_once __DIR__ . "/FolioSalida.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -140,11 +141,11 @@ try {
         LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id ";
 
     if ($tramite_id_post > 0) {
-        $stmtGet = $conn->prepare($selectCols . "WHERE t.id = ? LIMIT 1");
+        $stmtGet = $conn->prepare($selectCols . "WHERE t.id = ? LIMIT 1 FOR UPDATE");
         if (!$stmtGet) throw new Exception("Error BD: " . $conn->error);
         $stmtGet->bind_param("i", $tramite_id_post);
     } else {
-        $stmtGet = $conn->prepare($selectCols . "WHERE t.folio_numero = ? AND t.folio_anio = ? LIMIT 1");
+        $stmtGet = $conn->prepare($selectCols . "WHERE t.folio_numero = ? AND t.folio_anio = ? LIMIT 1 FOR UPDATE");
         if (!$stmtGet) throw new Exception("Error BD: " . $conn->error);
         $stmtGet->bind_param("ii", $folio_numero, $folio_anio);
     }
@@ -243,17 +244,8 @@ try {
          $folio_salida_resp = null;
          if (empty($tramite['folio_salida_numero'])) {
              $anio_salida = (int) date('Y');
-             $stmtSal = $conn->prepare(
-                 "SELECT COALESCE(MAX(folio_salida_numero), 0) + 1 AS siguiente
-                  FROM tramites
-                  WHERE folio_salida_anio = ? AND tipo_tramite_id = ? AND folio_salida_numero IS NOT NULL"
-             );
              $tipo_tramite_id = (int) $tramite['tipo_tramite_id'];
-             $stmtSal->bind_param("ii", $anio_salida, $tipo_tramite_id);
-             $stmtSal->execute();
-             $rowSal = $stmtSal->get_result()->fetch_assoc();
-             $stmtSal->close();
-             $nuevo_salida = (int) $rowSal['siguiente'];
+             $nuevo_salida = reservarFolioSalida($conn, $tipo_tramite_id, $anio_salida);
 
              $stmtUpS = $conn->prepare(
                  "UPDATE tramites
@@ -580,47 +572,15 @@ try {
     if ($estatus === 'Firmado') {
         $anio_actual = (int) date('Y');
 
-        // Recorrer todas las filas del grupo (mismo folio de entrada) sin folio de salida
-        $stmtPend = $conn->prepare(
-            "SELECT id, tipo_tramite_id FROM tramites
-             WHERE folio_numero = ? AND folio_anio = ?
-               AND (folio_salida_numero IS NULL OR folio_salida_numero = 0)"
-        );
-        $stmtPend->bind_param("ii", $folio_numero, $folio_anio);
-        $stmtPend->execute();
-        $resPend = $stmtPend->get_result();
-        $pendientes = [];
-        while ($rowP = $resPend->fetch_assoc()) { $pendientes[] = $rowP; }
-        $stmtPend->close();
-
-        foreach ($pendientes as $pend) {
-            $tipo_p = (int) $pend['tipo_tramite_id'];
-            $idp    = (int) $pend['id'];
-
-            $stmtSal = $conn->prepare(
-                "SELECT COALESCE(MAX(folio_salida_numero), 0) + 1 AS siguiente
-                 FROM tramites
-                 WHERE folio_salida_anio = ? AND tipo_tramite_id = ? AND folio_salida_numero IS NOT NULL"
-            );
-            $stmtSal->bind_param("ii", $anio_actual, $tipo_p);
-            $stmtSal->execute();
-            $rowSal = $stmtSal->get_result()->fetch_assoc();
-            $stmtSal->close();
-            $nuevo_salida = (int) $rowSal['siguiente'];
-
-            $stmtUpS = $conn->prepare(
-                "UPDATE tramites
-                 SET folio_salida_numero = ?, folio_salida_anio = ?, tiempo_salida = COALESCE(tiempo_salida, NOW())
-                 WHERE id = ?"
-            );
-            $stmtUpS->bind_param("iii", $nuevo_salida, $anio_actual, $idp);
+        // La firma corresponde al registro seleccionado, no a sus hermanos de folio.
+        if (empty($tramite['folio_salida_numero'])) {
+            $nuevo_salida = reservarFolioSalida($conn, (int)$tramite['tipo_tramite_id'], $anio_actual);
+            $stmtUpS = $conn->prepare("UPDATE tramites SET folio_salida_numero = ?, folio_salida_anio = ? WHERE id = ?");
+            $stmtUpS->bind_param("iii", $nuevo_salida, $anio_actual, $tramite_id);
             $stmtUpS->execute();
             $stmtUpS->close();
-
-            if ($idp === $tramite_id) {
-                $folio_asignado = $nuevo_salida;
-                $det = "Folio: $folio | $estatus_anterior → $estatus | Verificador: $verificador_nombre | Folio salida: " . str_pad($folio_asignado, 3, '0', STR_PAD_LEFT) . "/$anio_actual";
-            }
+            $folio_asignado = $nuevo_salida;
+            $det = "Folio: $folio | $estatus_anterior -> $estatus | Folio salida: $nuevo_salida/$anio_actual";
         }
     }
 

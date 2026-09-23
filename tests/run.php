@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__DIR__) . '/php/Utilidades.php';
+require_once dirname(__DIR__) . '/php/OficiosAdmin.php';
 
 $pruebas = [];
 $fallos = [];
@@ -107,6 +108,28 @@ prueba('acepta un PDF dentro del límite permitido', function (): void {
     } finally {
         @unlink($temporal);
     }
+});
+
+prueba('firma y cierre respetan el estado previo y la confirmación', function (): void {
+    afirmarIgual('Firmado', validarAccionOficio('Administrador', 'firmar', 'Pendiente por firmar', 'Pendiente por firmar', true));
+    afirmarIgual('Entregado y archivado', validarAccionOficio('Administrador', 'cerrar', 'Firmado', 'Firmado', true));
+    afirmarLanza(DomainException::class, fn() => validarAccionOficio('Administrador', 'cerrar', 'Pendiente por firmar', 'Pendiente por firmar', true));
+    afirmarLanza(DomainException::class, fn() => validarAccionOficio('Administrador', 'firmar', 'Firmado', 'Pendiente por firmar', true));
+    afirmarLanza(DomainException::class, fn() => validarAccionOficio('Administrador', 'firmar', 'Pendiente por firmar', 'Pendiente por firmar', false));
+    afirmarLanza(DomainException::class, fn() => validarAccionOficio('Administrador', 'cerrar', 'Entregado y archivado', 'Entregado y archivado', true));
+});
+
+prueba('otros roles no autorizan oficios desde administración', function (): void {
+    foreach (['Usuario', 'Ventanilla', 'Verificador', 'Calificador', ''] as $rol) {
+        afirmarLanza(DomainException::class, fn() => validarAccionOficio($rol, 'firmar', 'Pendiente por firmar', 'Pendiente por firmar', true));
+    }
+});
+
+prueba('los adjuntos del oficio usan descargas protegidas y rechazan rutas externas', function (): void {
+    afirmarIgual('php/archivo.php?scope=private&path=oficios%2Ffinal.pdf', urlDocumentoOficio('.private/oficios/final.pdf'));
+    afirmarIgual('php/archivo.php?scope=uploads&path=oficio.pdf', urlDocumentoOficio('uploads/oficio.pdf'));
+    foreach (['../secreto.pdf', '.private/../secreto.pdf', 'https://example.com/firma.pdf', '/etc/passwd', "archivo\0.pdf"] as $ruta) afirmarIgual('', urlDocumentoOficio($ruta));
+    afirmarIgual(null, documentoFirmadoDigital(['otros_archivos' => '[{"origen_firma":"visible_pdf","archivo":"../secreto.pdf","sha256":"abc"}]']));
 });
 
 echo "\n" . count($pruebas) . ' prueba(s) correctas; ' . count($fallos) . " fallo(s).\n";

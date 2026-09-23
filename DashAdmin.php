@@ -8,18 +8,17 @@ if(!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'Administrador'){
     header("Location: acceso.php?error=no_autorizado");
     exit();
 }
-
 require_once "php/db.php";
 
 // Obtener estadísticas generales de trámites y usuarios.
-$stats_tramites = $conn->query("SELECT 
+$stats_tramites = $conn->query("SELECT
     COUNT(*) as total,
     SUM(CASE WHEN estatus = 'En revisión' THEN 1 ELSE 0 END) as en_revision,
     SUM(CASE WHEN estatus IN ('Aprobado', 'Entregado y archivado') THEN 1 ELSE 0 END) as aprobados,
     SUM(CASE WHEN estatus = 'Rechazado' THEN 1 ELSE 0 END) as rechazados
     FROM tramites")->fetch_assoc();
 
-$stats_usuarios = $conn->query("SELECT 
+$stats_usuarios = $conn->query("SELECT
     COUNT(*) as total,
     SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) as activos,
     SUM(CASE WHEN rol = 'Administrador' THEN 1 ELSE 0 END) as admins,
@@ -27,6 +26,37 @@ $stats_usuarios = $conn->query("SELECT
     SUM(CASE WHEN rol = 'Ventanilla' THEN 1 ELSE 0 END) as ventanillas,
     SUM(CASE WHEN rol = 'Usuario' THEN 1 ELSE 0 END) as usuarios
     FROM usuarios")->fetch_assoc();
+
+// Trámites ingresados durante el año actual, incluidos los meses sin registros.
+$anio_estadisticas = (int)date('Y');
+$tramites_por_mes = array_fill(0, 12, 0);
+$inicio_estadisticas = $anio_estadisticas . '-01-01';
+$fin_estadisticas = ($anio_estadisticas + 1) . '-01-01';
+$consulta_mensual = $conn->prepare("SELECT MONTH(fecha_ingreso) AS mes, COUNT(*) AS total
+    FROM tramites WHERE fecha_ingreso >= ? AND fecha_ingreso < ?
+    GROUP BY MONTH(fecha_ingreso)");
+$consulta_mensual->bind_param('ss', $inicio_estadisticas, $fin_estadisticas);
+$consulta_mensual->execute();
+$resultado_mensual = $consulta_mensual->get_result();
+while ($mes = $resultado_mensual->fetch_assoc()) {
+    $tramites_por_mes[(int)$mes['mes'] - 1] = (int)$mes['total'];
+}
+$consulta_mensual->close();
+
+$tipos_estadisticas = [];
+$totales_tipos_estadisticas = [];
+$consulta_tipos = $conn->prepare("SELECT COALESCE(tt.nombre, 'Sin tipo asignado') AS tipo, COUNT(*) AS total
+    FROM tramites t LEFT JOIN tipos_tramite tt ON tt.id = t.tipo_tramite_id
+    WHERE t.fecha_ingreso >= ? AND t.fecha_ingreso < ?
+    GROUP BY t.tipo_tramite_id, tt.nombre ORDER BY total DESC, tipo ASC");
+$consulta_tipos->bind_param('ss', $inicio_estadisticas, $fin_estadisticas);
+$consulta_tipos->execute();
+$resultado_tipos = $consulta_tipos->get_result();
+while ($tipo = $resultado_tipos->fetch_assoc()) {
+    $tipos_estadisticas[] = $tipo['tipo'];
+    $totales_tipos_estadisticas[] = (int)$tipo['total'];
+}
+$consulta_tipos->close();
 
 // Cargar los usuarios para la tabla de gestión administrativa.
 $usuarios_query = $conn->query("SELECT * FROM usuarios ORDER BY fecha_registro DESC");
@@ -44,10 +74,10 @@ $tramites_aprobados = $conn->query("
 ");
 
 // Obtener las actividades más recientes del sistema.
-$logs_query = $conn->query("SELECT l.*, u.nombre, u.apellidos 
-    FROM logs_actividad l 
-    LEFT JOIN usuarios u ON l.usuario_id = u.id 
-    ORDER BY l.fecha DESC 
+$logs_query = $conn->query("SELECT l.*, u.nombre, u.apellidos
+    FROM logs_actividad l
+    LEFT JOIN usuarios u ON l.usuario_id = u.id
+    ORDER BY l.fecha DESC
     LIMIT 50");
 
 // Obtener solicitudes de registro y contar las que siguen pendientes.
@@ -106,7 +136,8 @@ $total_global = $conn->query("SELECT COUNT(*) as c FROM tramites")->fetch_assoc(
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Sis Dit</title>
+<meta name="theme-color" content="#4b0e22">
+<title>Administración | SisDiT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- BOOTSTRAP 5 -->
@@ -114,13 +145,12 @@ $total_global = $conn->query("SELECT COUNT(*) as c FROM tramites")->fetch_assoc(
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
 <!-- CSS PROPIO -->
-<link rel="stylesheet" href="./css/style.css?v=1">
+<link rel="stylesheet" href="css/admin-oficios.css?v=<?= filemtime(__DIR__ . '/css/admin-oficios.css') ?>">
 
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
 <!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
 <!-- DataTables JS -->
@@ -139,117 +169,19 @@ window.onpopstate = function () {
     history.go(1);
 };
 </script>
-<style>
-    /* =====================================================
-   DATATABLES - ALINEACIÓN PERFECTA
-===================================================== */
+<link rel="stylesheet" href="css/dashboard-modern.css?v=<?= filemtime(__DIR__ . '/css/dashboard-modern.css') ?>">
+<link rel="stylesheet" href="css/dashboard-admin.css?v=<?= filemtime(__DIR__ . '/css/dashboard-admin.css') ?>">
+<link rel="stylesheet" href="css/oficio-modal.css?v=<?= filemtime(__DIR__ . '/css/oficio-modal.css') ?>">
 
-/* Para pantallas mayores a 768px (tablet/desktop) */
-@media (min-width: 769px) {
-    .dataTables_wrapper .dataTables_length {
-        float: left;
-    }
-    .dataTables_wrapper .dataTables_filter {
-        float: right;
-    }
-}
-
-/* Para móvil (menor o igual a 768px) */
-@media (max-width: 768px) {
-    /* Contenedor principal como flexbox */
-    .dataTables_wrapper {
-        display: flex !important;
-        align-items: center !important;  /* <-- ESTO ALINEA VERTICALMENTE */
-        justify-content: space-between !important;
-        flex-wrap: wrap !important;
-        gap: 10px !important;
-    }
-    
-    /* Selector de registros */
-    .dataTables_wrapper .dataTables_length {
-        float: none !important;
-        width: auto !important;
-        order: 1 !important;
-    }
-    
-    /* Buscador */
-    .dataTables_wrapper .dataTables_filter {
-        float: none !important;
-        width: auto !important;
-        order: 2 !important;
-    }
-    
-    /* Labels - FORZAR MISMA ALTURA */
-    .dataTables_wrapper .dataTables_length label,
-    .dataTables_wrapper .dataTables_filter label {
-        display: flex !important;
-        align-items: center !important;  /* <-- ALINEACIÓN VERTICAL */
-        margin: 0 !important;
-        line-height: 1 !important;  /* <-- MISMA ALTURA DE LÍNEA */
-        height: 36px !important;     /* <-- MISMA ALTURA FIJA */
-    }
-    
-    /* Texto de los labels - MISMA PROPIEDADES */
-    .dataTables_wrapper .dataTables_length label span,
-    .dataTables_wrapper .dataTables_length label .fw-semibold,
-    .dataTables_wrapper .dataTables_filter label {
-        font-size: 14px !important;
-        line-height: 36px !important;  /* <-- MISMA ALTURA DE LÍNEA */
-    }
-    
-    /* Selector pequeño */
-    .dataTables_wrapper .dataTables_length select {
-        width: 65px !important;
-        height: 32px !important;
-        margin: 0 5px !important;
-        padding: 4px !important;
-        border: 1px solid #ced4da !important;
-        border-radius: 4px !important;
-    }
-    
-    /* Input de búsqueda */
-    .dataTables_wrapper .dataTables_filter input {
-        width: 150px !important;
-        height: 32px !important;
-        margin-left: 5px !important;
-        padding: 4px 8px !important;
-        border: 1px solid #ced4da !important;
-        border-radius: 4px !important;
-    }
-}
-
-/* Para móvil muy pequeño */
-@media (max-width: 480px) {
-    .dataTables_wrapper {
-        flex-direction: column !important;
-        align-items: stretch !important;
-    }
-    
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_filter {
-        width: 100% !important;
-    }
-    
-    .dataTables_wrapper .dataTables_length label,
-    .dataTables_wrapper .dataTables_filter label {
-        width: 100% !important;
-        justify-content: space-between !important;
-    }
-    
-    .dataTables_wrapper .dataTables_filter input {
-        width: calc(100% - 60px) !important;
-    }
-}
-</style>
 </head>
 
-<body>
+<body class="dashboard-shell dashboard-admin">
 
 <!-- NAVBAR MÓVIL -->
 <nav class="navbar navbar-dark bg-dark d-lg-none">
     <div class="container-fluid">
-        <span class="navbar-brand">Panel Administrador</span>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuMovil">
+        <span class="navbar-brand"><i class="bi bi-shield-check me-2"></i>Administración</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuMovil" aria-controls="menuMovil" aria-expanded="false" aria-label="Abrir menú de administración">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>
@@ -257,6 +189,7 @@ window.onpopstate = function () {
     <div class="collapse navbar-collapse" id="menuMovil">
         <ul class="navbar-nav p-3">
             <li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li>
+            <li class="nav-item"><a class="nav-link" href="#oficios-digitales"><i class="bi bi-pen"></i> Firma y cierre de oficios</a></li>
             <li class="nav-item"><a class="nav-link" href="#estadisticas">Estadísticas</a></li>
             <li class="nav-item"><a class="nav-link" href="#usuarios">Gestión de Usuarios</a></li>
             <li class="nav-item"><a class="nav-link" href="#logs">Logs de Actividad</a></li>
@@ -276,12 +209,13 @@ window.onpopstate = function () {
 </nav>
 
 <!-- SIDEBAR -->
-<div class="sidebar position-fixed d-none d-lg-flex flex-column p-3">
-    <h5 class="text-white text-center mb-4">Menú Admin</h5>
-    <a class="nav-link text-white" href="#inicio">Inicio</a>
-    <a class="nav-link text-white" href="#estadisticas">Estadísticas</a>
-    <a class="nav-link text-white" href="#usuarios">Usuarios</a>
-    <a class="nav-link text-white" href="#logs">Logs</a>
+<div class="sidebar d-none d-lg-flex" aria-label="Menú de administración">
+    <h5><i class="bi bi-shield-check me-2"></i>Administración</h5>
+    <a href="#inicio"><i class="bi bi-house me-2"></i>Inicio</a>
+    <a class="nav-link text-white" href="#oficios-digitales"><i class="bi bi-pen me-1"></i> Firma y cierre</a>
+    <a href="#estadisticas"><i class="bi bi-graph-up me-2"></i>Estadísticas</a>
+    <a href="#usuarios"><i class="bi bi-people me-2"></i>Usuarios</a>
+    <a href="#logs"><i class="bi bi-clock-history me-2"></i>Actividad</a>
     <a class="nav-link text-white" href="#actualizar-shp"><i class="bi bi-map me-1"></i> Actualizar SHP</a>
     <a class="nav-link text-white" href="#solicitudes">
         <i class="bi bi-person-check me-1"></i> Solicitudes
@@ -291,8 +225,8 @@ window.onpopstate = function () {
     </a>
     <a class="nav-link text-white" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a>
     <a class="nav-link text-white" href="#tramites-aprobados"><i class="bi bi-printer"></i> Constancias</a>
-    <a class="nav-link text-white border-top mt-2 pt-2" href="Dash.php">Ver Trámites</a>
-    <a class="nav-link text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>">Cerrar sesión</a>
+    <a href="Dash.php"><i class="bi bi-folder2-open me-2"></i>Ver trámites</a>
+    <a class="text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
 </div>
 
 <!-- CONTENIDO -->
@@ -300,81 +234,112 @@ window.onpopstate = function () {
 
 <!-- ENCABEZADO -->
 <section class="hero" id="inicio">
-    <h1><i class="bi bi-shield-check"></i> Panel de Administrador</h1>
-    <p>Bienvenido <?php echo $_SESSION['usuario'] ?? ''; ?>. Desde aquí puedes gestionar usuarios, configurar el sistema y monitorear la actividad.</p>
+    <div class="dashboard-eyebrow">SisDiT · Administración y control</div>
+    <h1><i class="bi bi-shield-check me-2"></i>Panel de Administrador</h1>
+    <p>Bienvenido, <strong><?= e((string)($_SESSION['usuario'] ?? '')) ?></strong>.
+       Firma oficios, cierra expedientes y administra la operación del sistema.</p>
+    <div class="dashboard-hero-actions" aria-label="Accesos rápidos">
+        <a class="dashboard-hero-action" href="#oficios-digitales"><i class="bi bi-pen"></i>Firmar oficios</a>
+        <a class="dashboard-hero-action" href="#usuarios"><i class="bi bi-people"></i>Gestionar usuarios</a>
+        <a class="dashboard-hero-action" href="#reporte"><i class="bi bi-bar-chart-line"></i>Ver reportes</a>
+    </div>
 </section>
+
+<div class="row g-3 mb-4 admin-resumen" aria-label="Resumen del sistema">
+        <!-- Tarjeta Trámites -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm border-start border-primary border-4">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><p class="text-muted mb-1 small">Total Trámites</p><h3 class="mb-0 fw-bold"><?= $stats_tramites['total'] ?></h3></div>
+                    <i class="bi bi-folder-check text-primary fs-1"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta En Revisión -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm border-start border-warning border-4">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><p class="text-muted mb-1 small">En Revisión</p><h3 class="mb-0 fw-bold"><?= $stats_tramites['en_revision'] ?></h3></div>
+                    <i class="bi bi-hourglass-split text-warning fs-1"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Aprobados -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm border-start border-success border-4">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><p class="text-muted mb-1 small">Aprobados</p><h3 class="mb-0 fw-bold"><?= $stats_tramites['aprobados'] ?></h3></div>
+                    <i class="bi bi-check-circle text-success fs-1"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Usuarios -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm border-start border-info border-4">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><p class="text-muted mb-1 small">Usuarios Activos</p><h3 class="mb-0 fw-bold"><?= $stats_usuarios['activos'] ?></h3></div>
+                    <i class="bi bi-people text-info fs-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<?php require __DIR__ . '/php/vistas/admin_oficios.php'; ?>
 
 <!-- ESTADÍSTICAS -->
-<section id="estadisticas" class="mb-4">
+<section id="estadisticas" class="tramite-box mb-6">
     <h4 class="text-primary mb-3"><i class="bi bi-graph-up"></i> Estadísticas del Sistema</h4>
-    
-    <div class="row g-3 mb-4">
-        <!-- Tarjeta Trámites -->
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="bi bi-folder-check text-primary fs-1"></i>
-                    <h3 class="mt-2"><?= $stats_tramites['total'] ?></h3>
-                    <p class="text-muted mb-0">Total Trámites</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tarjeta En Revisión -->
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="bi bi-hourglass-split text-warning fs-1"></i>
-                    <h3 class="mt-2"><?= $stats_tramites['en_revision'] ?></h3>
-                    <p class="text-muted mb-0">En Revisión</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tarjeta Aprobados -->
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="bi bi-check-circle text-success fs-1"></i>
-                    <h3 class="mt-2"><?= $stats_tramites['aprobados'] ?></h3>
-                    <p class="text-muted mb-0">Aprobados</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tarjeta Usuarios -->
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="bi bi-people text-info fs-1"></i>
-                    <h3 class="mt-2"><?= $stats_usuarios['activos'] ?></h3>
-                    <p class="text-muted mb-0">Usuarios Activos</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Gráficas -->
-    <div class="row g-3">
+    <div class="row g-3 admin-graficas">
         <div class="col-md-6">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm card-distribucion">
                 <div class="card-body">
                     <h5 class="card-title">Distribución de Trámites</h5>
-                    <canvas id="chartTramites"></canvas>
+                    <p class="text-muted small">Distribución histórica por estado del trámite.</p>
+                    <div class="admin-grafica-canvas"><canvas id="chartTramites"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm card-usuarios-rol">
+                <div class="card-body">
+                    <h5 class="card-title">Usuarios por Rol</h5>
+                    <p class="text-muted small">Usuarios registrados por rol en el sistema.</p>
+                    <div class="admin-grafica-canvas"><canvas id="chartUsuarios"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 admin-grafica-mensual">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Trámites por mes · <?= $anio_estadisticas ?></h5>
+                    <p class="text-muted small">Cantidad de trámites registrados según su fecha de ingreso.</p>
+                    <div class="admin-grafica-canvas">
+                        <canvas id="chartTramitesMensuales" role="img" aria-label="Cantidad de trámites por mes del año <?= $anio_estadisticas ?>"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Usuarios por Rol</h5>
-                    <canvas id="chartUsuarios"></canvas>
+                    <h5 class="card-title">Trámites por tipo · <?= $anio_estadisticas ?></h5>
+                    <p class="text-muted small">Cantidad registrada por cada tipo de trámite.</p>
+                    <div class="admin-grafica-canvas admin-grafica-tipos">
+                        <?php if (!$tipos_estadisticas): ?>
+                        <p class="admin-grafica-vacia">No hay trámites registrados este año.</p>
+                        <?php endif; ?>
+                        <canvas id="chartTramitesTipos" role="img" aria-label="Cantidad de trámites por tipo del año <?= $anio_estadisticas ?>"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
-
 <!-- ================================================ -->
 <!-- SOLICITUDES DE REGISTRO                         -->
 <!-- ================================================ -->
@@ -404,16 +369,16 @@ window.onpopstate = function () {
     <?php else: ?>
     <div class="table-responsive">
         <table id="tablaSolicitudes" class="table table-bordered table-hover align-middle">
-            <thead style="background:#7b0f2b;color:white;">
+            <thead>
                 <tr>
-                    <th style="background:#7b0f2b;color:#fff;">#</th>
-                    <th style="background:#7b0f2b;color:#fff;">Nombre</th>
-                    <th style="background:#7b0f2b;color:#fff;">Correo</th>
-                    <th style="background:#7b0f2b;color:#fff;">Teléfono</th>
-                    <th style="background:#7b0f2b;color:#fff;">Rol</th>
-                    <th style="background:#7b0f2b;color:#fff;">Fecha</th>
-                    <th style="background:#7b0f2b;color:#fff;">Estado</th>
-                    <th style="background:#7b0f2b;color:#fff;text-align:center;">Acciones</th>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th>Rol</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -430,9 +395,9 @@ window.onpopstate = function () {
                 <td><?= htmlspecialchars($sol['correo']) ?></td>
                 <td><?= htmlspecialchars($sol['telefono'] ? $sol['telefono'] : '—') ?></td>
                 <td>
-                    <span class="badge <?= 
-                        $sol['rol']==='Verificador' ? 'bg-warning text-dark' : 
-                        ($sol['rol']==='Ventanilla' ? 'bg-info text-dark' : 
+                    <span class="badge <?=
+                        $sol['rol']==='Verificador' ? 'bg-warning text-dark' :
+                        ($sol['rol']==='Ventanilla' ? 'bg-info text-dark' :
                         ($sol['rol']==='Usuario' ? 'bg-secondary' : 'bg-secondary')) ?>">
                         <?= $sol['rol'] ?>
                     </span>
@@ -537,7 +502,7 @@ window.onpopstate = function () {
     $cor_año += $d['en_correccion'];
   }
   ?>
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4 admin-resumen admin-resumen-reporte" aria-label="Resumen del reporte">
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm border-start border-primary border-4 h-100">
         <div class="card-body text-center py-3">
@@ -588,14 +553,14 @@ window.onpopstate = function () {
   ?>
   <div class="table-responsive mb-4">
     <table class="table table-bordered table-hover align-middle" id="tablaReporteMes">
-      <thead style="background:#7b0f2b;color:white;">
+      <thead>
         <tr>
-          <th style="background:#7b0f2b;color:#fff;">Mes</th>
-          <th style="background:#7b0f2b;color:#fff;text-align:center;">Total</th>
-          <th style="background:#1a6e35;color:#fff;text-align:center;">Aprobados</th>
-          <th style="background:#856404;color:#fff;text-align:center;">En Revisión</th>
-          <th style="background:#0d6efd;color:#fff;text-align:center;">En Corrección</th>
-          <th style="background:#842029;color:#fff;text-align:center;">Rechazados</th>
+          <th>Mes</th>
+          <th>Total</th>
+          <th>Aprobados</th>
+          <th>En Revisión</th>
+          <th>En Corrección</th>
+          <th>Rechazados</th>
         </tr>
       </thead>
       <tbody>
@@ -645,13 +610,13 @@ window.onpopstate = function () {
   <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-list-task me-1"></i>Trámites por Tipo — <?= $anio_filtro ?></h6>
   <div class="table-responsive mb-3">
     <table class="table table-bordered table-hover align-middle" id="tablaReporteTipo">
-      <thead style="background:#7b0f2b;color:white;">
+      <thead>
         <tr>
-          <th style="background:#7b0f2b;color:#fff;">Tipo de Trámite</th>
-          <th style="background:#7b0f2b;color:#fff;text-align:center;">Total</th>
-          <th style="background:#1a6e35;color:#fff;text-align:center;">Aprobados</th>
-          <th style="background:#842029;color:#fff;text-align:center;">Rechazados</th>
-          <th style="background:#7b0f2b;color:#fff;text-align:center;">% del año</th>
+          <th>Tipo de Trámite</th>
+          <th>Total</th>
+          <th>Aprobados</th>
+          <th>Rechazados</th>
+          <th>% del año</th>
          </thead>
       <tbody>
         <?php foreach($datos_tipo as $dt):
@@ -695,17 +660,17 @@ window.onpopstate = function () {
 
     <div class="table-responsive">
         <table id="tablaAprobados" class="table table-bordered table-hover">
-            <thead style="background: #1a6e35 !important; color: white !important;">
+            <thead>
                  <tr>
-                    <th style="background:#1a6e35;color:#fff;">Folio Ingreso</th>
-                    <th style="background:#1a6e35;color:#fff;">Folio Salida</th>
-                    <th style="background:#1a6e35;color:#fff;">Tipo de Trámite</th>
-                    <th style="background:#1a6e35;color:#fff;">Propietario</th>
-                    <th style="background:#1a6e35;color:#fff;">Solicitante</th>
-                    <th style="background:#1a6e35;color:#fff;">Dirección</th>
-                    <th style="background:#1a6e35;color:#fff;">Número Asignado</th>
-                    <th style="background:#1a6e35;color:#fff;">Fecha Aprobación</th>
-                    <th style="background:#1a6e35;color:#fff; text-align:center;">Constancia</th>
+                    <th>Folio Ingreso</th>
+                    <th>Folio Salida</th>
+                    <th>Tipo de Trámite</th>
+                    <th>Propietario</th>
+                    <th>Solicitante</th>
+                    <th>Dirección</th>
+                    <th>Número Asignado</th>
+                    <th>Fecha Aprobación</th>
+                    <th>Constancia</th>
                  </tr>
             </thead>
             <tbody>
@@ -782,15 +747,15 @@ window.onpopstate = function () {
 
     <div class="table-responsive">
         <table id="tablaUsuarios" class="table table-bordered table-hover">
-            <thead style="background: #7b0f2b !important; color: white !important;">
+            <thead>
                  <tr>
-                    <th style="background: #7b0f2b !important; color: white !important;">ID</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Nombre</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Correo</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Rol</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Estado</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Último Acceso</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Acciones</th>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Último Acceso</th>
+                    <th>Acciones</th>
                  </tr>
             </thead>
             <tbody>
@@ -817,12 +782,12 @@ window.onpopstate = function () {
                     </td>
                     <td><?= $usuario['ultimo_acceso'] ? date('d/m/Y H:i', strtotime($usuario['ultimo_acceso'])) : 'Nunca' ?></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" 
+                        <button class="btn btn-sm btn-outline-primary"
                                 onclick="editarUsuario(<?= $usuario['id'] ?>, '<?= htmlspecialchars($usuario['nombre']) ?>', '<?= htmlspecialchars($usuario['apellidos']) ?>', '<?= htmlspecialchars($usuario['correo']) ?>', '<?= $usuario['rol'] ?>', <?= $usuario['activo'] ?>)">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <?php if($usuario['id'] != $_SESSION['id']): ?>
-                        <button class="btn btn-sm btn-outline-<?= $usuario['activo'] ? 'warning' : 'success' ?>" 
+                        <button class="btn btn-sm btn-outline-<?= $usuario['activo'] ? 'warning' : 'success' ?>"
                                 onclick="toggleEstadoUsuario(<?= $usuario['id'] ?>, <?= $usuario['activo'] ?>)">
                             <i class="bi bi-<?= $usuario['activo'] ? 'x-circle' : 'check-circle' ?>"></i>
                         </button>
@@ -838,16 +803,16 @@ window.onpopstate = function () {
 <!-- LOGS DE ACTIVIDAD -->
 <section id="logs" class="tramite-box mb-4">
     <h4 class="text-primary mb-3"><i class="bi bi-clock-history"></i> Registro de Actividad</h4>
-    
+
     <div class="table-responsive">
         <table id="tablaLogs" class="table table-sm table-bordered">
-            <thead style="background: #7b0f2b !important; color: white !important;">
+            <thead>
                  <tr>
-                    <th style="background: #7b0f2b !important; color: white !important;">Fecha</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Usuario</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Acción</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">Detalles</th>
-                    <th style="background: #7b0f2b !important; color: white !important;">IP</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Acción</th>
+                    <th>Detalles</th>
+                    <th>IP</th>
                  </tr>
             </thead>
             <tbody>
@@ -960,13 +925,13 @@ window.onpopstate = function () {
                             <option value="Administrador">Administrador</option>
                         </select>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Nueva Contraseña (dejar vacío para mantener)</label>
                         <div class="password-container" style="position: relative;">
                             <input type="password" name="password" id="edit_password" class="form-control" minlength="8" style="padding-right: 45px;">
-                            <button type="button" class="toggle-password" onclick="togglePassword('edit_password')" 
-                                    style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); 
+                            <button type="button" class="toggle-password" onclick="togglePassword('edit_password')"
+                                    style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
                                         background: transparent; border: none; cursor: pointer; padding: 0; width: 30px; height: 30px;
                                         display: flex; align-items: center; justify-content: center; font-size: 18px; color: #7b0f2b; border-radius: 50%;">
                                 <i class="fas fa-eye"></i>
@@ -1001,7 +966,7 @@ new Chart(ctxTramites, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: {
                 position: 'bottom'
@@ -1011,6 +976,50 @@ new Chart(ctxTramites, {
 });
 
 // Gráfica de Usuarios
+new Chart(document.getElementById('chartTramitesMensuales'), {
+    type: 'bar',
+    data: {
+        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        datasets: [{
+            label: 'Cantidad de trámites',
+            data: <?= json_encode($tramites_por_mes) ?>,
+            backgroundColor: '#721832',
+            hoverBackgroundColor: '#4b0e22',
+            borderRadius: 5,
+            maxBarThickness: 48
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {title: {display: true, text: 'Meses'}, grid: {display: false}, ticks: {autoSkip: false, minRotation: 45, maxRotation: 90}},
+            y: {beginAtZero: true, suggestedMax: 1, title: {display: true, text: 'Cantidad de trámites'}, ticks: {precision: 0}}
+        },
+        plugins: {legend: {display: false}}
+    }
+});
+
+new Chart(document.getElementById('chartTramitesTipos'), {
+    type: 'bar',
+    data: {
+        labels: <?= json_encode($tipos_estadisticas, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+        datasets: [{label: 'Cantidad de trámites', data: <?= json_encode($totales_tipos_estadisticas) ?>,
+            backgroundColor: '#287468', borderRadius: 5, maxBarThickness: 32}]
+    },
+    options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        scales: {
+            x: {beginAtZero: true, suggestedMax: 1, ticks: {precision: 0}, title: {display: true, text: 'Cantidad de trámites'}},
+            y: {grid: {display: false}, ticks: {autoSkip: false, callback: function(value) {
+                const label = this.getLabelForValue(value);
+                return label.length > 24 ? label.slice(0, 23) + '…' : label;
+            }}}
+        },
+        plugins: {legend: {display: false}}
+    }
+});
+
 const ctxUsuarios = document.getElementById('chartUsuarios').getContext('2d');
 new Chart(ctxUsuarios, {
     type: 'bar',
@@ -1024,7 +1033,7 @@ new Chart(ctxUsuarios, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         scales: {
             y: {
                 beginAtZero: true,
@@ -1043,11 +1052,14 @@ new Chart(ctxUsuarios, {
 </script>
 
 <script src="js/admin.js"></script>
+<script src="js/dashboard-ui.js?v=<?= filemtime(__DIR__ . '/js/dashboard-ui.js') ?>"></script>
+<script src="assets/vendor/pdf-lib/pdf-lib.min.js"></script>
+<script type="module" src="js/admin-oficios.js?v=<?= filemtime(__DIR__ . '/js/admin-oficios.js') ?>"></script>
 <script src="js/actualizar-shp.js?v=<?= filemtime(__DIR__ . '/js/actualizar-shp.js') ?>"></script>
 <script>
 $(document).ready(function() {
     $('#tablaAprobados').DataTable({
-        language: { 
+        language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-MX.json',
             emptyTable: '<i class="bi bi-inbox fs-3 d-block mb-2"></i> No hay trámites aprobados aún.'
         },
@@ -1283,7 +1295,7 @@ function imprimirReporte() {
 function togglePassword(inputId) {
     var input = document.getElementById(inputId);
     var icon = input.nextElementSibling.querySelector('i');
-    
+
     if (!icon) {
         // Si el icono no está en el nextElementSibling, buscarlo de otra forma
         icon = document.querySelector('#' + inputId + ' + .toggle-password i');
@@ -1294,7 +1306,7 @@ function togglePassword(inputId) {
             }
         }
     }
-    
+
     if (input.type === "password") {
         input.type = "text";
         if (icon) icon.className = "fas fa-eye-slash";

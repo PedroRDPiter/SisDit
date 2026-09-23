@@ -1,0 +1,127 @@
+/* Expediente del oficio: estructura y controles exclusivos de este modal. */
+#modalOficioAdmin [hidden] { display: none !important; }
+#modalOficioAdmin .modal-dialog { max-width: min(1320px, calc(100vw - 48px)); height: calc(100% - 48px); margin: 24px auto; }
+#modalOficioAdmin .modal-content { height: 100%; max-height: 100%; border-radius: 24px; }
+.dashboard-admin #modalOficioAdmin .modal-header { flex: 0 0 auto; gap: 16px; padding: 22px 28px; background: linear-gradient(115deg, #4b0e22, #721832); }
+#modalOficioAdmin .oficio-header-icon { display: grid; place-items: center; width: 48px; height: 52px; flex-shrink: 0; border: 1px solid #ffffff30; border-radius: 13px; background: #ffffff0d; font-size: 1.5rem; }
+#modalOficioAdmin .oficio-header-text { flex: 1; min-width: 0; }
+#modalOficioAdmin .oficio-kicker { display: block; color: #e2bdc8; font-size: .62rem; letter-spacing: .15em; font-weight: 750; margin-bottom: 5px; }
+.dashboard-admin #modalOficioAdmin .modal-title { font-size: clamp(1.15rem, 2vw, 1.55rem); line-height: 1.2; margin-bottom: 5px; }
+#modalOficioAdmin #oficioReferencia { font-size: .78rem; }
+#modalOficioAdmin .oficio-status-pill { padding: 7px 12px; border: 1px solid #ffffff35; background: #ffffff13; border-radius: 30px; font-size: .72rem; font-weight: 650; }
+#modalOficioAdmin .oficio-status-pill[data-estado="pendiente"] { color: #ffe2a5; }
+#modalOficioAdmin .oficio-status-pill[data-estado="completo"] { color: #cbf1dd; }
+#modalOficioAdmin .modal-header .btn-close { margin: 0 0 0 4px; flex-shrink: 0; }
+#modalOficioAdmin .oficio-modal-form { min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden; }
+#modalOficioAdmin .oficio-tabs { flex-shrink: 0; display: flex; flex-wrap: nowrap; gap: 8px; padding: 0 28px; background: #fff; border-bottom: 1px solid #e9e3de; }
+#modalOficioAdmin .oficio-tabs .nav-link { display: flex; align-items: center; gap: 8px; padding: 17px 16px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; color: #6c7178; font-size: .85rem; font-weight: 650; background: transparent; }
+#modalOficioAdmin .oficio-tabs .nav-link.active { border-bottom-color: #721832; color: #721832; background: #faf6f7; }
+#modalOficioAdmin .oficio-tabs .nav-link:hover { color: #721832; }
+#modalOficioAdmin .oficio-contador { display: inline-block; padding: 2px 7px; margin-left: 4px; border-radius: 7px; background: #eee9e5; color: #68636a; font-size: .68rem; vertical-align: middle; }
+.dashboard-admin #modalOficioAdmin .modal-body { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: 26px 28px; background: #faf9f6; scroll-behavior: smooth; }
+#modalOficioAdmin .tab-pane { scroll-margin-top: 0; }
+#modalOficioAdmin .oficio-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 17px; }
+#modalOficioAdmin .oficio-section-heading h4 { margin: 0 0 4px; font-size: 1rem; font-weight: 750; color: #30343c; letter-spacing: -.015em; }
+#modalOficioAdmin .oficio-section-heading p { margin: 0; color: #757981; font-size: .8rem; }
+#modalOficioAdmin .oficio-section-heading > i { color: #9c8790; font-size: 1.4rem; }
+#modalOficioAdmin .oficio-ficha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0; border: 1px solid #e7e2dd; border-radius: 16px; background: #fff; overflow: hidden; }
+#modalOficioAdmin .oficio-ficha > div { padding: 18px 20px; min-width: 0; border-bottom: 1px solid #f0ece8; }
+#modalOficioAdmin .oficio-ficha small { margin-bottom: 7px; color: #84828a; font-size: .67rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+#modalOficioAdmin .oficio-ficha strong { color: #343841; font-size: .85rem; font-weight: 650; line-height: 1.5; }
+#modalOficioAdmin .oficio-ficha .oficio-ficha-notas { grid-column: 1/-1; border: 0; background: #fdfbf9; }
+#modalOficioAdmin .oficio-ficha-notas strong { font-weight: 400; white-space: pre-wrap; }
+#modalOficioAdmin .oficio-doc-heading { margin-top: 28px; }
+#modalOficioAdmin .oficio-documentos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#modalOficioAdmin .oficio-documento { min-width: 0; padding: 15px; border: 1px solid #e7e2dd; border-radius: 13px; background: #fff; transition: border-color .15s; }
+#modalOficioAdmin .oficio-documento:hover { border-color: #c8a4b0; }
+#modalOficioAdmin .oficio-documento-final { border-color: #bdd9cc; background: #fbfefc; }
+#modalOficioAdmin .oficio-documento-enlace { display: flex; align-items: center; gap: 13px; color: inherit; text-decoration: none; }
+#modalOficioAdmin .oficio-documento-enlace > i:first-child { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 44px; border-radius: 10px; background: #f5edf0; color: #721832; font-size: 1.35rem; }
+#modalOficioAdmin .oficio-documento-final .oficio-documento-enlace > i:first-child { background: #e9f5ee; color: #287468; }
+#modalOficioAdmin .oficio-documento-enlace > span { flex: 1; min-width: 0; }
+#modalOficioAdmin .oficio-documento-enlace strong { display: block; font-size: .82rem; font-weight: 650; overflow-wrap: anywhere; }
+#modalOficioAdmin .oficio-documento-enlace small { display: block; margin-top: 4px; font-size: .7rem; color: #84828a; }
+#modalOficioAdmin .oficio-documento-enlace > i:last-child { font-size: .8rem; color: #969098; }
+#modalOficioAdmin .oficio-documento > button { margin: 12px 0 0 !important; width: 100%; min-height: 34px; }
+#modalOficioAdmin .oficio-plantilla { margin-top: 18px; }
+#modalOficioAdmin .oficio-plantilla:empty { display: none; }
+#modalOficioAdmin .oficio-empty { grid-column: 1/-1; padding: 26px; border: 1px dashed #d9d2cf; border-radius: 14px; text-align: center; color: #81818a; font-size: .82rem; background: #fffdfb; }
+#modalOficioAdmin .oficio-empty i { display: block; margin-bottom: 8px; font-size: 1.8rem; color: #b5a1aa; }
+#modalOficioAdmin .oficio-empty p { margin: 0; }
+#modalOficioAdmin .oficio-historial { list-style: none; max-height: none; overflow: visible; padding: 0 0 0 20px; margin: 12px 0; }
+#modalOficioAdmin .oficio-historial li:not(.oficio-empty) { position: relative; padding: 0 0 25px 25px; margin: 0; border-left: 2px solid #e4d8dd; }
+#modalOficioAdmin .oficio-historial li:not(.oficio-empty)::before { content: ""; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border: 2px solid #faf9f6; border-radius: 50%; background: #721832; }
+#modalOficioAdmin .oficio-historial li:last-child { border-left-color: transparent; }
+#modalOficioAdmin .oficio-historial time { display: block; color: #86828b; font-size: .7rem; margin-bottom: 6px; }
+#modalOficioAdmin .oficio-historial strong { display: block; font-size: .9rem; color: #353942; }
+#modalOficioAdmin .oficio-historial span { display: block; color: #72727b; font-size: .78rem; margin-top: 3px; }
+#modalOficioAdmin .oficio-historial p { display: inline-block; margin: 12px 0 0; padding: 12px 16px; max-width: 100%; border: 1px solid #ece6e1; border-radius: 10px; background: #fff; color: #676b74; font-size: .8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+#modalOficioAdmin .oficio-editor-grid { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(0, 1.75fr); gap: 20px; align-items: start; }
+#modalOficioAdmin .oficio-editor-controles { display: grid; gap: 13px; min-width: 0; }
+#modalOficioAdmin .oficio-paso { padding: 17px; border: 1px solid #e7e2dd; border-radius: 14px; background: #fff; min-width: 0; }
+#modalOficioAdmin .oficio-paso-titulo { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+#modalOficioAdmin .oficio-paso-titulo > span { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 8px; background: #f2e8ec; color: #721832; font-size: .72rem; font-weight: 750; }
+#modalOficioAdmin .oficio-paso-titulo h5 { margin: 0; font-size: .86rem; font-weight: 700; }
+#modalOficioAdmin .oficio-paso .form-text { font-size: .71rem; line-height: 1.5; margin-bottom: 0; }
+#modalOficioAdmin .oficio-paso .form-control { font-size: .76rem; min-width: 0; width: 100%; }
+#modalOficioAdmin .oficio-divisor { display: flex; align-items: center; gap: 10px; color: #92909a; font-size: .68rem; margin: 15px 0; }
+#modalOficioAdmin .oficio-divisor::before, #modalOficioAdmin .oficio-divisor::after { content: ""; height: 1px; background: #ece7e3; flex: 1; }
+#modalOficioAdmin #firmaDibujo { background: linear-gradient(transparent 78%, #e7e3e1 78%, #e7e3e1 79%, transparent 79%), #fff; }
+#modalOficioAdmin .oficio-editor-preview { position: sticky; top: 0; min-width: 0; border: 1px solid #dedbd7; border-radius: 15px; overflow: hidden; background: #f0efed; }
+#modalOficioAdmin .oficio-preview-titulo { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 17px; background: #fff; border-bottom: 1px solid #e7e2dd; }
+#modalOficioAdmin .oficio-preview-titulo span { font-size: .8rem; font-weight: 650; }
+#modalOficioAdmin .oficio-preview-titulo small { font-size: .65rem; color: #8d8790; }
+#modalOficioAdmin #firmaEstado { margin: 12px; padding: 10px 12px; font-size: .74rem; border-radius: 9px; }
+#modalOficioAdmin .oficio-preview-vacia { display: flex; min-height: 280px; padding: 40px 30px; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #86858b; }
+#modalOficioAdmin .oficio-preview-vacia > i { font-size: 2.6rem; color: #b7a6ad; margin-bottom: 16px; }
+#modalOficioAdmin .oficio-preview-vacia strong { font-size: .94rem; color: #696770; }
+#modalOficioAdmin .oficio-preview-vacia p { font-size: .78rem; max-width: 280px; margin: 9px 0 0; }
+#modalOficioAdmin .firma-papel-contenedor { max-height: min(62vh, 650px); border-radius: 0; background: transparent; padding: 14px; }
+#modalOficioAdmin .oficio-pdf-toolbar { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px; background: #fff; border-top: 1px solid #e7e2dd; }
+#modalOficioAdmin .oficio-pdf-toolbar .btn { flex: 1; font-size: .76rem; }
+#modalOficioAdmin #firmaPreparada { flex-basis: 100%; font-size: .73rem; }
+#modalOficioAdmin .oficio-confirmacion-panel { padding: 20px; margin-top: 22px; border: 1px solid #e7e2dd; border-radius: 14px; background: #fff; }
+#modalOficioAdmin .oficio-confirmacion-panel h4 { font-size: .9rem; font-weight: 700; margin-bottom: 16px; }
+#modalOficioAdmin .oficio-confirmacion-panel .form-check { padding: 15px 15px 15px 42px; border-radius: 10px; background: #f6f3ef; margin: 0 !important; }
+#modalOficioAdmin .oficio-confirmacion-panel .form-check-label { font-size: .8rem; line-height: 1.5; }
+#modalOficioAdmin .oficio-cierre-panel { padding: 26px; border: 1px solid #d7e5dc; border-radius: 16px; background: #f5faf7; }
+#modalOficioAdmin .oficio-cierre-icono { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 12px; background: #e3f0e8; color: #287468; margin-bottom: 15px; font-size: 1.35rem; }
+#modalOficioAdmin #oficioCierreTexto { max-width: 650px; font-size: .87rem; color: #68746d; }
+.dashboard-admin #modalOficioAdmin .oficio-footer { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 24px; background: #fff; box-shadow: 0 -6px 24px #39302f05; }
+#modalOficioAdmin #oficioAyudaAccion { flex: 1; min-width: 140px; max-width: 400px; margin: 0; color: #817b85; font-size: .72rem; }
+#modalOficioAdmin .oficio-footer-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+#modalOficioAdmin .oficio-footer .btn { min-height: 42px; font-size: .8rem; }
+@media (max-width: 991.98px) {
+  #modalOficioAdmin .modal-dialog { max-width: calc(100vw - 24px); height: calc(100% - 24px); margin: 12px auto; }
+  #modalOficioAdmin .oficio-editor-grid { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.3fr); gap: 14px; }
+  #modalOficioAdmin .oficio-status-pill { max-width: 140px; text-align: center; }
+}
+@media (max-width: 767.98px) {
+  #modalOficioAdmin .oficio-editor-grid { grid-template-columns: minmax(0, 1fr); }
+  #modalOficioAdmin .oficio-editor-preview { position: static; }
+  #modalOficioAdmin .oficio-ficha { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #modalOficioAdmin .oficio-documentos-grid { grid-template-columns: minmax(0, 1fr); }
+  #modalOficioAdmin .oficio-preview-vacia { min-height: 180px; }
+}
+@media (max-width: 575.98px) {
+  #modalOficioAdmin .modal-dialog { max-width: calc(100vw - 12px); height: calc(100% - 12px); margin: 6px auto; }
+  #modalOficioAdmin .modal-content { border-radius: 18px; }
+  .dashboard-admin #modalOficioAdmin .modal-header { position: relative; padding: 17px 16px; gap: 10px; flex-wrap: wrap; }
+  .dashboard-admin #modalOficioAdmin .modal-header .btn-close { position: absolute; top: 20px; right: 16px; margin: 0; }
+  #modalOficioAdmin .oficio-header-icon { display: none; }
+  #modalOficioAdmin .oficio-header-text { flex: 1 1 100%; padding-right: 32px; }
+  #modalOficioAdmin .oficio-status-pill { order: 3; max-width: none; font-size: .65rem; padding: 4px 10px; }
+  #modalOficioAdmin .oficio-tabs { padding: 0 10px; gap: 0; }
+  #modalOficioAdmin .oficio-tabs .nav-link { justify-content: center; flex: 1; padding: 13px 5px; font-size: .73rem; gap: 5px; white-space: nowrap; }
+  #modalOficioAdmin .oficio-tabs .nav-link > i, #modalOficioAdmin .oficio-tabs .oficio-contador { display: none; }
+  .dashboard-admin #modalOficioAdmin .modal-body { padding: 18px 14px; }
+  #modalOficioAdmin .oficio-ficha > div { padding: 14px 12px; }
+  #modalOficioAdmin .oficio-ficha strong { font-size: .76rem; }
+  #modalOficioAdmin .oficio-ficha small { font-size: .61rem; }
+  #modalOficioAdmin .oficio-footer-botones { width: 100%; gap: 8px; }
+  #modalOficioAdmin .oficio-footer .btn { flex: 1; padding: 10px; font-size: .72rem; }
+  .dashboard-admin #modalOficioAdmin .oficio-footer { padding: 12px 14px; }
+  #modalOficioAdmin #oficioAyudaAccion { flex-basis: 100%; max-width: none; font-size: .65rem; }
+  #modalOficioAdmin .oficio-confirmacion-panel, #modalOficioAdmin .oficio-cierre-panel { padding: 17px; }
+  #modalOficioAdmin .oficio-preview-titulo small { display: none; }
+}
