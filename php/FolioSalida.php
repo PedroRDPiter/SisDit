@@ -10,9 +10,12 @@ function reservarFolioSalida(mysqli $conn, int $tipo, int $anio): int
     $candidato = (int)$stmt->get_result()->fetch_assoc()['siguiente'];
     $stmt->close();
     // La clave (tipo, año) serializa reservas de todos los paneles.
-    $stmt = $conn->prepare('INSERT INTO folios_salida_tipo_secuencia (tipo_tramite_id, anio, ultimo_numero)
-        VALUES (?, ?, LAST_INSERT_ID(?)) ON DUPLICATE KEY UPDATE
-        ultimo_numero = LAST_INSERT_ID(GREATEST(ultimo_numero + 1, VALUES(ultimo_numero)))');
+    $stmt = $conn->prepare(
+        'INSERT INTO folios_salida_tipo_secuencia (tipo_tramite_id, anio, ultimo_numero)
+         VALUES (?, ?, LAST_INSERT_ID(?))
+         ON DUPLICATE KEY UPDATE
+         ultimo_numero = LAST_INSERT_ID(GREATEST(ultimo_numero + 1, VALUES(ultimo_numero)))'
+    );
     $stmt->bind_param('iii', $tipo, $anio, $candidato);
     $stmt->execute();
     $numero = (int)$conn->insert_id;

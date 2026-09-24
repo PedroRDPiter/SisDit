@@ -5,7 +5,10 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/funciones_seguridad.php';
 
 // Solo se aceptan solicitudes POST protegidas contra CSRF.
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !validarCSRF()) {
+if (
+    $_SERVER['REQUEST_METHOD'] !== 'POST' ||
+    !validarCSRF()
+) {
     header('Location: ../acceso.php?error=csrf');
     exit;
 }
@@ -48,7 +51,9 @@ if ($usuario) {
     $mensaje = "Hola {$usuario['nombre']},\n\nAbre este enlace para restablecer tu contraseña:\n{$enlace}\n\nEl enlace expira en una hora.";
     $cabeceras = "From: noreply@sistema-geo.com\r\nContent-Type: text/plain; charset=UTF-8\r\n";
     // No revelar al usuario si el envío del correo falló.
-    if (!@mail($correo, $asunto, $mensaje, $cabeceras)) {
+    if (
+        !@mail($correo, $asunto, $mensaje, $cabeceras)
+    ) {
         error_log('No se pudo enviar correo de recuperacion para usuario id ' . (int) $usuario['id']);
     }
 }

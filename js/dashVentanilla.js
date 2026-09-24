@@ -1,6 +1,5 @@
 // ── MAPA ──
 
-
 proj4.defs('EPSG:32613', '+proj=utm +zone=13 +datum=WGS84 +units=m +no_defs');
 const CENTRO_MUNICIPIO = [22.228, -102.320];
 const map = L.map('mapa', { zoomControl: true, scrollWheelZoom: true, tap: true }).setView(CENTRO_MUNICIPIO, 14);

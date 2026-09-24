@@ -27,7 +27,9 @@
     }
 
     function validateStep(step) {
-      const invalid = fieldsFor(step).find(field => !field.disabled && !field.checkValidity());
+      const invalid = fieldsFor(step).find(
+        field => !field.disabled && !field.checkValidity()
+      );
       if (!invalid) return true;
 
       if (currentStep !== step) showStep(step);
@@ -60,7 +62,11 @@
       const numero = document.getElementById('c_numero_asignado');
       const requiredLocationFields = fieldsFor(2).filter(field => field.required);
       setChecklistItem('check-numero', Boolean(numero && numero.value.trim()));
-      setChecklistItem('check-ubicacion', requiredLocationFields.length > 0 && requiredLocationFields.every(field => field.checkValidity()));
+      setChecklistItem(
+        'check-ubicacion',
+        requiredLocationFields.length > 0 &&
+          requiredLocationFields.every(field => field.checkValidity())
+      );
       setChecklistItem('check-croquis', hasCroquis());
     }
 
@@ -161,7 +167,12 @@
     }, true);
 
     const croquisStatus = document.getElementById('ver_ok_croquis');
-    if (croquisStatus) new MutationObserver(updateChecklist).observe(croquisStatus, { attributes: true, attributeFilter: ['style', 'class'] });
+    if (croquisStatus) {
+      new MutationObserver(updateChecklist).observe(croquisStatus, {
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
+    }
 
     modal.addEventListener('show.bs.modal', function () {
       form.classList.remove('was-validated');

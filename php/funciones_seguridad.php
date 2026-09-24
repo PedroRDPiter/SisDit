@@ -76,16 +76,22 @@ function consumirLimite(string $accion, string $identificador, int $maximo, int 
     $ruta = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'sisdit_rate_' . $clave;
     $ahora = time();
     $fp = @fopen($ruta, 'c+');
-    if (!$fp || !flock($fp, LOCK_EX)) return 0;
+
+    if (!$fp || !flock($fp, LOCK_EX)) {
+        return 0;
+    }
+
     $datos = json_decode(stream_get_contents($fp) ?: '[]', true);
     if (!is_array($datos) || ($datos['inicio'] ?? 0) + $ventana <= $ahora) {
         $datos = ['inicio' => $ahora, 'intentos' => 0];
     }
+
     if (($datos['intentos'] ?? 0) >= $maximo) {
         $restante = max(1, ($datos['inicio'] + $ventana) - $ahora);
         flock($fp, LOCK_UN); fclose($fp);
         return $restante;
     }
+
     $datos['intentos']++;
     ftruncate($fp, 0); rewind($fp);
     fwrite($fp, json_encode($datos)); fflush($fp);
@@ -162,7 +168,10 @@ function esPersonalAutorizado(): bool {
 }
 
 function puedeAccederTramite(array $tramite): bool {
-    if (esPersonalAutorizado()) return true;
+    if (esPersonalAutorizado()) {
+        return true;
+    }
+
     return isset($_SESSION['id'], $tramite['usuario_creador_id'])
         && (int) $_SESSION['id'] === (int) $tramite['usuario_creador_id'];
 }

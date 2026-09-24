@@ -10,6 +10,7 @@ function actualizarAccionesModal() {
     const enAccion = el('oficioTabAccion').classList.contains('active');
     el('oficioContinuar').hidden = !editable || enAccion;
     el('guardarOficio').hidden = !editable || !enAccion;
+
     if (busy) {
         el('oficioAyudaAccion').textContent = 'Guardando el documento y su historial…';
     } else if (refresh) {
@@ -52,10 +53,18 @@ filtrar(['Pendiente por firmar', 'Firmado', 'Entregado y archivado', ''].include
 document.querySelectorAll('.oficios-filtro').forEach(btn => btn.addEventListener('click', () => filtrar(btn.dataset.estado)));
 document.querySelector('.oficios-filtro-todos').addEventListener('click', () => filtrar(''));
 function mensaje(texto, tipo = 'info') {
-    el('oficioMensaje').textContent = texto; el('oficioMensaje').className = `alert alert-${tipo}`; el('oficioMensaje').hidden = false;
+    el('oficioMensaje').textContent = texto;
+    el('oficioMensaje').className = `alert alert-${tipo}`;
+    el('oficioMensaje').hidden = false;
 }
 function enlace(label, url, estilo = 'btn-outline-secondary') {
-    const link = document.createElement('a'); link.textContent = label; link.href = url; link.target = '_blank'; link.rel = 'noopener'; link.className = `btn btn-sm ${estilo}`; return link;
+    const link = document.createElement('a');
+    link.textContent = label;
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.className = `btn btn-sm ${estilo}`;
+    return link;
 }
 async function respuesta(response) {
     const data = await response.json().catch(() => { throw new Error('El servidor no respondió correctamente. Verifica tu sesión y vuelve a consultar el expediente.'); });
@@ -162,7 +171,11 @@ document.querySelector('#tablaOficiosAdmin tbody').addEventListener('click', asy
         el('oficioContenido').hidden = false; el('oficioMensaje').hidden = true;
         el('oficioTabs').hidden = false;
         actualizarAccionesModal();
-    } catch (error) { if (error.name !== 'AbortError') mensaje(error.message, 'danger'); }
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            mensaje(error.message, 'danger');
+        }
+    }
 });
 form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -175,7 +188,10 @@ form.addEventListener('submit', async event => {
             const file = el('oficioDocumentoFinal').files[0];
             if (file && file.size > 10 * 1024 * 1024) throw new Error('El documento final no debe superar 10 MiB.');
         }
-    } catch (error) { mensaje(error.message, 'warning'); return; }
+    } catch (error) {
+        mensaje(error.message, 'warning');
+        return;
+    }
     busy = true;
     el('guardarOficio').disabled = true;
     el('oficioTabs').querySelectorAll('button').forEach(button => button.disabled = true);
@@ -203,8 +219,13 @@ form.addEventListener('submit', async event => {
         modalEl.querySelectorAll('[data-bs-dismiss]').forEach(button => button.disabled = false);
     }
 });
-modalEl.addEventListener('hide.bs.modal', event => { if (busy) event.preventDefault(); });
+modalEl.addEventListener('hide.bs.modal', event => {
+    if (busy) event.preventDefault();
+});
 modalEl.addEventListener('hidden.bs.modal', () => {
     controller?.abort(); editor.reset(); actual = null;
-    if (refresh) { location.hash = 'oficios-digitales'; location.reload(); }
+    if (refresh) {
+        location.hash = 'oficios-digitales';
+        location.reload();
+    }
 });

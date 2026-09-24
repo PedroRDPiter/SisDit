@@ -80,7 +80,21 @@ $reporta = $realizo;
 $fecha_ingreso = $tramite['fecha_ingreso'];
 
 // Convertir la fecha de ingreso al formato utilizado en la ficha impresa.
-$meses = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+$meses = [
+    '',
+    'ENERO',
+    'FEBRERO',
+    'MARZO',
+    'ABRIL',
+    'MAYO',
+    'JUNIO',
+    'JULIO',
+    'AGOSTO',
+    'SEPTIEMBRE',
+    'OCTUBRE',
+    'NOVIEMBRE',
+    'DICIEMBRE',
+];
 $dia = date('d', strtotime($fecha_ingreso));
 $mes = $meses[intval(date('m', strtotime($fecha_ingreso)))];
 $anio = date('Y', strtotime($fecha_ingreso));

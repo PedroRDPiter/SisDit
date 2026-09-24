@@ -50,8 +50,15 @@ try {
     $tramite = $stmt->get_result()->fetch_assoc();
     if (!$tramite) throw new DomainException('El oficio no existe.', 404);
     if ($metodo === 'GET') {
-        $stmt = $conn->prepare('SELECT h.accion, h.estatus_nuevo, h.comentario, h.fecha, CONCAT_WS(" ", u.nombre, u.apellidos) AS responsable
-            FROM historial_tramites h LEFT JOIN usuarios u ON u.id = h.usuario_id WHERE h.tramite_id = ? ORDER BY h.id DESC LIMIT 20');
+        $stmt = $conn->prepare(
+            'SELECT h.accion, h.estatus_nuevo, h.comentario, h.fecha,
+                    CONCAT_WS(" ", u.nombre, u.apellidos) AS responsable
+               FROM historial_tramites h
+               LEFT JOIN usuarios u ON u.id = h.usuario_id
+              WHERE h.tramite_id = ?
+              ORDER BY h.id DESC
+              LIMIT 20'
+        );
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $historial = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -64,11 +71,20 @@ try {
             $salida = $stmt->get_result()->fetch_assoc();
             if ($salida) $plantilla = ((int)$tramite['tipo_tramite_id'] === 7 ? 'licencia_construccion.php' : 'constancia_compatibilidad.php') . '?id=' . (int)$salida['id'];
         }
-        $campos = array_flip(['id', 'estatus', 'propietario', 'solicitante', 'direccion', 'cuenta_catastral', 'observaciones',
-            'folio_numero', 'folio_anio', 'folio_salida_numero', 'folio_salida_anio', 'fecha_aprobacion_director', 'tiempo_salida']);
-        responderOficio(200, ['success' => true, 'tramite' => array_intersect_key($tramite, $campos),
-            'documentos' => documentosOficio($tramite), 'historial' => $historial, 'plantilla' => $plantilla,
-            'firma_digital_disponible' => documentoFirmadoDigital($tramite) !== null]);
+        $campos = array_flip([
+            'id', 'estatus', 'propietario', 'solicitante', 'direccion',
+            'cuenta_catastral', 'observaciones', 'folio_numero', 'folio_anio',
+            'folio_salida_numero', 'folio_salida_anio',
+            'fecha_aprobacion_director', 'tiempo_salida'
+        ]);
+        responderOficio(200, [
+            'success' => true,
+            'tramite' => array_intersect_key($tramite, $campos),
+            'documentos' => documentosOficio($tramite),
+            'historial' => $historial,
+            'plantilla' => $plantilla,
+            'firma_digital_disponible' => documentoFirmadoDigital($tramite) !== null
+        ]);
     }
 
     $accion = (string)($_POST['accion'] ?? '');
@@ -100,9 +116,17 @@ try {
         $guardados[] = $destino;
         $hash = hash_file('sha256', $destino);
         if ($hash === false) throw new RuntimeException('No se pudo verificar el archivo digital.');
-        $documento = ['tipo' => (int)$tramite['tipo_tramite_id'] === 7 ? 'documento_firmado_licencia' : 'documento_firmado_constancia',
-            'label' => 'Oficio firmado', 'archivo' => '.private/oficios/' . $nombreArchivo,
-            'fecha' => date('Y-m-d H:i:s'), 'usuario_id' => $uid, 'responsable' => $nombre, 'sha256' => $hash];
+        $documento = [
+            'tipo' => (int)$tramite['tipo_tramite_id'] === 7
+                ? 'documento_firmado_licencia'
+                : 'documento_firmado_constancia',
+            'label' => 'Oficio firmado',
+            'archivo' => '.private/oficios/' . $nombreArchivo,
+            'fecha' => date('Y-m-d H:i:s'),
+            'usuario_id' => $uid,
+            'responsable' => $nombre,
+            'sha256' => $hash
+        ];
         if ($accion === 'firmar') {
             $original = $_FILES['documento_original'] ?? [];
             Utilidades::validarArchivo($original, ['pdf']);
@@ -115,8 +139,14 @@ try {
             $documento['origen_firma'] = 'visible_pdf';
             $documento['original_sha256'] = $hashOriginal;
             $documento['pagina_firma'] = max(1, (int)($_POST['pagina_firma'] ?? 1));
-            $otros[] = ['tipo' => 'oficio_original', 'label' => 'Oficio original (antes de firmar)',
-                'archivo' => '.private/oficios/' . $nombreOriginal, 'sha256' => $hashOriginal, 'usuario_id' => $uid, 'fecha' => date('Y-m-d H:i:s')];
+            $otros[] = [
+                'tipo' => 'oficio_original',
+                'label' => 'Oficio original (antes de firmar)',
+                'archivo' => '.private/oficios/' . $nombreOriginal,
+                'sha256' => $hashOriginal,
+                'usuario_id' => $uid,
+                'fecha' => date('Y-m-d H:i:s')
+            ];
         }
         $otros[] = $documento;
     }
@@ -127,11 +157,21 @@ try {
             $folioAnio = (int)date('Y');
             $folioNumero = reservarFolioSalida($conn, (int)$tramite['tipo_tramite_id'], $folioAnio);
         }
-        $stmt = $conn->prepare('UPDATE tramites SET estatus = ?, aprobado_director = 1, fecha_aprobacion_director = NOW(),
-            folio_salida_numero = ?, folio_salida_anio = ?, otros_archivos = ? WHERE id = ?');
+        $stmt = $conn->prepare(
+            'UPDATE tramites
+                SET estatus = ?, aprobado_director = 1,
+                    fecha_aprobacion_director = NOW(), folio_salida_numero = ?,
+                    folio_salida_anio = ?, otros_archivos = ?
+              WHERE id = ?'
+        );
         $stmt->bind_param('siisi', $nuevo, $folioNumero, $folioAnio, $json, $id);
     } else {
-        $stmt = $conn->prepare('UPDATE tramites SET estatus = ?, otros_archivos = ?, tiempo_salida = NOW(), fecha_entrega = CURDATE() WHERE id = ?');
+        $stmt = $conn->prepare(
+            'UPDATE tramites
+                SET estatus = ?, otros_archivos = ?, tiempo_salida = NOW(),
+                    fecha_entrega = CURDATE()
+              WHERE id = ?'
+        );
         $stmt->bind_param('ssi', $nuevo, $json, $id);
     }
     $stmt->execute();

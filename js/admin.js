@@ -60,6 +60,11 @@ function editarUsuario(id, nombre, apellidos, correo, rol, activo) {
     document.getElementById('edit_correo').value = correo;
     document.getElementById('edit_rol').value = rol;
 
+    const campoActivo = document.getElementById('edit_activo');
+    if (campoActivo) {
+        campoActivo.checked = Boolean(Number(activo));
+    }
+
     const modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     modal.show();
 }
@@ -91,7 +96,8 @@ function toggleEstadoUsuario(id, estadoActual) {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
+                        Swal.fire('¡Listo!', data.message, 'success')
+                            .then(() => location.reload());
                     } else {
                         Swal.fire('Error', data.message, 'error');
                     }

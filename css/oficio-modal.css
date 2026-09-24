@@ -92,36 +92,36 @@
 #modalOficioAdmin .oficio-footer-botones { display: flex; flex-wrap: wrap; gap: 10px; }
 #modalOficioAdmin .oficio-footer .btn { min-height: 42px; font-size: .8rem; }
 @media (max-width: 991.98px) {
-  #modalOficioAdmin .modal-dialog { max-width: calc(100vw - 24px); height: calc(100% - 24px); margin: 12px auto; }
-  #modalOficioAdmin .oficio-editor-grid { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.3fr); gap: 14px; }
-  #modalOficioAdmin .oficio-status-pill { max-width: 140px; text-align: center; }
+    #modalOficioAdmin .modal-dialog { max-width: calc(100vw - 24px); height: calc(100% - 24px); margin: 12px auto; }
+    #modalOficioAdmin .oficio-editor-grid { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.3fr); gap: 14px; }
+    #modalOficioAdmin .oficio-status-pill { max-width: 140px; text-align: center; }
 }
 @media (max-width: 767.98px) {
-  #modalOficioAdmin .oficio-editor-grid { grid-template-columns: minmax(0, 1fr); }
-  #modalOficioAdmin .oficio-editor-preview { position: static; }
-  #modalOficioAdmin .oficio-ficha { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #modalOficioAdmin .oficio-documentos-grid { grid-template-columns: minmax(0, 1fr); }
-  #modalOficioAdmin .oficio-preview-vacia { min-height: 180px; }
+    #modalOficioAdmin .oficio-editor-grid { grid-template-columns: minmax(0, 1fr); }
+    #modalOficioAdmin .oficio-editor-preview { position: static; }
+    #modalOficioAdmin .oficio-ficha { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #modalOficioAdmin .oficio-documentos-grid { grid-template-columns: minmax(0, 1fr); }
+    #modalOficioAdmin .oficio-preview-vacia { min-height: 180px; }
 }
 @media (max-width: 575.98px) {
-  #modalOficioAdmin .modal-dialog { max-width: calc(100vw - 12px); height: calc(100% - 12px); margin: 6px auto; }
-  #modalOficioAdmin .modal-content { border-radius: 18px; }
-  .dashboard-admin #modalOficioAdmin .modal-header { position: relative; padding: 17px 16px; gap: 10px; flex-wrap: wrap; }
-  .dashboard-admin #modalOficioAdmin .modal-header .btn-close { position: absolute; top: 20px; right: 16px; margin: 0; }
-  #modalOficioAdmin .oficio-header-icon { display: none; }
-  #modalOficioAdmin .oficio-header-text { flex: 1 1 100%; padding-right: 32px; }
-  #modalOficioAdmin .oficio-status-pill { order: 3; max-width: none; font-size: .65rem; padding: 4px 10px; }
-  #modalOficioAdmin .oficio-tabs { padding: 0 10px; gap: 0; }
-  #modalOficioAdmin .oficio-tabs .nav-link { justify-content: center; flex: 1; padding: 13px 5px; font-size: .73rem; gap: 5px; white-space: nowrap; }
-  #modalOficioAdmin .oficio-tabs .nav-link > i, #modalOficioAdmin .oficio-tabs .oficio-contador { display: none; }
-  .dashboard-admin #modalOficioAdmin .modal-body { padding: 18px 14px; }
-  #modalOficioAdmin .oficio-ficha > div { padding: 14px 12px; }
-  #modalOficioAdmin .oficio-ficha strong { font-size: .76rem; }
-  #modalOficioAdmin .oficio-ficha small { font-size: .61rem; }
-  #modalOficioAdmin .oficio-footer-botones { width: 100%; gap: 8px; }
-  #modalOficioAdmin .oficio-footer .btn { flex: 1; padding: 10px; font-size: .72rem; }
-  .dashboard-admin #modalOficioAdmin .oficio-footer { padding: 12px 14px; }
-  #modalOficioAdmin #oficioAyudaAccion { flex-basis: 100%; max-width: none; font-size: .65rem; }
-  #modalOficioAdmin .oficio-confirmacion-panel, #modalOficioAdmin .oficio-cierre-panel { padding: 17px; }
-  #modalOficioAdmin .oficio-preview-titulo small { display: none; }
+    #modalOficioAdmin .modal-dialog { max-width: calc(100vw - 12px); height: calc(100% - 12px); margin: 6px auto; }
+    #modalOficioAdmin .modal-content { border-radius: 18px; }
+    .dashboard-admin #modalOficioAdmin .modal-header { position: relative; padding: 17px 16px; gap: 10px; flex-wrap: wrap; }
+    .dashboard-admin #modalOficioAdmin .modal-header .btn-close { position: absolute; top: 20px; right: 16px; margin: 0; }
+    #modalOficioAdmin .oficio-header-icon { display: none; }
+    #modalOficioAdmin .oficio-header-text { flex: 1 1 100%; padding-right: 32px; }
+    #modalOficioAdmin .oficio-status-pill { order: 3; max-width: none; font-size: .65rem; padding: 4px 10px; }
+    #modalOficioAdmin .oficio-tabs { padding: 0 10px; gap: 0; }
+    #modalOficioAdmin .oficio-tabs .nav-link { justify-content: center; flex: 1; padding: 13px 5px; font-size: .73rem; gap: 5px; white-space: nowrap; }
+    #modalOficioAdmin .oficio-tabs .nav-link > i, #modalOficioAdmin .oficio-tabs .oficio-contador { display: none; }
+    .dashboard-admin #modalOficioAdmin .modal-body { padding: 18px 14px; }
+    #modalOficioAdmin .oficio-ficha > div { padding: 14px 12px; }
+    #modalOficioAdmin .oficio-ficha strong { font-size: .76rem; }
+    #modalOficioAdmin .oficio-ficha small { font-size: .61rem; }
+    #modalOficioAdmin .oficio-footer-botones { width: 100%; gap: 8px; }
+    #modalOficioAdmin .oficio-footer .btn { flex: 1; padding: 10px; font-size: .72rem; }
+    .dashboard-admin #modalOficioAdmin .oficio-footer { padding: 12px 14px; }
+    #modalOficioAdmin #oficioAyudaAccion { flex-basis: 100%; max-width: none; font-size: .65rem; }
+    #modalOficioAdmin .oficio-confirmacion-panel, #modalOficioAdmin .oficio-cierre-panel { padding: 17px; }
+    #modalOficioAdmin .oficio-preview-titulo small { display: none; }
 }

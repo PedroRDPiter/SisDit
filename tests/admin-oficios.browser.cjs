@@ -1,33 +1,50 @@
 // Ejecutar únicamente contra el servidor conectado a tests/fixture_oficios.php.
-const {chromium} = require(process.env.SISDIT_PLAYWRIGHT || 'playwright');
-const {PDFDocument, StandardFonts, degrees} = require('../assets/vendor/pdf-lib/pdf-lib.min.js');
+const { chromium } = require(process.env.SISDIT_PLAYWRIGHT || 'playwright');
+const { PDFDocument, StandardFonts, degrees } = require('../assets/vendor/pdf-lib/pdf-lib.min.js');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
 const baseURL = process.env.SISDIT_TEST_URL || 'http://127.0.0.1:8097';
-if (!/^http:\/\/127\.0\.0\.1:8097$/.test(baseURL)) throw Error('Usa el servidor aislado de pruebas en 127.0.0.1:8097.');
+if (!/^http:\/\/127\.0\.0\.1:8097$/.test(baseURL)) {
+    throw Error('Usa el servidor aislado de pruebas en 127.0.0.1:8097.');
+}
 const artifacts = path.join(require('node:os').tmpdir(), 'sisdit-oficios-tests');
-fs.mkdirSync(artifacts, {recursive: true});
+fs.mkdirSync(artifacts, { recursive: true });
 async function login(context, rol) {
     const response = await context.request.get('/acceso.php');
     const html = await response.text();
     const csrf = html.match(/name="csrf_token"[^>]*value="([^"]+)"/)?.[1];
     assert.ok(csrf, 'Token de acceso');
-    const result = await context.request.post('/php/login.php', {form: {correo: `${rol}@pruebas.example`, password: 'Prueba-Oficios-2026!', csrf_token: csrf}});
+    const result = await context.request.post('/php/login.php', {
+        form: {
+            correo: `${rol}@pruebas.example`,
+            password: 'Prueba-Oficios-2026!',
+            csrf_token: csrf
+        }
+    });
     assert.equal(result.status(), 200);
     const destino = await result.text();
     return destino.match(/name="csrf_token"[^>]*value="([^"]+)"/)?.[1] || csrf;
 }
 (async () => {
-    const browser = await chromium.launch({channel: 'chrome', headless: true});
+    const browser = await chromium.launch({ channel: 'chrome', headless: true });
     try {
-        const context = await browser.newContext({baseURL, ignoreHTTPSErrors: true, viewport: {width: 1440, height: 1000}});
+        const context = await browser.newContext({
+            baseURL,
+            ignoreHTTPSErrors: true,
+            viewport: { width: 1440, height: 1000 }
+        });
         const csrf = await login(context, 'administrador');
         const page = await context.newPage();
         page.setDefaultTimeout(20000);
         const errors = [];
-        page.on('pageerror', error => { errors.push(error.message); console.log('PAGE ERROR:', error.stack); });
-        page.on('console', message => { if (message.type() === 'error') console.log('BROWSER:', message.text()); });
+        page.on('pageerror', error => {
+            errors.push(error.message);
+            console.log('PAGE ERROR:', error.stack);
+        });
+        page.on('console', message => {
+            if (message.type() === 'error') console.log('BROWSER:', message.text());
+        });
         await page.goto('/DashAdmin.php', {waitUntil: 'networkidle'});
         await page.waitForSelector('#tablaOficiosAdmin_wrapper', {timeout: 30000});
         await page.screenshot({path: path.join(artifacts, 'bandeja.png'), fullPage: false});
@@ -50,8 +67,20 @@ async function login(context, rol) {
         const original = Buffer.from(await pdf.save());
         const storedDir = path.join(__dirname, '..', '.private', 'oficios');
         const beforeFiles = fs.existsSync(storedDir) ? fs.readdirSync(storedDir).sort() : [];
-        const incomplete = await context.request.post('/php/admin_oficios.php', {multipart: {id: '5', accion: 'firmar', estado_esperado: 'Pendiente por firmar', confirmar: '1', csrf_token: csrf,
-            documento_firmado: {name: 'firmado.pdf', mimeType: 'application/pdf', buffer: original}}});
+        const incomplete = await context.request.post('/php/admin_oficios.php', {
+            multipart: {
+                id: '5',
+                accion: 'firmar',
+                estado_esperado: 'Pendiente por firmar',
+                confirmar: '1',
+                csrf_token: csrf,
+                documento_firmado: {
+                    name: 'firmado.pdf',
+                    mimeType: 'application/pdf',
+                    buffer: original
+                }
+            }
+        });
         assert.equal(incomplete.status(), 422);
         assert.deepEqual(fs.readdirSync(storedDir).filter(name => name !== '.htaccess').sort(), beforeFiles.filter(name => name !== '.htaccess'));
         assert.equal((await (await context.request.get('/php/admin_oficios.php?id=5')).json()).tramite.estatus, 'Pendiente por firmar');
@@ -186,5 +215,10 @@ async function login(context, rol) {
         await page.screenshot({path: path.join(artifacts, 'bandeja-movil.png')});
         assert.equal(errors.length, 0, errors.join('\n'));
         console.log('OK: bandeja móvil y sin errores JavaScript. Artefactos:', artifacts);
-    } finally { await browser.close(); }
-})().catch(error => { console.error(error); process.exit(1); });
+    } finally {
+        await browser.close();
+    }
+})().catch(error => {
+    console.error(error);
+    process.exit(1);
+});

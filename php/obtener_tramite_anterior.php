@@ -40,8 +40,12 @@ if (!esPersonalAutorizado()) {
 $folio = isset($_GET['folio']) ? trim($_GET['folio']) : '';
 $propietario = isset($_GET['propietario']) ? trim($_GET['propietario']) : '';
 $tipo_tramite_id = isset($_GET['tipo_tramite_id']) ? intval($_GET['tipo_tramite_id']) : 0;
-$incluir_constancia = isset($_GET['incluir_constancia']) ? $_GET['incluir_constancia'] === 'true' : false;
-$buscar_por_folio_salida = isset($_GET['buscar_por_folio_salida']) ? $_GET['buscar_por_folio_salida'] === 'true' : false;
+$incluir_constancia = isset($_GET['incluir_constancia'])
+    ? $_GET['incluir_constancia'] === 'true'
+    : false;
+$buscar_por_folio_salida = isset($_GET['buscar_por_folio_salida'])
+    ? $_GET['buscar_por_folio_salida'] === 'true'
+    : false;
 
 if (empty($folio) && empty($propietario)) {
     responder_json(['error' => 'Se requiere folio o propietario'], 400);
@@ -49,19 +53,19 @@ if (empty($folio) && empty($propietario)) {
 
 // Consulta los datos del trámite y genera sus folios en un formato legible.
 $sql = "SELECT
-            t.*,
-            CONCAT(LPAD(t.folio_numero, 3, '0'), '/', t.folio_anio) as folio_formateado,
-            CASE
-                WHEN t.folio_salida_numero IS NULL OR t.folio_salida_anio IS NULL THEN ''
-                ELSE CONCAT(LPAD(t.folio_salida_numero, 3, '0'), '/', t.folio_salida_anio)
-            END as folio_salida_formateado,
-            tt.nombre as tipo_tramite_nombre
-        FROM tramites t
-        LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-        WHERE 1=1";
+                t.*,
+                CONCAT(LPAD(t.folio_numero, 3, '0'), '/', t.folio_anio) AS folio_formateado,
+                CASE
+                    WHEN t.folio_salida_numero IS NULL OR t.folio_salida_anio IS NULL THEN ''
+                    ELSE CONCAT(LPAD(t.folio_salida_numero, 3, '0'), '/', t.folio_salida_anio)
+                END AS folio_salida_formateado,
+                tt.nombre AS tipo_tramite_nombre
+            FROM tramites t
+            LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
+            WHERE 1 = 1";
 
 $params = [];
-$types = "";
+$types = '';
 
 if (!empty($folio)) {
     // Cuando se recibe un folio, busca por folio de entrada o de salida.
@@ -75,37 +79,39 @@ if (!empty($folio)) {
     } else {
         $sql .= " AND t.folio_numero = ? AND t.folio_anio = ?";
     }
+
     $params[] = intval($partes[0]);
     $params[] = intval($partes[1]);
-    $types .= "ii";
+    $types .= 'ii';
 } elseif (!empty($propietario) && $tipo_tramite_id > 0) {
     // Como alternativa, busca el trámite aprobado más reciente del propietario.
-    $sql .= " AND t.propietario LIKE ? AND t.tipo_tramite_id = ?
+    $sql .= " AND t.propietario LIKE ?
+              AND t.tipo_tramite_id = ?
               AND t.estatus IN ('Aprobado', 'Firmado', 'Entregado y archivado')";
     $params[] = '%' . $propietario . '%';
     $params[] = $tipo_tramite_id;
-    $types .= "si";
+    $types .= 'si';
 } else {
     responder_json(['error' => 'Parametros insuficientes'], 400);
 }
 
 // Devuelve únicamente el trámite más reciente que coincide con los criterios.
-$sql .= " ORDER BY t.fecha_ingreso DESC, t.id DESC LIMIT 1";
+$sql .= ' ORDER BY t.fecha_ingreso DESC, t.id DESC LIMIT 1';
 
 // Prepara y ejecuta la consulta usando parámetros para evitar inyección SQL.
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
-    error_log("Error en prepare obtener_tramite_anterior: " . $conn->error);
+    error_log('Error en prepare obtener_tramite_anterior: ' . $conn->error);
     responder_json(['error' => 'No se pudo preparar la busqueda del tramite'], 500);
 }
 
 if (!empty($params) && !$stmt->bind_param($types, ...$params)) {
-    error_log("Error en bind_param obtener_tramite_anterior: " . $stmt->error);
+    error_log('Error en bind_param obtener_tramite_anterior: ' . $stmt->error);
     responder_json(['error' => 'No se pudieron aplicar los parametros de busqueda'], 500);
 }
 
 if (!$stmt->execute()) {
-    error_log("Error en execute obtener_tramite_anterior: " . $stmt->error);
+    error_log('Error en execute obtener_tramite_anterior: ' . $stmt->error);
     responder_json(['error' => 'No se pudo consultar el tramite'], 500);
 }
 

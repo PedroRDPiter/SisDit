@@ -85,33 +85,181 @@ else $back = 'DashVentanilla.php';
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Constancia de Compatibilidad Urbanística - <?= e($folioSalida) ?></title>
 <style>
-/* Estilos de impresión y presentación de la constancia. */
-@page { size: letter; margin: 1.4cm 1.7cm; }
-* { box-sizing: border-box; }
-body { margin: 0; color: #171717; background: #fff; font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; }
-.barra { position: fixed; inset: 0 0 auto; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 9px 16px; background: #7b0f2b; color: #fff; }
-.barra strong { margin-right: auto; }
-.barra button { border: 0; border-radius: 4px; padding: 7px 14px; cursor: pointer; font-weight: bold; }
-.imprimir { background: #fff; color: #7b0f2b; }
-.volver { background: #555; color: #fff; }
-.hoja { width: 100%; max-width: 21cm; margin: 55px auto 0; }
-.encabezado { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding-bottom: 8px; border-bottom: 3px solid #7b0f2b; }
-.encabezado img { max-height: 62px; max-width: 145px; object-fit: contain; }
-.dependencia { flex: 1; text-align: center; color: #7b0f2b; font-weight: bold; font-size: 12pt; }
-h1 { margin: 20px 0 12px; color: #7b0f2b; text-align: center; font-size: 16pt; letter-spacing: 0; }
-.folios { display: flex; justify-content: flex-end; gap: 24px; margin-bottom: 18px; font-weight: bold; }
-.folios span { border-bottom: 1px solid #333; padding: 0 10px 2px; }
-.fecha { text-align: right; margin-bottom: 22px; }
-.texto { text-align: justify; }
-.datos { width: 100%; border-collapse: collapse; margin: 16px 0; }
-.datos th, .datos td { border: 1px solid #7b0f2b; padding: 6px 8px; vertical-align: top; }
-.datos th { width: 21%; color: #7b0f2b; background: #f8eef1; text-align: left; }
-.dictamen { margin: 18px 0; padding: 13px 15px; border: 1.5px solid #7b0f2b; text-align: justify; white-space: pre-wrap; }
-.nota { margin-top: 18px; font-size: 9pt; text-align: justify; }
-.firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 55px; margin-top: 65px; text-align: center; font-size: 9pt; }
-.firma { border-top: 1px solid #222; padding-top: 5px; }
-.director { grid-column: 1 / -1; width: 52%; margin: 35px auto 0; }
-@media print { .barra { display: none; } .hoja { margin-top: 0; } }
+  /* Estilos de impresión y presentación de la constancia. */
+  @page {
+    size: letter;
+    margin: 1.4cm 1.7cm;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    color: #171717;
+    background: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+
+  .barra {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    background: #7b0f2b;
+    color: #fff;
+  }
+
+  .barra strong {
+    margin-right: auto;
+  }
+
+  .barra button {
+    border: 0;
+    border-radius: 4px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .imprimir {
+    background: #fff;
+    color: #7b0f2b;
+  }
+
+  .volver {
+    background: #555;
+    color: #fff;
+  }
+
+  .hoja {
+    width: 100%;
+    max-width: 21cm;
+    margin: 55px auto 0;
+  }
+
+  .encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #7b0f2b;
+  }
+
+  .encabezado img {
+    max-height: 62px;
+    max-width: 145px;
+    object-fit: contain;
+  }
+
+  .dependencia {
+    flex: 1;
+    text-align: center;
+    color: #7b0f2b;
+    font-weight: bold;
+    font-size: 12pt;
+  }
+
+  h1 {
+    margin: 20px 0 12px;
+    color: #7b0f2b;
+    text-align: center;
+    font-size: 16pt;
+    letter-spacing: 0;
+  }
+
+  .folios {
+    display: flex;
+    justify-content: flex-end;
+    gap: 24px;
+    margin-bottom: 18px;
+    font-weight: bold;
+  }
+
+  .folios span {
+    border-bottom: 1px solid #333;
+    padding: 0 10px 2px;
+  }
+
+  .fecha {
+    text-align: right;
+    margin-bottom: 22px;
+  }
+
+  .texto {
+    text-align: justify;
+  }
+
+  .datos {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+
+  .datos th,
+  .datos td {
+    border: 1px solid #7b0f2b;
+    padding: 6px 8px;
+    vertical-align: top;
+  }
+
+  .datos th {
+    width: 21%;
+    color: #7b0f2b;
+    background: #f8eef1;
+    text-align: left;
+  }
+
+  .dictamen {
+    margin: 18px 0;
+    padding: 13px 15px;
+    border: 1.5px solid #7b0f2b;
+    text-align: justify;
+    white-space: pre-wrap;
+  }
+
+  .nota {
+    margin-top: 18px;
+    font-size: 9pt;
+    text-align: justify;
+  }
+
+  .firmas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 55px;
+    margin-top: 65px;
+    text-align: center;
+    font-size: 9pt;
+  }
+
+  .firma {
+    border-top: 1px solid #222;
+    padding-top: 5px;
+  }
+
+  .director {
+    grid-column: 1 / -1;
+    width: 52%;
+    margin: 35px auto 0;
+  }
+
+  @media print {
+    .barra {
+      display: none;
+    }
+
+    .hoja {
+      margin-top: 0;
+    }
+  }
 </style>
 </head>
 <body>

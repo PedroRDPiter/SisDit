@@ -57,20 +57,62 @@ if (!puedeAccederTramite($tramite)) {
 
 $docMap = [
     // Relaciona cada tipo de documento con su etiqueta y campo en la base de datos.
-    'ine' => ['label' => 'INE / Identificación', 'campo' => 'ine_archivo'],
-    'escritura' => ['label' => 'Escritura / Título', 'campo' => 'escrituras_archivo'],
-    'predial' => ['label' => 'Boleta Predial', 'campo' => 'predial_archivo'],
-    'formato' => ['label' => 'Formato de Constancia', 'campo' => 'formato_constancia'],
-    'oficio_vobo' => ['label' => 'Oficio Visto Bueno', 'campo' => 'oficio_vobo'],
-    'contrato_arrendamiento' => ['label' => 'Contrato de Arrendamiento o Escritura', 'campo' => 'contrato_arrendamiento_archivo'],
-    'memoria_descriptiva' => ['label' => 'Memoria Descriptiva / Cálculo de Superficie', 'campo' => 'memoria_descriptiva_archivo'],
-    'poder_notariado' => ['label' => 'Poder Notariado', 'campo' => 'poder_notariado_archivo'],
-    'acta_constitutiva' => ['label' => 'Acta Constitutiva', 'campo' => 'acta_constitutiva_archivo'],
-    'solicitud_por_escrito' => ['label' => 'Solicitud por Escrito', 'campo' => 'solicitud_por_escrito_archivo'],
-    'licencia_de_construccion' => ['label' => 'Licencia de Construcción', 'campo' => 'licencia_de_construccion_archivo'],
-    'bitacora_de_obra' => ['label' => 'Bitácora de Obra', 'campo' => 'bitacora_de_obra_archivo'],
-    'foto1' => ['label' => 'Fotografía 1 del Inmueble', 'campo' => 'foto1_archivo'],
-    'foto2' => ['label' => 'Fotografía 2 del Inmueble', 'campo' => 'foto2_archivo'],
+    'ine' => [
+        'label' => 'INE / Identificación',
+        'campo' => 'ine_archivo',
+    ],
+    'escritura' => [
+        'label' => 'Escritura / Título',
+        'campo' => 'escrituras_archivo',
+    ],
+    'predial' => [
+        'label' => 'Boleta Predial',
+        'campo' => 'predial_archivo',
+    ],
+    'formato' => [
+        'label' => 'Formato de Constancia',
+        'campo' => 'formato_constancia',
+    ],
+    'oficio_vobo' => [
+        'label' => 'Oficio Visto Bueno',
+        'campo' => 'oficio_vobo',
+    ],
+    'contrato_arrendamiento' => [
+        'label' => 'Contrato de Arrendamiento o Escritura',
+        'campo' => 'contrato_arrendamiento_archivo',
+    ],
+    'memoria_descriptiva' => [
+        'label' => 'Memoria Descriptiva / Cálculo de Superficie',
+        'campo' => 'memoria_descriptiva_archivo',
+    ],
+    'poder_notariado' => [
+        'label' => 'Poder Notariado',
+        'campo' => 'poder_notariado_archivo',
+    ],
+    'acta_constitutiva' => [
+        'label' => 'Acta Constitutiva',
+        'campo' => 'acta_constitutiva_archivo',
+    ],
+    'solicitud_por_escrito' => [
+        'label' => 'Solicitud por Escrito',
+        'campo' => 'solicitud_por_escrito_archivo',
+    ],
+    'licencia_de_construccion' => [
+        'label' => 'Licencia de Construcción',
+        'campo' => 'licencia_de_construccion_archivo',
+    ],
+    'bitacora_de_obra' => [
+        'label' => 'Bitácora de Obra',
+        'campo' => 'bitacora_de_obra_archivo',
+    ],
+    'foto1' => [
+        'label' => 'Fotografía 1 del Inmueble',
+        'campo' => 'foto1_archivo',
+    ],
+    'foto2' => [
+        'label' => 'Fotografía 2 del Inmueble',
+        'campo' => 'foto2_archivo',
+    ],
 ];
 
 function uploadPath(string $path): string {

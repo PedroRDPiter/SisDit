@@ -25,10 +25,21 @@ if (!esPersonalAutorizado()) {
 }
 
 // Obtener estadísticas
-$total_tramites = $conn->query("SELECT COUNT(*) as total FROM tramites")->fetch_assoc()['total'];
-$en_revision = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión'")->fetch_assoc()['total'];
-$aprobados_hoy = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'Aprobado' AND DATE(created_at) = CURDATE()")->fetch_assoc()['total'];
-$sin_fotografias = $conn->query("SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión' AND (foto1_archivo IS NULL OR foto1_archivo = '')")->fetch_assoc()['total'];
+$total_tramites = $conn->query(
+    "SELECT COUNT(*) as total FROM tramites"
+)->fetch_assoc()['total'];
+
+$en_revision = $conn->query(
+    "SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión'"
+)->fetch_assoc()['total'];
+
+$aprobados_hoy = $conn->query(
+    "SELECT COUNT(*) as total FROM tramites WHERE estatus = 'Aprobado' AND DATE(created_at) = CURDATE()"
+)->fetch_assoc()['total'];
+
+$sin_fotografias = $conn->query(
+    "SELECT COUNT(*) as total FROM tramites WHERE estatus = 'En revisión' AND (foto1_archivo IS NULL OR foto1_archivo = '')"
+)->fetch_assoc()['total'];
 
 echo json_encode([
     'success' => true,

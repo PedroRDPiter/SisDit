@@ -33,29 +33,48 @@ try {
     $password  = $_POST['password'];
     $rol       = limpiarInput($_POST['rol']);
 
-    if (!validarEmail($correo))
+    if (!validarEmail($correo)) {
         throw new Exception("El correo electronico no es valido");
-    if (!soloLetras($nombre) || !soloLetras($apellidos))
+    }
+
+    if (!soloLetras($nombre) || !soloLetras($apellidos)) {
         throw new Exception("Nombre y apellidos solo deben contener letras");
+    }
+
     // Validar formato de contacto, nombres y complejidad de la contraseña.
-    if (strlen($password) < 12)
+    if (strlen($password) < 12) {
         throw new Exception("La contraseña debe tener al menos 12 caracteres");
-    if (!preg_match('/[A-Z]/', $password))
+    }
+
+    if (!preg_match('/[A-Z]/', $password)) {
         throw new Exception("La contraseña debe contener al menos una letra mayúscula");
-    if (!preg_match('/[a-z]/', $password))
+    }
+
+    if (!preg_match('/[a-z]/', $password)) {
         throw new Exception("La contraseña debe contener al menos una letra minúscula");
-    if (!preg_match('/[0-9]/', $password))
+    }
+
+    if (!preg_match('/[0-9]/', $password)) {
         throw new Exception("La contraseña debe contener al menos un número");
-    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password))
+    }
+
+    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
         throw new Exception("La contraseña debe contener al menos un símbolo (!@#$%^&*)");
-    if (!in_array($rol, array('Usuario','Ventanilla','Verificador')))
+    }
+
+    if (!in_array($rol, array('Usuario', 'Ventanilla', 'Verificador'))) {
         throw new Exception("Rol no valido");
+    }
+
     // Verificar que el correo no pertenezca ya a un usuario activo.
     $chk = $conn->prepare("SELECT id FROM usuarios WHERE correo = ?");
     $chk->bind_param("s", $correo);
     $chk->execute();
-    if ($chk->get_result()->num_rows > 0)
+
+    if ($chk->get_result()->num_rows > 0) {
         throw new Exception("El correo ya esta registrado en el sistema");
+    }
+
     $chk->close();
 
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
@@ -68,16 +87,20 @@ try {
     $chkSol->close();
 
     if ($resSol) {
-        if ($resSol['estado'] === 'Pendiente')
+        if ($resSol['estado'] === 'Pendiente') {
             throw new Exception("Ya tienes una solicitud pendiente con ese correo. Espera la revisión del administrador.");
-        if ($resSol['estado'] === 'Rechazado')
+        }
+        if ($resSol['estado'] === 'Rechazado') {
             throw new Exception("Tu solicitud fue rechazada. Contacta directamente al administrador.");
+        }
     }
 
     // Crear la solicitud; el administrador deberá aprobarla posteriormente.
     $stmt = $conn->prepare("INSERT INTO solicitudes_registro (nombre, apellidos, correo, password_hash, telefono, rol, estado) VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')");
     $stmt->bind_param("ssssss", $nombre, $apellidos, $correo, $passwordHash, $telefono, $rol);
-    if (!$stmt->execute()) throw new Exception("Error al enviar la solicitud. Intenta nuevamente");
+    if (!$stmt->execute()) {
+        throw new Exception("Error al enviar la solicitud. Intenta nuevamente");
+    }
     $solId = $conn->insert_id;
     $stmt->close();
 

@@ -206,37 +206,114 @@ else                       $back = 'DashVentanilla.php';
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Licencia de Construcción - <?= htmlspecialchars($folioLic) ?></title>
 <style>
-    @page { size: letter; margin: 0.8cm 1.2cm; }
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    body { font-family:Arial,sans-serif; font-size:8.3pt; color:#000; background:#fff; line-height:1.25; }
+    @page {
+        size: letter;
+        margin: 0.8cm 1.2cm;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 8.3pt;
+        color: #000;
+        background: #fff;
+        line-height: 1.25;
+    }
 
     .no-print {
-        position:fixed; top:0; left:0; right:0;
-        background:#7b0f2b; color:#fff;
-        padding:8px 16px; display:flex; gap:10px; align-items:center; z-index:1000;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #7b0f2b;
+        color: #fff;
+        padding: 8px 16px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        z-index: 1000;
     }
-    .no-print span { font-size:8.5pt; font-weight:bold; margin-right:auto; }
-    .no-print button { padding:6px 16px; border:none; border-radius:4px; cursor:pointer; font-size:9pt; font-weight:bold; }
-    .btn-print { background:#fff; color:#7b0f2b; }
-    .btn-back  { background:#555; color:#fff; }
+    .no-print span {
+        font-size: 8.5pt;
+        font-weight: bold;
+        margin-right: auto;
+    }
 
-    .hoja { max-width:21cm; margin:45px auto 10px; padding:0; }
-    .hoja + .hoja { margin-top:0; }
+    .no-print button {
+        padding: 6px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 9pt;
+        font-weight: bold;
+    }
+
+    .btn-print {
+        background: #fff;
+        color: #7b0f2b;
+    }
+
+    .btn-back {
+        background: #555;
+        color: #fff;
+    }
+
+    .hoja {
+        max-width: 21cm;
+        margin: 45px auto 10px;
+        padding: 0;
+    }
+
+    .hoja + .hoja {
+        margin-top: 0;
+    }
 
     /* Header */
     .header {
-        display:flex; justify-content:space-between; align-items:flex-start;
-        margin-bottom:5px; border-bottom:3px solid #7b0f2b; padding-bottom:5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 5px;
+        border-bottom: 3px solid #7b0f2b;
+        padding-bottom: 5px;
     }
-    .header-left { display:flex; align-items:center; gap:8px; }
-    .header-left img { height:50px; }
-    .titulo-dep { font-size:10.5pt; font-weight:bold; color:#7b0f2b; line-height:1.15; }
-    .subtitulo  { font-size:7.5pt; color:#666; }
-    .header-right img { height:50px; }
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .header-left img,
+    .header-right img {
+        height: 50px;
+    }
+
+    .titulo-dep {
+        font-size: 10.5pt;
+        font-weight: bold;
+        color: #7b0f2b;
+        line-height: 1.15;
+    }
+
+    .subtitulo {
+        font-size: 7.5pt;
+        color: #666;
+    }
 
     .titulo-principal {
-        text-align:center; font-size:12pt; font-weight:bold;
-        color:#7b0f2b; margin:5px 0 5px; letter-spacing:1px;
+        text-align: center;
+        font-size: 12pt;
+        font-weight: bold;
+        color: #7b0f2b;
+        margin: 5px 0;
+        letter-spacing: 1px;
     }
 
     /* Cajita FOLIO/CMCU/FECHA */

@@ -172,6 +172,10 @@ window.onpopstate = function () {
 <link rel="stylesheet" href="css/dashboard-modern.css?v=<?= filemtime(__DIR__ . '/css/dashboard-modern.css') ?>">
 <link rel="stylesheet" href="css/dashboard-admin.css?v=<?= filemtime(__DIR__ . '/css/dashboard-admin.css') ?>">
 <link rel="stylesheet" href="css/oficio-modal.css?v=<?= filemtime(__DIR__ . '/css/oficio-modal.css') ?>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+#mapa-tramites-admin{height:min(68vh,680px);min-height:420px;border-radius:12px;z-index:1}.mapa-admin-leyenda{display:flex;flex-wrap:wrap;gap:.6rem 1rem}.mapa-admin-etapa{display:inline-flex;align-items:center;gap:.4rem;font-size:.82rem}.mapa-admin-punto{width:.7rem;height:.7rem;border-radius:50%;display:inline-block}.mapa-admin-progreso{display:flex;gap:0;margin:.8rem 0}.mapa-admin-paso{flex:1;text-align:center;position:relative;font-size:.69rem;color:#737985}.mapa-admin-paso:not(:last-child)::after{content:'';position:absolute;height:2px;background:#d9dee5;top:.48rem;left:58%;right:-42%}.mapa-admin-paso .punto{display:block;width:.8rem;height:.8rem;border-radius:50%;margin:0 auto .3rem;background:#d9dee5;position:relative;z-index:1}.mapa-admin-paso.completado{color:#146c43}.mapa-admin-paso.completado .punto{background:#198754}.mapa-admin-paso.actual{color:#7b0f2b;font-weight:700}.mapa-admin-paso.actual .punto{background:#7b0f2b;box-shadow:0 0 0 3px #f2dce3}.mapa-admin-paso.finalizado .punto{background:#198754}.leaflet-interactive.mapa-admin-predio{transition:fill-opacity .12s ease}.leaflet-interactive.mapa-admin-predio:hover{fill-opacity:.72}@media(max-width:575px){#mapa-tramites-admin{min-height:360px}.mapa-admin-paso{font-size:.58rem}}
+</style>
 
 </head>
 
@@ -191,6 +195,7 @@ window.onpopstate = function () {
             <li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li>
             <li class="nav-item"><a class="nav-link" href="#oficios-digitales"><i class="bi bi-pen"></i> Firma y cierre de oficios</a></li>
             <li class="nav-item"><a class="nav-link" href="#estadisticas">Estadísticas</a></li>
+            <li class="nav-item"><a class="nav-link" href="#mapa-cuentas"><i class="bi bi-geo-alt me-1"></i>Mapa de cuentas</a></li>
             <li class="nav-item">
                 <a class="nav-link" href="#solicitudes">
                     <i class="bi bi-person-check me-1"></i> Solicitudes
@@ -214,6 +219,7 @@ window.onpopstate = function () {
     <a href="#inicio"><i class="bi bi-house me-2"></i>Inicio</a>
     <a class="nav-link text-white" href="#oficios-digitales"><i class="bi bi-pen me-1"></i> Firma y cierre de oficios</a>
     <a href="#estadisticas"><i class="bi bi-graph-up me-2"></i>Estadísticas</a>
+    <a href="#mapa-cuentas"><i class="bi bi-geo-alt me-2"></i>Mapa de cuentas y trámites</a>
     <a class="nav-link text-white" href="#solicitudes">
         <i class="bi bi-person-check me-1"></i> Solicitudes
         <?php if($total_pendientes > 0): ?>
@@ -339,6 +345,16 @@ window.onpopstate = function () {
             </div>
         </div>
     </div>
+</section>
+<section id="mapa-cuentas" class="tramite-box mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"><div><h4 class="text-primary mb-1"><i class="bi bi-geo-alt me-2"></i>Mapa de cuentas y trámites</h4><p class="text-muted small mb-0">Consulta la ubicación, cuenta catastral y avance de cada trámite. Esta vista es de solo consulta.</p></div><span class="badge text-bg-light border"><i class="bi bi-eye me-1"></i>Solo consulta</span></div>
+    <!-- funcion para buscar poligono por numero de folio -->
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Buscar por folio..." aria-label="Buscar por folio..." id="buscador-folio">
+        <button class="btn btn-outline-secondary" type="button" id="boton-buscar-folio"><i class="bi bi-search"></i></button>
+    </div>               
+    <div class="mapa-admin-leyenda mb-3" aria-label="Estados de trámites"><span class="mapa-admin-etapa"><i class="mapa-admin-punto" style="background:#e5e7eb;border:1px solid #adb5bd"></i>Sin trámite</span><span class="mapa-admin-etapa"><i class="mapa-admin-punto" style="background:#dc3545"></i>En revisión o corrección</span><span class="mapa-admin-etapa"><i class="mapa-admin-punto" style="background:#0d6efd"></i>Revisión aprobada</span><span class="mapa-admin-etapa"><i class="mapa-admin-punto" style="background:#ffc107"></i>Pendiente de firma</span><span class="mapa-admin-etapa"><i class="mapa-admin-punto" style="background:#198754"></i>Concluido</span></div>
+    <div id="mapa-tramites-admin" role="region" aria-label="Polígonos catastrales y avance de trámites"></div><div id="mapa-tramites-admin-mensaje" class="small text-muted mt-2" aria-live="polite">Cargando polígonos, cuentas y trámites...</div>
 </section>
 <!-- ================================================ -->
 <!-- SOLICITUDES DE REGISTRO                         -->
@@ -617,6 +633,7 @@ window.onpopstate = function () {
           <th>Aprobados</th>
           <th>Rechazados</th>
           <th>% del año</th>
+        </tr>
          </thead>
       <tbody>
         <?php foreach($datos_tipo as $dt):
@@ -783,12 +800,12 @@ window.onpopstate = function () {
                     <td><?= $usuario['ultimo_acceso'] ? date('d/m/Y H:i', strtotime($usuario['ultimo_acceso'])) : 'Nunca' ?></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary"
-                                onclick="editarUsuario(<?= $usuario['id'] ?>, '<?= htmlspecialchars($usuario['nombre']) ?>', '<?= htmlspecialchars($usuario['apellidos']) ?>', '<?= htmlspecialchars($usuario['correo']) ?>', '<?= $usuario['rol'] ?>', <?= $usuario['activo'] ?>)">
+                                onclick='editarUsuario(<?= (int)$usuario['id'] ?>, <?= json_encode($usuario['nombre'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= json_encode($usuario['apellidos'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= json_encode($usuario['correo'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= json_encode($usuario['rol'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= (int)$usuario['activo'] ?>)'>
                             <i class="bi bi-pencil"></i>
                         </button>
                         <?php if($usuario['id'] != $_SESSION['id']): ?>
                         <button class="btn btn-sm btn-outline-<?= $usuario['activo'] ? 'warning' : 'success' ?>"
-                                onclick="toggleEstadoUsuario(<?= $usuario['id'] ?>, <?= $usuario['activo'] ?>)">
+                                onclick="toggleEstadoUsuario(<?= (int)$usuario['id'] ?>, <?= (int)$usuario['activo'] ?>)">
                             <i class="bi bi-<?= $usuario['activo'] ? 'x-circle' : 'check-circle' ?>"></i>
                         </button>
                         <?php endif; ?>
@@ -925,7 +942,6 @@ window.onpopstate = function () {
                             <option value="Administrador">Administrador</option>
                         </select>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Nueva Contraseña (dejar vacío para mantener)</label>
                         <div class="password-container" style="position: relative;">
@@ -949,6 +965,7 @@ window.onpopstate = function () {
 </div>
 
 <!-- SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -1051,6 +1068,301 @@ new Chart(ctxUsuarios, {
 });
 </script>
 
+<script>
+(function(){
+    var mapEl = document.getElementById('mapa-tramites-admin');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    var map = L.map(mapEl, { preferCanvas: true }).setView([22.228, -102.320], 12),
+        mensaje = document.getElementById('mapa-tramites-admin-mensaje');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    function esc(v) {
+        var d = document.createElement('div');
+        d.textContent = String(v == null ? '' : v);
+        return d.innerHTML;
+    }
+
+    function norm(v) {
+        return String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    function cuentaKey(v) {
+        return String(v || '').trim().toUpperCase().replace(/\s+/g, '');
+    }
+    function cuentaDigits(v) {
+        return cuentaKey(v).replace(/\D+/g, '');
+    }
+
+    function cuentaAliases(v) {
+        var raw = cuentaKey(v),
+            digits = cuentaDigits(v),
+            aliases = [];
+
+        [raw, digits, digits.replace(/^0+/, '')].forEach(function(key) {
+            if (key && aliases.indexOf(key) === -1) aliases.push(key);
+        });
+        return aliases;
+    }
+
+    function cuentaPredio(props) {
+        props = props || {};
+        return props.CVE_CAT_OR || props.cve_cat_or || props.CUENTA_CATASTRAL ||
+            props.cuenta_catastral || props.CVE_CAT || props.CLAVE_CAT || props.CLAVE || '';
+    }
+
+    function guardarTramite(indice, cuenta, tramite) {
+        cuentaAliases(cuenta).forEach(function(key) {
+            (indice[key] || (indice[key] = [])).push(tramite);
+        });
+    }
+
+    function buscarTramites(indice, cuenta) {
+        var vistos = Object.create(null), salida = [];
+        cuentaAliases(cuenta).forEach(function(key) {
+            (indice[key] || []).forEach(function(t) {
+                var id = t.ID_TRAMITE || JSON.stringify(t);
+                if (!vistos[id]) {
+                    vistos[id] = true;
+                    salida.push(t);
+                }
+            });
+        });
+        return salida;
+    }
+
+    function folioAliases(v) {
+        var raw = String(v || '').trim().toUpperCase().replace(/\s+/g, '');
+        var aliases = [];
+        var match;
+
+        function add(key) {
+            if (key && aliases.indexOf(key) === -1) aliases.push(key);
+        }
+
+        add(raw);
+        match = raw.match(/^0*(\d+)\/(\d{4})$/);
+        if (match) {
+            add(match[1] + '/' + match[2]);
+            add(match[1].padStart(3, '0') + '/' + match[2]);
+            add(match[1]);
+            add(match[1].padStart(3, '0'));
+        } else if (/^0*\d+$/.test(raw)) {
+            add(String(parseInt(raw, 10)));
+            add(String(parseInt(raw, 10)).padStart(3, '0'));
+        }
+        return aliases;
+    }
+
+    function stateIndex(s) {
+        s = norm(s);
+        if (s.indexOf('rechaz') >= 0 || s.indexOf('correccion') >= 0 || s.indexOf('revision') >= 0) return 0;
+        if (s.indexOf('aprobado por verificador') >= 0) return 1;
+        if (s.indexOf('pendiente por firmar') >= 0 || s.indexOf('aprobado') >= 0) return 2;
+        if (s.indexOf('entregado y archivado') >= 0 || s.indexOf('firmado') >= 0) return 3;
+        return 0;
+    }
+
+    function flow(t) {
+        var labels = ['Recepción', 'Revisión', 'Visto bueno', 'Firma y cierre'];
+        var idx = stateIndex(t.ESTATUS);
+        var done = idx === 3;
+
+        return '<div class="mapa-admin-progreso">' + labels.map(function(label, i) {
+            var cls = done || i < idx ? 'completado' : (i === idx ? 'actual' : '');
+            return '<div class="mapa-admin-paso ' + cls + '"><i class="punto"></i>' + esc(label) + '</div>';
+        }).join('') + '</div>';
+    }
+
+    function one(t) {
+        var estatus = norm(t.ESTATUS);
+        var concluido = estatus === 'entregado y archivado' || estatus === 'concluido';
+        var boton = concluido && t.ID_TRAMITE
+            ? '<div class="mt-2"><a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="php/constancia_mapa.php?id=' + encodeURIComponent(t.ID_TRAMITE) + '"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar constancia firmada</a></div>'
+            : '';
+
+        return '<article style="min-width:260px;max-width:360px">' +
+            '<div class="fw-bold">Folio ' + esc(t.FOLIO_INGR || 'N/D') + ' · ' + esc(t.ESTATUS || 'Sin estatus') + '</div>' +
+            '<div class="small text-muted mb-2">' + esc(t.TIP_TRAMIT || 'Trámite') + ' · ' + esc(t.NOM_SOLI || 'Solicitante sin nombre') + '</div>' +
+            flow(t) +
+            '<div class="small"><b>Ingreso:</b> ' + esc(t.FECH_INGRE || 'N/D') +
+            '<br><b>Cuenta:</b> ' + esc(t.CUENTA_CATASTRAL || 'Sin cuenta') +
+            '<br><b>Ubicación:</b> ' + esc(t.UBICACION || 'N/D') +
+            (t.FOLIO_SALIDA ? '<br><b>Folio de salida:</b> ' + esc(t.FOLIO_SALIDA) : '') +
+            '</div>' + boton + '</article>';
+    }
+
+    var estadoPorEstatus = function(s) {
+        var n = norm(s);
+        if (n.indexOf('entregado y archivado') >= 0 || n === 'firmado') return 3;
+        if (n === 'aprobado' || n === 'pendiente por firmar') return 2;
+        if (n.indexOf('aprobado por verificador') >= 0) return 1;
+        if (n.indexOf('revision') >= 0 || n.indexOf('correccion') >= 0 || n.indexOf('rechaz') >= 0) return 0;
+        return -1;
+    };
+
+    Promise.all([
+        fetch('./Geojson/TRAMITES_reprojected.geojson', {
+            credentials: 'same-origin',
+            cache: 'no-cache'
+        }).then(function(r) {
+            if (!r.ok) throw new Error('GeoJSON HTTP ' + r.status);
+            return r.json();
+        }),
+        fetch('./php/get_tramites_geojson.php', {
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(function(r) {
+            if (!r.ok) throw new Error('Trámites HTTP ' + r.status);
+            return r.json();
+        })
+    ]).then(function(result) {
+        var predios = result[0].features || [];
+        var features = result[1].features || [];
+        var tramitesPorCuenta = Object.create(null);
+        var foliosPorClave = Object.create(null);
+        var totalTramites = 0;
+        var capaPredios = null;
+        var capaSeleccionada = null;
+
+        features.forEach(function(f) {
+            var p = f.properties || {};
+            var list = Array.isArray(p.TRAMITES) && p.TRAMITES.length ? p.TRAMITES : [p];
+
+            list.forEach(function(t) {
+                var cuenta = t.CUENTA_CATASTRAL || p.CUENTA_CATASTRAL;
+                if (!cuentaKey(cuenta)) return;
+                guardarTramite(tramitesPorCuenta, cuenta, t);
+                totalTramites++;
+            });
+        });
+
+        if (!predios.length) throw new Error('El GeoJSON no contiene polígonos.');
+
+        var limite = L.latLngBounds([]);
+        var enMapa = 0;
+        var conTramite = 0;
+
+        capaPredios = L.geoJSON({
+            type: 'FeatureCollection',
+            features: predios
+        },
+        {
+            style: function(feature) {
+                var cuenta = cuentaPredio(feature.properties);
+                var list = buscarTramites(tramitesPorCuenta, cuenta);
+                var steps = list.map(function(t) {
+                    return estadoPorEstatus(t.ESTATUS);
+                }).filter(function(x) {
+                    return x >= 0;
+                });
+                var state = steps.length ? Math.min.apply(null, steps) : -1;
+                var colors = ['#dc3545', '#0d6efd', '#ffc107', '#198754'];
+
+                if (list.length) conTramite++;
+                return {
+                    color: list.length ? '#495057' : '#adb5bd',
+                    weight: list.length ? 1 : .55,
+                    opacity: .8,
+                    fillColor: state < 0 ? '#e5e7eb' : colors[state],
+                    fillOpacity: list.length ? .62 : .24,
+                    className: 'mapa-admin-predio'
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                var cuenta = cuentaKey(cuentaPredio(feature.properties));
+                var list = buscarTramites(tramitesPorCuenta, cuenta);
+                var nombre = cuenta || 'Cuenta catastral sin clave';
+                var contenidoPopup = '<div class="small text-muted">Sin trámites asociados a esta cuenta.</div>';
+
+                if (list.length) {
+                    contenidoPopup = '<div class="small text-muted mb-2">' + list.length +
+                        ' trámite(s) en este predio</div>' + list.map(one).join('<hr class="my-2">');
+                }
+
+                var popup = '<div style="max-height:400px;overflow:auto;min-width:270px">' +
+                    '<div class="fw-bold mb-2">Cuenta catastral ' + esc(nombre) + '</div>' +
+                    contenidoPopup + '</div>';
+
+                layer.bindPopup(popup, { maxWidth: 410 });
+                if (cuenta) layer.bindTooltip(esc(cuenta), { sticky: true, direction: 'top' });
+
+                list.forEach(function(t) {
+                    folioAliases(t.FOLIO_INGR).forEach(function(key) {
+                        if (!foliosPorClave[key]) {
+                            foliosPorClave[key] = { layer: layer, tramite: t, cuenta: nombre };
+                        }
+                    });
+                });
+            }
+        }).addTo(map);
+
+        capaPredios.eachLayer(function(layer) {
+            if (layer.getBounds) {
+                limite.extend(layer.getBounds());
+                enMapa++;
+            }
+        });
+
+        if (limite.isValid()) map.fitBounds(limite, { padding: [12, 12], maxZoom: 16 });
+        mensaje.textContent = 'Mostrando ' + enMapa.toLocaleString('es-MX') +
+            ' polígonos catastrales · ' + conTramite.toLocaleString('es-MX') +
+            ' cuentas con ' + totalTramites.toLocaleString('es-MX') +
+            ' trámite(s). Selecciona un polígono para consultar su avance.';
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 200);
+
+        function buscarFolio() {
+            var input = document.getElementById('buscador-folio');
+            var valor = input ? input.value : '';
+            var encontrado = null;
+
+            folioAliases(valor).some(function(key) {
+                if (foliosPorClave[key]) {
+                    encontrado = foliosPorClave[key];
+                    return true;
+                }
+                return false;
+            });
+
+            if (!encontrado) {
+                mensaje.textContent = valor.trim()
+                    ? 'No se encontró un polígono asociado al folio "' + valor.trim() + '".'
+                    : 'Escribe un folio para buscar su polígono en el mapa.';
+                if (input) input.focus();
+                return;
+            }
+
+            if (capaSeleccionada && capaPredios) capaPredios.resetStyle(capaSeleccionada);
+            capaSeleccionada = encontrado.layer;
+            capaSeleccionada.setStyle({ color: '#111827', weight: 3, fillOpacity: .78 });
+            if (capaSeleccionada.bringToFront) capaSeleccionada.bringToFront();
+            if (capaSeleccionada.getBounds) map.fitBounds(capaSeleccionada.getBounds(), { padding: [40, 40], maxZoom: 18 });
+            capaSeleccionada.openPopup();
+            mensaje.textContent = 'Folio ' + (encontrado.tramite.FOLIO_INGR || valor.trim()) + ' localizado en la cuenta catastral ' + (encontrado.cuenta || 'sin clave') + '.';
+        }
+
+        var btnBuscarFolio = document.getElementById('boton-buscar-folio');
+        var inputBuscarFolio = document.getElementById('buscador-folio');
+        if (btnBuscarFolio) btnBuscarFolio.addEventListener('click', buscarFolio);
+        if (inputBuscarFolio) {
+            inputBuscarFolio.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    buscarFolio();
+                }
+            });
+        }
+    }).catch(function(error) {
+        console.error('Error cargando polígonos del administrador:', error);
+        mensaje.textContent = 'No fue posible cargar los polígonos o asociar los trámites. Verifica el GeoJSON y vuelve a cargar el panel.';
+    });
+})();
+</script>
 <script src="js/admin.js"></script>
 <script src="js/dashboard-ui.js?v=<?= filemtime(__DIR__ . '/js/dashboard-ui.js') ?>"></script>
 <script src="assets/vendor/pdf-lib/pdf-lib.min.js"></script>
@@ -1248,48 +1560,85 @@ function imprimirReporte() {
 
     if (!t1) { alert('No hay datos para imprimir.'); return; }
 
-    var tabla1 = t1.outerHTML;
-    var tabla2 = t2 ? '<h3 style="margin-top:24px;color:#7b0f2b;">Por Tipo de Trámite</h3>' + t2.outerHTML : '';
+    function limpiarTabla(tabla) {
+        var clon = tabla.cloneNode(true);
+        clon.className = 'reporte-tabla';
+        clon.querySelectorAll('[style]').forEach(function(el) {
+            if (!el.classList.contains('progress-bar')) el.removeAttribute('style');
+        });
+        return clon.outerHTML;
+    }
+
+    var tabla1 = limpiarTabla(t1);
+    var tabla2 = t2 ? '<h3>Trámites por tipo</h3>' + limpiarTabla(t2) : '';
+    var fecha = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+    var hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
     var w = window.open('', '_blank');
-    w.document.write(
-        '<html><head><title>Reporte <?= $anio_filtro ?></title><style>' +
-        'body{font-family:Arial,sans-serif;padding:20px;color:#222;}' +
-        'h2,h3{color:#7b0f2b;margin:6px 0;}' +
-        'table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}' +
-        'th,td{border:1px solid #bbb;padding:6px 10px;text-align:center;}' +
-        'td:first-child{text-align:left;}' +
-        'thead th{color:white;}' +
-        'tbody tr:hover{background:#f9f9f9;}' +
-        'tfoot tr:first-child td{background:#e0e0e0;font-weight:bold;}' +
-        'tfoot tr:last-child td{background:#d0d0d0;font-weight:bold;}' +
-        '.badge{padding:2px 8px;border-radius:4px;font-size:12px;color:white;display:inline-block;}' +
-        '.bg-primary{background:#0d6efd;}' +
-        '.bg-success{background:#198754;}' +
-        '.bg-warning{background:#ffc107;color:#000 !important;}' +
-        '.bg-info{background:#0dcaf0;color:#000 !important;}' +
-        '.bg-danger{background:#dc3545;}' +
-        '.bg-dark{background:#212529;}' +
-        '.text-dark{color:#000 !important;}' +
-        '.text-muted{color:#888;}' +
-        '.progress{display:inline-block;width:60px;height:10px;background:#eee;border-radius:4px;vertical-align:middle;}' +
-        '.progress-bar{height:100%;background:#0d6efd;border-radius:4px;display:block;}' +
-        '@media print{.no-print{display:none;}}' +
-        '</style></head><body>' +
-        '<div style="text-align:center;margin-bottom:20px;">' +
-        '<img src="logos/logo_urbano.jpeg" style="height:55px;margin-right:16px;" onerror="this.style.display=\'none\'">' +
-        '<img src="logos/logo_presi.jpeg"  style="height:55px;" onerror="this.style.display=\'none\'">' +
-        '<h2>Dirección de Planeación y Desarrollo Urbano</h2>' +
-        '<h3>Reporte de Trámites — <?= $anio_filtro ?></h3>' +
-        '<p style="color:#666;font-size:13px;margin:4px 0;">Total histórico acumulado: <strong><?= $total_global ?> trámites</strong></p>' +
-        '</div>' +
-        '<h3>Trámites por Mes</h3>' +
-        tabla1 + tabla2 +
-        '<p style="margin-top:20px;color:#999;font-size:11px;">Generado el ' + new Date().toLocaleDateString('es-MX',{day:"2-digit",month:"long",year:"numeric"}) + '</p>' +
-        '<button class="no-print" onclick="window.print()" style="margin-top:8px;padding:8px 22px;background:#7b0f2b;color:white;border:none;border-radius:5px;cursor:pointer;font-size:14px;">🖨️ Imprimir / Guardar PDF</button>' +
-        '</body></html>'
-    );
+    if (!w) { alert('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio.'); return; }
+
+    w.document.open();
+    w.document.write([
+        '<!doctype html><html lang="es"><head><meta charset="UTF-8">',
+        '<title>Reporte de trámites <?= $anio_filtro ?></title>',
+        '<style>',
+        '@page{size:letter;margin:12mm;}',
+        '*{box-sizing:border-box;}',
+        'body{font-family:Arial,Helvetica,sans-serif;margin:0;color:#222;background:#fff;font-size:12px;}',
+        '.hoja{max-width:980px;margin:0 auto;padding:18px;}',
+        '.encabezado{display:flex;align-items:center;gap:16px;border-bottom:3px solid #7b0f2b;padding-bottom:12px;margin-bottom:16px;}',
+        '.logos{display:flex;gap:10px;align-items:center;min-width:128px;}',
+        '.logos img{height:58px;max-width:78px;object-fit:contain;}',
+        '.titulo{flex:1;text-align:center;}',
+        'h1{font-size:20px;color:#7b0f2b;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em;}',
+        'h2{font-size:15px;margin:0;color:#333;font-weight:700;}',
+        'h3{font-size:15px;margin:22px 0 8px;color:#7b0f2b;border-left:4px solid #7b0f2b;padding-left:8px;}',
+        '.meta{font-size:11px;color:#666;margin-top:6px;}',
+        '.resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0 18px;}',
+        '.card{border:1px solid #d8d8d8;border-radius:8px;padding:10px;text-align:center;background:#fafafa;}',
+        '.card strong{display:block;font-size:22px;color:#7b0f2b;line-height:1;}',
+        '.card span{display:block;font-size:10px;color:#555;text-transform:uppercase;margin-top:5px;}',
+        '.reporte-tabla{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px;page-break-inside:auto;}',
+        '.reporte-tabla tr{page-break-inside:avoid;page-break-after:auto;}',
+        '.reporte-tabla th,.reporte-tabla td{border:1px solid #b9b9b9;padding:6px 7px;text-align:center;vertical-align:middle;}',
+        '.reporte-tabla th{background:#7b0f2b;color:#fff;font-weight:700;}',
+        '.reporte-tabla td:first-child,.reporte-tabla th:first-child{text-align:left;}',
+        '.reporte-tabla tfoot td{background:#ededed;font-weight:700;}',
+        '.badge{display:inline-block;min-width:26px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#111;border:1px solid #bbb;background:#f6f6f6;}',
+        '.bg-primary,.bg-success,.bg-warning,.bg-info,.bg-danger,.bg-dark{background:#f6f6f6!important;color:#111!important;}',
+        '.text-muted{color:#777!important;}',
+        '.progress{display:inline-block;width:80px;height:9px;background:#e8e8e8;border:1px solid #cfcfcf;border-radius:999px;vertical-align:middle;overflow:hidden;}',
+        '.progress-bar{display:block;height:100%;background:#7b0f2b!important;}',
+        '.pie{margin-top:18px;padding-top:8px;border-top:1px solid #ddd;color:#666;font-size:10px;display:flex;justify-content:space-between;gap:10px;}',
+        '.acciones{position:sticky;bottom:0;background:#fff;border-top:1px solid #ddd;padding:12px 0;margin-top:18px;text-align:right;}',
+        '.btn{border:0;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:700;}',
+        '.btn-print{background:#7b0f2b;color:#fff;}',
+        '.btn-close{background:#e9ecef;color:#222;margin-right:8px;}',
+        '@media print{.hoja{max-width:none;padding:0}.acciones{display:none}.encabezado{break-inside:avoid}.resumen{break-inside:avoid}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}',
+        '@media(max-width:760px){.resumen{grid-template-columns:repeat(2,1fr)}.encabezado{flex-direction:column}.titulo{text-align:center}}',
+        '</style></head><body><main class="hoja">',
+        '<header class="encabezado"><div class="logos">',
+        '<img src="logos/logo_urbano.jpeg" alt="Planeación" onerror="this.style.display=\'none\'">',
+        '<img src="logos/logo_presi.jpeg" alt="Presidencia" onerror="this.style.display=\'none\'">',
+        '</div><div class="titulo"><h1>Dirección de Planeación y Desarrollo Urbano</h1>',
+        '<h2>Reporte de trámites <?= $anio_filtro ?></h2>',
+        '<div class="meta">Generado el ' + fecha + ' a las ' + hora + '</div></div></header>',
+        '<section class="resumen" aria-label="Resumen del reporte">',
+        '<div class="card"><strong><?= (int)$tot_año ?></strong><span>Total <?= (int)$anio_filtro ?></span></div>',
+        '<div class="card"><strong><?= (int)$apr_año ?></strong><span>Aprobados</span></div>',
+        '<div class="card"><strong><?= (int)$rev_año ?></strong><span>En revisión</span></div>',
+        '<div class="card"><strong><?= (int)$cor_año ?></strong><span>En corrección</span></div>',
+        '<div class="card"><strong><?= (int)$rec_año ?></strong><span>Rechazados</span></div>',
+        '</section>',
+        '<p class="meta">Total histórico acumulado: <strong><?= (int)$total_global ?> trámites</strong>.</p>',
+        '<h3>Trámites por mes</h3>', tabla1, tabla2,
+        '<footer class="pie"><span>SisDiT · Panel de administración</span><span>Reporte anual <?= (int)$anio_filtro ?></span></footer>',
+        '<div class="acciones"><button class="btn btn-close" onclick="window.close()">Cerrar</button><button class="btn btn-print" onclick="window.print()">Imprimir / Guardar PDF</button></div>',
+        '</main></body></html>'
+    ].join(''));
     w.document.close();
+    w.focus();
+    setTimeout(function() { w.print(); }, 400);
 }
 // Función para mostrar/ocultar contraseña
 function togglePassword(inputId) {

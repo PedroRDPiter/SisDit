@@ -47,12 +47,25 @@ img{
    todo al vino para que coincida con la identidad
 ===================================================== */
 
-.text-primary{color:var(--vino)!important;}
-.bg-primary{background-color:var(--vino)!important;}
-.border-primary{border-color:var(--vino)!important;}
+.text-primary{
+    color:var(--vino)!important;
+}
 
-a{color:var(--vino);}
-a:hover{color:var(--vino-oscuro);}
+.bg-primary{
+    background-color:var(--vino)!important;
+}
+
+.border-primary{
+    border-color:var(--vino)!important;
+}
+
+a{
+    color:var(--vino);
+}
+
+a:hover{
+    color:var(--vino-oscuro);
+}
 
 .btn-primary{
     background:var(--vino)!important;
@@ -260,10 +273,21 @@ a:hover{color:var(--vino-oscuro);}
     color:white;
 }
 
-.stat-card .stat-icon.vino{background:var(--vino);}
-.stat-card .stat-icon.verde{background:var(--verde);}
-.stat-card .stat-icon.warning{background:#f59e0b;}
-.stat-card .stat-icon.info{background:#3b82f6;}
+.stat-card .stat-icon.vino{
+    background:var(--vino);
+}
+
+.stat-card .stat-icon.verde{
+    background:var(--verde);
+}
+
+.stat-card .stat-icon.warning{
+    background:#f59e0b;
+}
+
+.stat-card .stat-icon.info{
+    background:#3b82f6;
+}
 
 .stat-card .stat-number{
     font-size:28px;
@@ -290,12 +314,35 @@ a:hover{color:var(--vino-oscuro);}
     font-weight:500;
 }
 
-.badge-revision{ background:#fef3c7; color:#92400e; }
-.badge-aprobado{ background:#d1fae5; color:#065f46; }
-.badge-rechazado{ background:#fee2e2; color:#991b1b; }
-.badge-entregado{ background:#dbeafe; color:#1e40af; }
-.badge-correccion{ background:#ede9fe; color:#5b21b6; }
-.badge-aprobado-ver{ background:#d1fae5; color:#065f46; }
+.badge-revision{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.badge-aprobado{
+    background:#d1fae5;
+    color:#065f46;
+}
+
+.badge-rechazado{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.badge-entregado{
+    background:#dbeafe;
+    color:#1e40af;
+}
+
+.badge-correccion{
+    background:#ede9fe;
+    color:#5b21b6;
+}
+
+.badge-aprobado-ver{
+    background:#d1fae5;
+    color:#065f46;
+}
 
 /* =====================================================
    MAPA LEAFLET
@@ -516,9 +563,20 @@ a:hover{color:var(--vino-oscuro);}
     box-shadow:0 4px 12px rgba(0,0,0,.15);
 }
 
-.btn-accion.vino{ background:var(--vino); color:white; }
-.btn-accion.verde{ background:var(--verde); color:white; }
-.btn-accion.gris{ background:#64748b; color:white; }
+.btn-accion.vino{
+    background:var(--vino);
+    color:white;
+}
+
+.btn-accion.verde{
+    background:var(--verde);
+    color:white;
+}
+
+.btn-accion.gris{
+    background:#64748b;
+    color:white;
+}
 
 /* =====================================================
    SELECTOR DE ARCHIVOS

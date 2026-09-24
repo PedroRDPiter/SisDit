@@ -24,7 +24,10 @@ $result = $stmt->get_result();
 // Convierte los resultados de la consulta en una respuesta JSON.
 $respuesta = [];
 while ($row = $result->fetch_assoc()) {
-    $respuesta[] = ['asentamiento' => $row['asentamiento'], 'codigo_postal' => $row['codigo_postal']];
+    $respuesta[] = [
+        'asentamiento' => $row['asentamiento'],
+        'codigo_postal' => $row['codigo_postal'],
+    ];
 }
 
 echo json_encode($respuesta);

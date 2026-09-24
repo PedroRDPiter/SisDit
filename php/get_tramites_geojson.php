@@ -30,7 +30,9 @@ function latLngToUtm(float $lat, float $lon, int $zone = 13): array {
     $utmE = $k0 * $N * ($A + (1 - $T + $C) * $A*$A*$A/6 + (5 - 18*$T + $T*$T + 72*$C - 58*$e*$e) * $A*$A*$A*$A*$A/120) + 500000;
     $utmN = $k0 * ($M + $N * tan($latRad) * ($A*$A/2 + (5 - $T + 9*$C + 4*$C*$C) * $A*$A*$A*$A/24 + (61 - 58*$T + $T*$T + 600*$C - 330*$e*$e) * $A*$A*$A*$A*$A*$A/720));
 
-    if ($lat < 0) $utmN += 10000000;
+    if ($lat < 0) {
+        $utmN += 10000000;
+    }
 
     return [$utmE, $utmN];
 }
@@ -64,6 +66,7 @@ function utmToLatLng(float $easting, float $northing, int $zone = 13): array {
 try {
     $sql = "
         SELECT
+            t.id AS ID_TRAMITE,
             CONCAT(LPAD(t.folio_numero, 3, '0'), '/', t.folio_anio) AS FOLIO_INGR,
             t.solicitante AS NOM_SOLI,
             tt.nombre AS TIP_TRAMIT,
@@ -71,6 +74,12 @@ try {
             DATE_FORMAT(t.fecha_ingreso, '%Y-%m-%d') AS FECH_INGRE,
             DATE_FORMAT(t.fecha_entrega, '%Y-%m-%d') AS FECH_ENTRE,
             t.estatus AS ESTATUS,
+            t.aprobado_por AS APROBADO_POR,
+            t.fecha_aprobacion AS FECHA_APROBACION,
+            t.aprobado_director AS APROBADO_DIRECTOR,
+            t.fecha_aprobacion_director AS FECHA_APROBACION_DIRECTOR,
+            t.folio_salida_numero AS FOLIO_SALIDA_NUMERO,
+            t.folio_salida_anio AS FOLIO_SALIDA_ANIO,
             t.telefono AS CONTACTO,
             t.numero_asignado AS NUMERO,
             t.cuenta_catastral AS CUENTA_CATASTRAL,
@@ -78,7 +87,6 @@ try {
             t.lng
         FROM tramites t
         LEFT JOIN tipos_tramite tt ON t.tipo_tramite_id = tt.id
-        WHERE t.lat IS NOT NULL AND t.lng IS NOT NULL
         ORDER BY t.created_at DESC
     ";
 
@@ -87,28 +95,39 @@ try {
     $omitidos = 0;
 
     while ($row = $result->fetch_assoc()) {
-        $coordA = (float) $row['lat'];
-        $coordB = (float) $row['lng'];
-        if ($coordA >= 100000 && $coordA <= 900000 && $coordB >= 0 && $coordB <= 10000000) {
-            [$latitud, $longitud] = utmToLatLng($coordA, $coordB);
-            $utm = [$coordA, $coordB];
-        } elseif ($coordA != 0.0 && $coordB != 0.0 && $coordA >= -90 && $coordA <= 90 && $coordB >= -180 && $coordB <= 180) {
-            $latitud = $coordA;
-            $longitud = $coordB;
-            $utm = latLngToUtm($latitud, $longitud);
-        } else {
-            $omitidos++;
-            continue;
+        $cuenta = Utilidades::normalizarCuentaCatastral($row['CUENTA_CATASTRAL'] ?? '');
+        $coordA = is_numeric($row['lat']) ? (float) $row['lat'] : null;
+        $coordB = is_numeric($row['lng']) ? (float) $row['lng'] : null;
+        $latitud = null;
+        $longitud = null;
+        $utm = [null, null];
+
+        if ($coordA !== null && $coordB !== null) {
+            if ($coordA >= 100000 && $coordA <= 900000 && $coordB >= 0 && $coordB <= 10000000) {
+                [$latitud, $longitud] = utmToLatLng($coordA, $coordB);
+                $utm = [$coordA, $coordB];
+            } elseif ($coordA != 0.0 && $coordB != 0.0 && $coordA >= -90 && $coordA <= 90 && $coordB >= -180 && $coordB <= 180) {
+                $latitud = $coordA;
+                $longitud = $coordB;
+                $utm = latLngToUtm($latitud, $longitud);
+            }
         }
+
         // Limites amplios alrededor de Aguascalientes para descartar ceros y
         // coordenadas capturadas en otra zona sin ocultar predios limitrofes.
-        if (!is_finite($latitud) || !is_finite($longitud)
-            || $latitud < 21 || $latitud > 23
-            || $longitud < -103 || $longitud > -101) {
+        $tieneCoordenadaValida = $latitud !== null && $longitud !== null
+            && is_finite($latitud) && is_finite($longitud)
+            && $latitud >= 21 && $latitud <= 23
+            && $longitud >= -103 && $longitud <= -101;
+        if (!$tieneCoordenadaValida) {
             $omitidos++;
-            continue;
+            if ($cuenta === '') {
+                continue;
+            }
         }
+
         $tramiteMapa = [
+            'ID_TRAMITE' => (int) $row['ID_TRAMITE'],
             'FOLIO_INGR' => $row['FOLIO_INGR'],
             'NOM_SOLI' => $row['NOM_SOLI'] ?? 'N/A',
             'TIP_TRAMIT' => $row['TIP_TRAMIT'] ?? 'N/A',
@@ -116,15 +135,29 @@ try {
             'FECH_INGRE' => $row['FECH_INGRE'] ?? 'N/A',
             'FECH_ENTRE' => $row['FECH_ENTRE'] ?? 'N/A',
             'ESTATUS' => $row['ESTATUS'] ?? 'N/A',
+            'APROBADO_POR' => $row['APROBADO_POR'] ?? '',
+            'FECHA_APROBACION' => $row['FECHA_APROBACION'] ?? '',
+            'APROBADO_DIRECTOR' => $row['APROBADO_DIRECTOR'] ?? '',
+            'FECHA_APROBACION_DIRECTOR' => $row['FECHA_APROBACION_DIRECTOR'] ?? '',
+            'FOLIO_SALIDA' => !empty($row['FOLIO_SALIDA_NUMERO']) ? str_pad((string)$row['FOLIO_SALIDA_NUMERO'], 3, '0', STR_PAD_LEFT) . '/' . ($row['FOLIO_SALIDA_ANIO'] ?? '') : '',
             'CONTACTO' => $row['CONTACTO'] ?? 'N/A',
             'NUMERO' => $row['NUMERO'] ?? 'N/A',
+            'CUENTA_CATASTRAL' => $cuenta,
         ];
-        $cuenta = Utilidades::normalizarCuentaCatastral($row['CUENTA_CATASTRAL'] ?? '');
-        $clavePredio = $cuenta !== '' ? 'cuenta:' . $cuenta : 'coord:' . round($longitud, 7) . ',' . round($latitud, 7);
+        $clavePredio = $cuenta !== '' ? 'cuenta:' . $cuenta : 'coord:' . round((float)$longitud, 7) . ',' . round((float)$latitud, 7);
+        $geometry = $tieneCoordenadaValida ? [
+            'type' => 'Point',
+            'coordinates' => [$longitud, $latitud]
+        ] : null;
 
         if (isset($featuresPorPredio[$clavePredio])) {
             $featuresPorPredio[$clavePredio]['properties']['TRAMITES'][] = $tramiteMapa;
             $featuresPorPredio[$clavePredio]['properties']['TOTAL_TRAMITES']++;
+            if ($featuresPorPredio[$clavePredio]['geometry'] === null && $geometry !== null) {
+                $featuresPorPredio[$clavePredio]['geometry'] = $geometry;
+                $featuresPorPredio[$clavePredio]['properties']['X'] = round((float)$utm[0], 2);
+                $featuresPorPredio[$clavePredio]['properties']['Y'] = round((float)$utm[1], 2);
+            }
             continue;
         }
 
@@ -138,18 +171,15 @@ try {
                 'FECH_INGRE' => $row['FECH_INGRE'] ?? 'N/A',
                 'FECH_ENTRE' => $row['FECH_ENTRE'] ?? 'N/A',
                 'ESTATUS' => $row['ESTATUS'] ?? 'N/A',
-                'X' => round($utm[0], 2),
-                'Y' => round($utm[1], 2),
+                'X' => $tieneCoordenadaValida ? round((float)$utm[0], 2) : null,
+                'Y' => $tieneCoordenadaValida ? round((float)$utm[1], 2) : null,
                 'CONTACTO' => $row['CONTACTO'] ?? 'N/A',
                 'NUMERO' => $row['NUMERO'] ?? 'N/A',
                 'CUENTA_CATASTRAL' => $cuenta,
                 'TOTAL_TRAMITES' => 1,
                 'TRAMITES' => [$tramiteMapa]
             ],
-            'geometry' => [
-                'type' => 'Point',
-                'coordinates' => [$longitud, $latitud]
-            ]
+            'geometry' => $geometry
         ];
     }
 
@@ -164,7 +194,6 @@ try {
             'omitidos_por_coordenadas' => $omitidos,
             'generado' => date(DATE_ATOM)
         ]
-
     ];
 
     echo json_encode($geojson, JSON_PRETTY_PRINT);

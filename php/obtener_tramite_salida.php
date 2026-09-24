@@ -49,7 +49,9 @@ if (!$stmt) {
 }
 $stmt->bind_param("i", $tramite_id);
 $stmt->execute();
-$row = $stmt->get_result()->fetch_assoc();
+$row = $stmt
+    ->get_result()
+    ->fetch_assoc();
 $stmt->close();
 
 // Si todavía no existe, devuelve una respuesta exitosa con datos nulos.

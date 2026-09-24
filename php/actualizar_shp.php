@@ -2,7 +2,8 @@
 require_once __DIR__ . '/funciones_seguridad.php';
 header('Content-Type: application/json; charset=utf-8');
 
-function responderShp(int $codigo, array $datos): void {
+function responderShp(int $codigo, array $datos): void
+{
     http_response_code($codigo);
     echo json_encode($datos, JSON_UNESCAPED_UNICODE);
     exit;
@@ -42,13 +43,17 @@ try {
     }
     $temporal = tempnam(dirname($destino), 'shp_conversion_');
     $errores = tempnam(sys_get_temp_dir(), 'sisdit_shp_');
-    if (!$temporal || !$errores) throw new RuntimeException('No se pudo preparar la conversión.');
+    if (!$temporal || !$errores) {
+        throw new RuntimeException('No se pudo preparar la conversión.');
+    }
     $python = getenv('SISDIT_PYTHON') ?: (is_file('C:/ProgramData/anaconda3/python.exe') ? 'C:/ProgramData/anaconda3/python.exe' : 'python');
     $proceso = proc_open([
         $python, $raiz . '/scripts/actualizar_poligonos.py',
         '--entrada', $archivo['tmp_name'], '--anterior', $destino, '--salida', $temporal
     ], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', $errores, 'w']], $pipes, $raiz, null, ['bypass_shell' => true]);
-    if (!is_resource($proceso)) throw new RuntimeException('No se pudo iniciar el convertidor de polígonos.');
+    if (!is_resource($proceso)) {
+        throw new RuntimeException('No se pudo iniciar el convertidor de polígonos.');
+    }
     fclose($pipes[0]);
     $salida = stream_get_contents($pipes[1]);
     fclose($pipes[1]);
@@ -60,8 +65,12 @@ try {
         throw new RuntimeException('No se pudo convertir el archivo. Debe ser un SHP completo de polígonos del municipio en UTM zona 13 norte.');
     }
     // Preparar el respaldo antes de reemplazar la capa compartida por los mapas.
-    if (!copy($destino, $destino . '.bak')) throw new RuntimeException('No fue posible respaldar la capa anterior.');
-    if (!rename($temporal, $destino)) throw new RuntimeException('No fue posible publicar la nueva capa.');
+    if (!copy($destino, $destino . '.bak')) {
+        throw new RuntimeException('No fue posible respaldar la capa anterior.');
+    }
+    if (!rename($temporal, $destino)) {
+        throw new RuntimeException('No fue posible publicar la nueva capa.');
+    }
     $temporal = null;
     AppLogger::evento(null, 'ACTUALIZAR_SHP', null, null, json_encode($resultado), (int) $_SESSION['id']);
     $codigo = 200;
@@ -72,6 +81,9 @@ try {
 } finally {
     if ($temporal && is_file($temporal)) unlink($temporal);
     if ($errores && is_file($errores)) unlink($errores);
-    if (is_resource($bloqueo)) { flock($bloqueo, LOCK_UN); fclose($bloqueo); }
+    if (is_resource($bloqueo)) {
+        flock($bloqueo, LOCK_UN);
+        fclose($bloqueo);
+    }
 }
 responderShp($codigo, $respuesta);

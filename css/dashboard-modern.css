@@ -298,7 +298,7 @@ body.dashboard-shell::before {
 .dashboard-shell .hero + .row .card-body { padding: 24px !important; }
 .dashboard-shell .hero + .row h3 { color: var(--tinta); font-size: 1.9rem; letter-spacing: -.04em; }
 .dashboard-shell .hero + .row h6,
-.dashboard-shell .hero + .row p { color: var(--gris) !important; font-size: .76rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .dashboard-shell .hero + .row p { color: var(--gris) !important; font-size: .76rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .dashboard-shell .hero + .row .fs-1 { padding: 10px; border-radius: 15px; background: rgba(114,24,50,.06); opacity: 1 !important; font-size: 1.65rem !important; }
 
 .dashboard-shell .tramite-box {
@@ -328,8 +328,8 @@ body.dashboard-shell::before {
 .dashboard-shell .card-header { padding: 14px 18px; border-bottom-color: rgba(114,24,50,.09); }
 
 .dashboard-shell .form-label,
-.dashboard-shell label.fw-bold,
-.dashboard-shell label.fw-semibold { color: #3d4147; font-size: .82rem; font-weight: 700 !important; }
+  .dashboard-shell label.fw-bold,
+  .dashboard-shell label.fw-semibold { color: #3d4147; font-size: .82rem; font-weight: 700 !important; }
 .dashboard-shell .form-control,
 .dashboard-shell .form-select,
 .dashboard-shell .input-group-text {
@@ -358,9 +358,9 @@ body.dashboard-shell::before {
 }
 .dashboard-shell .btn:hover { transform: translateY(-1px); }
 .dashboard-shell .btn-primary,
-.dashboard-shell .btn-secondary { border-color: var(--vino); background: var(--vino); }
+  .dashboard-shell .btn-secondary { border-color: var(--vino); background: var(--vino); }
 .dashboard-shell .btn-primary:hover,
-.dashboard-shell .btn-secondary:hover { border-color: var(--vino-oscuro); background: var(--vino-oscuro); box-shadow: 0 8px 20px rgba(114,24,50,.18); }
+  .dashboard-shell .btn-secondary:hover { border-color: var(--vino-oscuro); background: var(--vino-oscuro); box-shadow: 0 8px 20px rgba(114,24,50,.18); }
 .dashboard-shell .btn-success { border-color: var(--verde); background: var(--verde); }
 .dashboard-shell .btn-outline-primary { border-color: rgba(114,24,50,.38); color: var(--vino); }
 .dashboard-shell .btn-outline-primary:hover { border-color: var(--vino); background: var(--vino); color: #fff; }
@@ -395,9 +395,9 @@ body.dashboard-shell::before {
 .dashboard-shell .table > tbody > tr > td { padding: 12px; color: #3e444a; vertical-align: middle; }
 
 .dashboard-shell .dataTables_wrapper .dataTables_length,
-.dashboard-shell .dataTables_wrapper .dataTables_filter { margin-bottom: 14px; color: var(--gris); font-size: .82rem; }
+  .dashboard-shell .dataTables_wrapper .dataTables_filter { margin-bottom: 14px; color: var(--gris); font-size: .82rem; }
 .dashboard-shell .dataTables_wrapper .dataTables_info,
-.dashboard-shell .dataTables_wrapper .dataTables_paginate { margin-top: 14px; color: var(--gris) !important; font-size: .8rem; }
+  .dashboard-shell .dataTables_wrapper .dataTables_paginate { margin-top: 14px; color: var(--gris) !important; font-size: .8rem; }
 .dashboard-shell .page-link { color: var(--vino); }
 .dashboard-shell .page-item.active .page-link { border-color: var(--vino); background: var(--vino); }
 
@@ -417,7 +417,7 @@ body.dashboard-shell::before {
 .dashboard-shell .modal-header { padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,.12); }
 .dashboard-shell .modal-header.bg-primary,
 .dashboard-shell .modal-header.bg-success,
-.dashboard-shell .modal-header.bg-secondary { background: var(--vino-oscuro) !important; }
+  .dashboard-shell .modal-header.bg-secondary { background: var(--vino-oscuro) !important; }
 .dashboard-shell .modal-title { font-weight: 750; letter-spacing: -.015em; }
 .dashboard-shell .modal-body { padding: clamp(20px, 3vw, 30px); background: #fffdfb; }
 .dashboard-shell .modal-footer { padding: 15px 22px; border-top-color: var(--linea); background: #faf8f5; }

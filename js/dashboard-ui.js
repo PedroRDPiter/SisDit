@@ -74,14 +74,14 @@
   }
 
   const revealObserver = 'IntersectionObserver' in window
-    ? new IntersectionObserver(function(entries, observer) {
-        entries.forEach(function(entry) {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('dashboard-reveal');
-          observer.unobserve(entry.target);
-        });
-      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 })
-    : null;
+      ? new IntersectionObserver(function(entries, observer) {
+          entries.forEach(function(entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('dashboard-reveal');
+            observer.unobserve(entry.target);
+          });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 })
+      : null;
 
   document.querySelectorAll('.tramite-box, .hero + .row .card').forEach(function(element) {
     if (revealObserver) revealObserver.observe(element);

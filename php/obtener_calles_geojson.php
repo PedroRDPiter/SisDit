@@ -2,8 +2,13 @@
 // Evita que los errores internos se mezclen con la respuesta JSON.
 error_reporting(0);
 ini_set('display_errors', 0);
-if (ob_get_length()) ob_clean();
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (ob_get_length()) {
+    ob_clean();
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once "funciones_seguridad.php";
 
@@ -100,7 +105,9 @@ while ($offset + 8 <= $length) {
                     ];
                 }
                 $minimumPoints = $isPolygon ? 4 : 2;
-                if (count($coordinates) >= $minimumPoints) $parts[] = $coordinates;
+                if (count($coordinates) >= $minimumPoints) {
+                    $parts[] = $coordinates;
+                }
             }
 
             if ($parts) {

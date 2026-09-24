@@ -59,108 +59,108 @@
 
 /* Ajustes existentes de las tarjetas y graficas del administrador. */
 /* Mantener las tarjetas del panel uniformes y evitar desbordamientos. */
-    .dashboard-admin .row.g-3 > [class*="col-"] {
-        display: flex;
-    }
+  .dashboard-admin .row.g-3 > [class*="col-"] {
+    display: flex;
+  }
 
+  .dashboard-admin .row.g-3 > [class*="col-"] > .card {
+    width: 100%;
+    min-height: 118px;
+  }
+
+  .dashboard-admin .row.g-3 > [class*="col-"] > .card .card-body {
+    min-width: 0;
+  }
+
+  .dashboard-admin .row.g-3 > [class*="col-"] > .card h3,
+  .dashboard-admin .row.g-3 > [class*="col-"] > .card .fs-1 {
+    overflow-wrap: anywhere;
+  }
+
+    /* Cards adaptables: igualar alturas sin forzar desbordamientos. */
+  .dashboard-admin .row.g-3 > [class*="col-"] {
+    min-width: 0;
+  }
+
+  .dashboard-admin .row.g-3 > [class*="col-"] > .card {
+    height: 100%;
+  }
+
+  .dashboard-admin .card .card-body {
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-admin #estadisticas .row > [class*="col-"] {
+    display: flex;
+  }
+
+  .dashboard-admin #estadisticas .card {
+    width: 100%;
+  }
+
+  .dashboard-admin #estadisticas canvas {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+    /* Reducir la tarjeta de distribución sin afectar la de usuarios. */
+  .dashboard-admin .card-distribucion {
+    max-width: 430px;
+    margin-inline: auto;
+  }
+
+    /* Reducir también la tarjeta de usuarios por rol. */
+  .dashboard-admin .card-usuarios-rol {
+    max-width: 430px;
+    margin-inline: auto;
+  }
+
+  @media (max-width: 575.98px) {
     .dashboard-admin .row.g-3 > [class*="col-"] > .card {
-        width: 100%;
-        min-height: 118px;
+      min-height: 104px;
     }
 
     .dashboard-admin .row.g-3 > [class*="col-"] > .card .card-body {
-        min-width: 0;
+      padding: .85rem .7rem;
     }
 
-    .dashboard-admin .row.g-3 > [class*="col-"] > .card h3,
     .dashboard-admin .row.g-3 > [class*="col-"] > .card .fs-1 {
-        overflow-wrap: anywhere;
+      font-size: 2rem !important;
     }
 
-    /* Cards adaptables: igualar alturas sin forzar desbordamientos. */
-    .dashboard-admin .row.g-3 > [class*="col-"] {
-        min-width: 0;
+    .dashboard-admin .row.g-3 {
+      --bs-gutter-x: .75rem;
+      --bs-gutter-y: .75rem;
     }
 
-    .dashboard-admin .row.g-3 > [class*="col-"] > .card {
-        height: 100%;
+    .dashboard-admin .row.g-3 > .col-6 > .card .card-body {
+      gap: .5rem;
     }
 
-    .dashboard-admin .card .card-body {
-        overflow-wrap: anywhere;
+    .dashboard-admin .row.g-3 > .col-6 > .card .card-body > i {
+      font-size: 1.75rem !important;
     }
 
-    .dashboard-admin #estadisticas .row > [class*="col-"] {
-        display: flex;
+    .dashboard-admin .row.g-3 > .col-6 > .card h3 {
+      font-size: 1.35rem;
     }
 
-    .dashboard-admin #estadisticas .card {
-        width: 100%;
-    }
-
-    .dashboard-admin #estadisticas canvas {
-        width: 100% !important;
-        max-width: 100%;
-    }
-
-    /* Reducir la tarjeta de distribución sin afectar la de usuarios. */
-    .dashboard-admin .card-distribucion {
-        max-width: 430px;
-        margin-inline: auto;
-    }
-
-    /* Reducir también la tarjeta de usuarios por rol. */
+    .dashboard-admin .card-distribucion,
     .dashboard-admin .card-usuarios-rol {
-        max-width: 430px;
-        margin-inline: auto;
+      max-width: none;
     }
 
-    @media (max-width: 575.98px) {
-        .dashboard-admin .row.g-3 > [class*="col-"] > .card {
-            min-height: 104px;
-        }
-
-        .dashboard-admin .row.g-3 > [class*="col-"] > .card .card-body {
-            padding: .85rem .7rem;
-        }
-
-        .dashboard-admin .row.g-3 > [class*="col-"] > .card .fs-1 {
-            font-size: 2rem !important;
-        }
-
-        .dashboard-admin .row.g-3 {
-            --bs-gutter-x: .75rem;
-            --bs-gutter-y: .75rem;
-        }
-
-        .dashboard-admin .row.g-3 > .col-6 > .card .card-body {
-            gap: .5rem;
-        }
-
-        .dashboard-admin .row.g-3 > .col-6 > .card .card-body > i {
-            font-size: 1.75rem !important;
-        }
-
-        .dashboard-admin .row.g-3 > .col-6 > .card h3 {
-            font-size: 1.35rem;
-        }
-
-        .dashboard-admin .card-distribucion,
-        .dashboard-admin .card-usuarios-rol {
-            max-width: none;
-        }
-
-        .dashboard-admin #estadisticas .card-body {
-            padding: 1rem .75rem;
-        }
+    .dashboard-admin #estadisticas .card-body {
+      padding: 1rem .75rem;
     }
+  }
 
-    @media (min-width: 576px) and (max-width: 991.98px) {
-        .dashboard-admin .card-distribucion,
-        .dashboard-admin .card-usuarios-rol {
-            max-width: 100%;
-        }
+  @media (min-width: 576px) and (max-width: 991.98px) {
+    .dashboard-admin .card-distribucion,
+    .dashboard-admin .card-usuarios-rol {
+      max-width: 100%;
     }
+  }
 
 /* Cuadrícula explícita: evita columnas comprimidas por el menú lateral. */
 .dashboard-admin .row.admin-resumen,

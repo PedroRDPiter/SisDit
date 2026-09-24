@@ -1,5 +1,8 @@
 <?php
-if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once "db.php";
 
 header('Content-Type: text/plain; charset=utf-8');
@@ -14,7 +17,9 @@ function utmToLatLng(float $easting, float $northing, int $zone = 13): array {
 
     $x = $easting - 500000;
     $y = $northing;
-    if ($y < 0) $y += 10000000;
+    if ($y < 0) {
+        $y += 10000000;
+    }
 
     $M = $y / $k0;
     $mu = $M / ($a * (1 - $e*$e/4 - 3*$e*$e*$e*$e/64 - 5*$e*$e*$e*$e*$e*$e/256));
@@ -37,25 +42,25 @@ try {
     // Obtener todos los trámites con coordenadas
     $sql = "SELECT id, lat, lng FROM tramites WHERE lat IS NOT NULL AND lng IS NOT NULL";
     $result = $conn->query($sql);
-    
+
     $updated = 0;
     while ($row = $result->fetch_assoc()) {
         $id = $row['id'];
         $utmX = $row['lat'];
         $utmY = $row['lng'];
-        
+
         // Verificar si parecen UTM (valores grandes)
         if ($utmX > 1000 && $utmY > 1000000) {
             $coords = utmToLatLng($utmX, $utmY);
             $newLat = $coords[0];
             $newLng = $coords[1];
-            
+
             $updateSql = "UPDATE tramites SET lat = ?, lng = ? WHERE id = ?";
             $stmt = $conn->prepare($updateSql);
             $stmt->bind_param("ddi", $newLat, $newLng, $id);
             $stmt->execute();
             $stmt->close();
-            
+
             $updated++;
             echo "Updated tramite $id: UTM ($utmX, $utmY) -> LatLng ($newLat, $newLng)\n";
         } else {

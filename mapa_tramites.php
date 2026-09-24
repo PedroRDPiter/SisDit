@@ -161,6 +161,7 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                                 <strong>Número:</strong> ${escaparHtml(props.NUMERO || 'N/A')}
                             </div>
                         `;
+
                         if (tramites.length > 1) {
                             // Crear una lista cuando existen varios trámites en la misma cuenta.
                             const lista = tramites.map((tramite, indice) => `
@@ -169,8 +170,15 @@ if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], ['Ventanilla', 'Admi
                                     <strong>Solicitante:</strong> ${escaparHtml(tramite.NOM_SOLI || 'N/A')}<br>
                                     <strong>Tipo:</strong> ${escaparHtml(tramite.TIP_TRAMIT || 'N/A')}<br>
                                     <strong>Estatus:</strong> ${escaparHtml(tramite.ESTATUS || 'N/A')}
-                                </div>`).join('');
-                            popupContent = `<div style="max-width:340px"><h6>${tramites.length} trámites en la cuenta ${escaparHtml(props.CUENTA_CATASTRAL || '')}</h6><div style="max-height:320px;overflow:auto">${lista}</div></div>`;
+                                </div>
+                            `).join('');
+
+                            popupContent = `
+                                <div style="max-width:340px">
+                                    <h6>${tramites.length} trámites en la cuenta ${escaparHtml(props.CUENTA_CATASTRAL || '')}</h6>
+                                    <div style="max-height:320px;overflow:auto">${lista}</div>
+                                </div>
+                            `;
                         }
                         marker.bindPopup(popupContent);
                         return marker;

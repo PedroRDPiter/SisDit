@@ -199,7 +199,7 @@ export class EditorFirma {
         el('prepararFirmaPdf').disabled = true;
         this.mensaje('Incorporando la firma al PDF…');
         try {
-            const {PDFDocument, degrees} = window.PDFLib;
+            const { PDFDocument, degrees } = window['PDFLib'];
             const pdf = await PDFDocument.load(original);
             const image = await pdf.embedPng(imageData);
             const page = pdf.getPage(pageNumber - 1);
@@ -216,7 +216,9 @@ export class EditorFirma {
             el('firmaPreparada').hidden = false;
             this.onChange(true);
             this.mensaje('PDF firmado preparado. Abre «Revisar PDF firmado» y confirma para guardarlo en el expediente.');
-        } finally { el('prepararFirmaPdf').disabled = !this.pdf || !this.imagen || this.rendering; }
+        } finally {
+            el('prepararFirmaPdf').disabled = !this.pdf || !this.imagen || this.rendering;
+        }
     }
     configurarDibujo() {
         let drawing = false;

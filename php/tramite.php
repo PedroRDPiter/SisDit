@@ -189,7 +189,7 @@ try {
     $bind_types = "iiissssssssddssssssssssssssiis";
     $null_principal = null;
 
-     $bound_calle = $calle ?? '';
+    $bound_calle = $calle ?? '';
     $bound_entre_calle1 = $entre_calle1 ?? '';
     $bound_lat = $lat === null ? 0.0 : $lat;
     $bound_lng = $lng === null ? 0.0 : $lng;
@@ -243,11 +243,12 @@ try {
     $hist = $conn->prepare("INSERT INTO historial_tramites (tramite_id, usuario_id, accion, estatus_nuevo, comentario) VALUES (?, ?, ?, ?, ?)");
     if ($hist) {
         // Bind parameters using the explicitly defined variables
-        $hist->bind_param("iisss", 
-            $hist_param1, 
-            $hist_param2, 
-            $hist_param3, 
-            $hist_param4, 
+        $hist->bind_param(
+            "iisss",
+            $hist_param1,
+            $hist_param2,
+            $hist_param3,
+            $hist_param4,
             $hist_param5
         );
         $hist->execute();

@@ -38,9 +38,9 @@ if (!validarCSRF()) {
 }
 
 // Leer y validar los datos enviados por la solicitud AJAX.
-$accion    = isset($_POST['accion'])    ? trim($_POST['accion'])    : '';
-$sol_id    = isset($_POST['sol_id'])    ? (int)$_POST['sol_id']    : 0;
-$motivo    = isset($_POST['motivo'])    ? trim($_POST['motivo'])    : '';
+$accion = isset($_POST['accion']) ? trim($_POST['accion']) : '';
+$sol_id = isset($_POST['sol_id']) ? (int) $_POST['sol_id'] : 0;
+$motivo = isset($_POST['motivo']) ? trim($_POST['motivo']) : '';
 
 if (!in_array($accion, array('aprobar','rechazar')) || $sol_id <= 0) {
     echo json_encode(array('success'=>false,'message'=>'Datos invalidos'));
@@ -101,14 +101,14 @@ try {
 
         // Generar los enlaces de WhatsApp y correo para notificar al solicitante.
         $nombre_completo = $sol['nombre'] . ' ' . $sol['apellidos'];
-        $primer_nombre   = explode(' ', $sol['nombre'])[0];
-        $msg = "Hola " . $primer_nombre . ", tu solicitud para acceder al Sistema Georreferenciado fue APROBADA.\n\n" .
-               "Tus datos de acceso son:\n" .
-               "Correo: " . $sol['correo'] . "\n" .
-               "Contrasena: la que registraste en tu solicitud\n" .
-               "Rol: " . $sol['rol'] . "\n\n" .
-               "Ingresa al portal SisDit con tu correo y contraseña.\n\n" .
-               "-- Direccion de Planeacion y D.U.";
+        $primer_nombre = explode(' ', $sol['nombre'])[0];
+        $msg = "Hola " . $primer_nombre . ", tu solicitud para acceder al Sistema Georreferenciado fue APROBADA.\n\n"
+            . "Tus datos de acceso son:\n"
+            . "Correo: " . $sol['correo'] . "\n"
+            . "Contrasena: la que registraste en tu solicitud\n"
+            . "Rol: " . $sol['rol'] . "\n\n"
+            . "Ingresa al portal SisDit con tu correo y contraseña.\n\n"
+            . "-- Direccion de Planeacion y D.U.";
 
         $asunto = "Tu acceso al Sistema Georreferenciado fue aprobado";
         $tel    = preg_replace('/\D/', '', isset($sol['telefono']) ? $sol['telefono'] : '');
@@ -146,10 +146,10 @@ try {
 
         // Registrar el rechazo y preparar los enlaces de notificación.
         $primer_nombre = explode(' ', $sol['nombre'])[0];
-        $msg_rec = "Hola " . $primer_nombre . ", lamentamos informarte que tu solicitud para el rol de " . $sol['rol'] .
-                   " en el Sistema Georreferenciado fue RECHAZADA." .
-                   ($motivo ? "\nMotivo: " . $motivo : "") .
-                   "\n\nSi tienes dudas, contacta directamente a la Direccion de Planeacion y D.U.";
+        $msg_rec = "Hola " . $primer_nombre . ", lamentamos informarte que tu solicitud para el rol de " . $sol['rol']
+            . " en el Sistema Georreferenciado fue RECHAZADA."
+            . ($motivo ? "\nMotivo: " . $motivo : "")
+            . "\n\nSi tienes dudas, contacta directamente a la Direccion de Planeacion y D.U.";
         $asunto_rec = "Solicitud de acceso rechazada - Sistema Georreferenciado";
         $tel    = preg_replace('/\D/', '', isset($sol['telefono']) ? $sol['telefono'] : '');
         $wa_link = $tel ? "https://wa.me/52" . $tel . "?text=" . rawurlencode($msg_rec) : null;

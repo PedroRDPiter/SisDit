@@ -1744,9 +1744,9 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
     });
     map.addControl(createCroquisToolbar());
 
-    modifyInteraction = new ol.interaction.Modify({ source: trabajoSource });
-    map.addInteraction(modifyInteraction);
-    map.on('singleclick', onMapClick);
+      modifyInteraction = new ol.interaction.Modify({ source: trabajoSource });
+      map.addInteraction(modifyInteraction);
+      map.on('singleclick', onMapClick);
 
     document.getElementById('ver_texto_poligono')?.addEventListener('input', function() {
       if (selectedFeature) selectedFeature.set('croquis_text', this.value);
@@ -1941,7 +1941,13 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
             if (detalle.label_lat !== null && detalle.label_lat !== undefined && detalle.label_lat !== '') f.set('croquis_label_lat', Number(detalle.label_lat));
             applyStoredLabelStyle(f, detalle);
           }
-          if (!f.get('croquis_text') && data.poligono.texto && features.length === 1) f.set('croquis_text', data.poligono.texto);
+          if (
+            !f.get('croquis_text') &&
+            data.poligono.texto &&
+            features.length === 1
+          ) {
+            f.set('croquis_text', data.poligono.texto);
+          }
           ensureFeatureUid(f);
           trabajoSource.addFeature(f);
           if (!selectedFeature || f.get('croquis_selected')) selectedFeature = f;
@@ -1961,7 +1967,11 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
           map.getView().setZoom(georef.map_zoom);
         }
         loadExtraTexts(georef && Array.isArray(georef.extra_texts) ? georef.extra_texts : []);
-        if (selectedFeature && selectedFeature.get('croquis_label_lng') && selectedFeature.get('croquis_label_lat')) {
+        if (
+          selectedFeature &&
+          selectedFeature.get('croquis_label_lng') &&
+          selectedFeature.get('croquis_label_lat')
+        ) {
           labelCoordinate = ol.proj.fromLonLat([Number(selectedFeature.get('croquis_label_lng')), Number(selectedFeature.get('croquis_label_lat'))]);
         } else if (georef && georef.label_position) {
           labelCoordinate = ol.proj.fromLonLat([georef.label_position.lng, georef.label_position.lat]);
@@ -2750,51 +2760,51 @@ document.getElementById('modalConstancia')?.addEventListener('shown.bs.modal', f
         scale: 0.9,
         logging: false
       })
-        .then(canvas => new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95)))
-        .then(function(blob) {
-          const fd = new FormData();
-          const featureCollection = getFeatureCollection();
-          const texto = document.getElementById('ver_texto_poligono')?.value || '';
-          const centroUtm = getFeatureCenterUtm(selectedFeature);
-          const georef = buildGeoreference(texto, featureCollection);
+      .then(canvas => new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95)))
+      .then(function(blob) {
+        const fd = new FormData();
+        const featureCollection = getFeatureCollection();
+        const texto = document.getElementById('ver_texto_poligono')?.value || '';
+        const centroUtm = getFeatureCenterUtm(selectedFeature);
+        const georef = buildGeoreference(texto, featureCollection);
 
-          if (currentTramiteId) fd.append('id', currentTramiteId);
-          fd.append('folio', currentFolio);
-          fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
-          fd.append('texto', texto);
-          fd.append('origen', selectedFeature.get('croquis_source') || 'seleccionado');
-          fd.append('cuenta_catastral_origen', getFeatureNumber(selectedFeature));
-          fd.append('geojson', JSON.stringify(featureCollection));
-          fd.append('poligonos_detalle', JSON.stringify(getPolygonDetails()));
-          fd.append('utm_vertices', JSON.stringify(getVerticesUtm(selectedFeature)));
-          fd.append('utm_centro_x', centroUtm ? centroUtm.x : '');
-          fd.append('utm_centro_y', centroUtm ? centroUtm.y : '');
-          fd.append('georeferencia', JSON.stringify(georef));
-          fd.append('croquis', blob, 'croquis_mapa.png');
-          if (msg) { msg.textContent = 'Guardando croquis...'; msg.style.color = '#555'; }
-          return fetch('php/guardar_croquis_mapa.php', { method: 'POST', body: fd, credentials: 'same-origin' });
-        })
-        .then(r => r.json())
-        .then(function(data) {
-          if (btn) btn.disabled = false;
-          if (data.success) {
-            const predioGuardado = data.predio ? ' Predio: ' + data.predio + '.' : '';
-            if (msg) { msg.textContent = 'Croquis guardado para el predio seleccionado.' + predioGuardado + ' Ya puedes imprimir.'; msg.style.color = '#198754'; }
-            ver_mostrarEstado(true, data.url || data.archivo || null);
-            ver_mostrarPreviewCroquis(data.url || data.archivo || '');
-          } else if (msg) {
-            msg.textContent = 'Error: ' + (data.message || 'No se pudo guardar.');
-            msg.style.color = '#dc3545';
-          }
-        })
-        .catch(function(err) {
-          console.error('Error guardando croquis OpenLayers:', err);
-          if (btn) btn.disabled = false;
-          if (msg) { msg.textContent = 'Error capturando el mapa.'; msg.style.color = '#dc3545'; }
-        })
-        .finally(function() {
-          setCaptureMode(false);
-        });
+        if (currentTramiteId) fd.append('id', currentTramiteId);
+        fd.append('folio', currentFolio);
+        fd.append('csrf_token', document.querySelector('input[name="csrf_token"]')?.value || '');
+        fd.append('texto', texto);
+        fd.append('origen', selectedFeature.get('croquis_source') || 'seleccionado');
+        fd.append('cuenta_catastral_origen', getFeatureNumber(selectedFeature));
+        fd.append('geojson', JSON.stringify(featureCollection));
+        fd.append('poligonos_detalle', JSON.stringify(getPolygonDetails()));
+        fd.append('utm_vertices', JSON.stringify(getVerticesUtm(selectedFeature)));
+        fd.append('utm_centro_x', centroUtm ? centroUtm.x : '');
+        fd.append('utm_centro_y', centroUtm ? centroUtm.y : '');
+        fd.append('georeferencia', JSON.stringify(georef));
+        fd.append('croquis', blob, 'croquis_mapa.png');
+        if (msg) { msg.textContent = 'Guardando croquis...'; msg.style.color = '#555'; }
+        return fetch('php/guardar_croquis_mapa.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+      })
+      .then(r => r.json())
+      .then(function(data) {
+        if (btn) btn.disabled = false;
+        if (data.success) {
+          const predioGuardado = data.predio ? ' Predio: ' + data.predio + '.' : '';
+          if (msg) { msg.textContent = 'Croquis guardado para el predio seleccionado.' + predioGuardado + ' Ya puedes imprimir.'; msg.style.color = '#198754'; }
+          ver_mostrarEstado(true, data.url || data.archivo || null);
+          ver_mostrarPreviewCroquis(data.url || data.archivo || '');
+        } else if (msg) {
+          msg.textContent = 'Error: ' + (data.message || 'No se pudo guardar.');
+          msg.style.color = '#dc3545';
+        }
+      })
+      .catch(function(err) {
+        console.error('Error guardando croquis OpenLayers:', err);
+        if (btn) btn.disabled = false;
+        if (msg) { msg.textContent = 'Error capturando el mapa.'; msg.style.color = '#dc3545'; }
+      })
+      .finally(function() {
+        setCaptureMode(false);
+      });
     });
   }
 

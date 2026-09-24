@@ -239,32 +239,32 @@ try {
         if (!$stmtUp->execute()) throw new Exception("Error UPDATE: " . $stmtUp->error);
         $stmtUp->close();
 
-         // -- ASIGNAR FOLIO DE SALIDA DE ESTE SUBTRÁMITE (si aún no tiene) --
-         // Consecutivo por tipo de trámite y año; cada subtrámite obtiene uno distinto.
-         $folio_salida_resp = null;
-         if (empty($tramite['folio_salida_numero'])) {
-             $anio_salida = (int) date('Y');
-             $tipo_tramite_id = (int) $tramite['tipo_tramite_id'];
-             $nuevo_salida = reservarFolioSalida($conn, $tipo_tramite_id, $anio_salida);
+        // -- ASIGNAR FOLIO DE SALIDA DE ESTE SUBTRÁMITE (si aún no tiene) --
+        // Consecutivo por tipo de trámite y año; cada subtrámite obtiene uno distinto.
+        $folio_salida_resp = null;
+        if (empty($tramite['folio_salida_numero'])) {
+            $anio_salida = (int) date('Y');
+            $tipo_tramite_id = (int) $tramite['tipo_tramite_id'];
+            $nuevo_salida = reservarFolioSalida($conn, $tipo_tramite_id, $anio_salida);
 
-             $stmtUpS = $conn->prepare(
-                 "UPDATE tramites
-                  SET folio_salida_numero = ?, folio_salida_anio = ?, tiempo_salida = COALESCE(tiempo_salida, NOW())
-                  WHERE id = ?"
-             );
-             $stmtUpS->bind_param("iii", $nuevo_salida, $anio_salida, $tramite_id);
-             $stmtUpS->execute();
-             $stmtUpS->close();
+            $stmtUpS = $conn->prepare(
+                "UPDATE tramites
+                 SET folio_salida_numero = ?, folio_salida_anio = ?, tiempo_salida = COALESCE(tiempo_salida, NOW())
+                 WHERE id = ?"
+            );
+            $stmtUpS->bind_param("iii", $nuevo_salida, $anio_salida, $tramite_id);
+            $stmtUpS->execute();
+            $stmtUpS->close();
 
-             $folio_salida_resp = str_pad($nuevo_salida, 3, '0', STR_PAD_LEFT) . '/' . $anio_salida;
-         } else {
-             $folio_salida_resp = str_pad($tramite['folio_salida_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_salida_anio'];
-         }
+            $folio_salida_resp = str_pad($nuevo_salida, 3, '0', STR_PAD_LEFT) . '/' . $anio_salida;
+        } else {
+            $folio_salida_resp = str_pad($tramite['folio_salida_numero'], 3, '0', STR_PAD_LEFT) . '/' . $tramite['folio_salida_anio'];
+        }
 
-         // Log
-         $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'desconocida';
-         $ua  = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'desconocido';
-         $det = "Folio entrada: $folio | Subtramite id: $tramite_id | Datos constancia | Numero: $numero_asignado | Folio salida: $folio_salida_resp";
+        // Log
+        $ip  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'desconocida';
+        $ua  = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'desconocido';
+        $det = "Folio entrada: $folio | Subtramite id: $tramite_id | Datos constancia | Numero: $numero_asignado | Folio salida: $folio_salida_resp";
         $stmtL = $conn->prepare("
             INSERT INTO logs_actividad (usuario_id, accion, tabla_afectada, registro_id, detalles, ip_address, user_agent)
             VALUES (?, 'Actualizo datos constancia', 'tramites', ?, ?, ?, ?)
@@ -522,35 +522,35 @@ try {
          $stmtCurrent->close();
 
          // If cantidad is greater than 1, we need to create additional records
-         if ($cantidad > 1 && $current_cantidad < $cantidad) {
-             $additionalCount = $cantidad - $current_cantidad;
-             for ($i = 0; $i < $additionalCount; $i++) {
-                 $sqlInsertAdicional = "INSERT INTO tramites_adicionales (
+        if ($cantidad > 1 && $current_cantidad < $cantidad) {
+            $additionalCount = $cantidad - $current_cantidad;
+            for ($i = 0; $i < $additionalCount; $i++) {
+                $sqlInsertAdicional = "INSERT INTO tramites_adicionales (
                      tramite_principal_id, tipo_tramite_id, propietario, solicitante, telefono, correo,
                      folio_numero_adicional, cantidad, estatus
                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                  
-                 $stmtInsertAdicional = $conn->prepare($sqlInsertAdicional);
-                 if (!$stmtInsertAdicional) {
-                     throw new Exception("Error preparar INSERT adicional: " . $conn->error);
-                 }
+                $stmtInsertAdicional = $conn->prepare($sqlInsertAdicional);
+                if (!$stmtInsertAdicional) {
+                    throw new Exception("Error preparar INSERT adicional: " . $conn->error);
+                }
                  
                  // Get the folio number for this additional constancia
-                 $stmtFolio = $conn->prepare("SELECT COALESCE(MAX(folio_numero_adicional), 0) + 1 AS siguiente
+                $stmtFolio = $conn->prepare("SELECT COALESCE(MAX(folio_numero_adicional), 0) + 1 AS siguiente
                                               FROM tramites_adicionales
                                               WHERE tramite_principal_id = ?");
-                 $stmtFolio->bind_param("i", $tramite_id);
-                 $stmtFolio->execute();
-                 $resultFolio = $stmtFolio->get_result();
-                 $rowFolio = $resultFolio->fetch_assoc();
-                 $folioAdicional = $rowFolio['siguiente'] ?? 1;
-                 $stmtFolio->close();
+                $stmtFolio->bind_param("i", $tramite_id);
+                $stmtFolio->execute();
+                $resultFolio = $stmtFolio->get_result();
+                $rowFolio = $resultFolio->fetch_assoc();
+                $folioAdicional = $rowFolio['siguiente'] ?? 1;
+                $stmtFolio->close();
                   
-                   // Prepare correo value to avoid "Only variables should be passed by reference" error
-                   $correo = $tramite['correo'] ?? '';
-                   $estatusAdicional = 'En revisión';
+                     // Prepare correo value to avoid "Only variables should be passed by reference" error
+                     $correo = $tramite['correo'] ?? '';
+                     $estatusAdicional = 'En revisión';
 
-                   $stmtInsertAdicional->bind_param("iisssissi",
+                     $stmtInsertAdicional->bind_param("iisssissi",
                        $tramite_id,
                        $tramite['tipo_tramite_id'],
                        $tramite['propietario'],
@@ -562,13 +562,13 @@ try {
                        $estatusAdicional // Initial status
                    );
                  
-                 if (!$stmtInsertAdicional->execute()) {
-                     throw new Exception("Error INSERT adicional: " . $stmtInsertAdicional->error);
-                 }
-                 $stmtInsertAdicional->close();
-             }
-         }
-     }
+                if (!$stmtInsertAdicional->execute()) {
+                    throw new Exception("Error INSERT adicional: " . $stmtInsertAdicional->error);
+                }
+                $stmtInsertAdicional->close();
+            }
+        }
+    }
     if ($estatus === 'Firmado') {
         $anio_actual = (int) date('Y');
 

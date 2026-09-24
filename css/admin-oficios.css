@@ -1,11 +1,355 @@
-.oficios-panel{background:#fff;border:1px solid #e2e5ec;border-radius:18px;overflow:hidden;box-shadow:0 8px 26px #25335009;scroll-margin-top:20px}
-.oficios-cabecera{padding:28px 30px;background:linear-gradient(120deg,#fff6f8,#f5f7fc);display:flex;justify-content:space-between;gap:16px;align-items:center}
-.oficios-eyebrow{font-size:.7rem;font-weight:800;letter-spacing:.14em;color:#7b0f2b}.oficios-cabecera h2{font-size:1.65rem;font-weight:750;color:#252c3e;margin:7px 0}.oficios-cabecera p{color:#586174;margin:0;max-width:620px}.oficios-sello{color:#7b0f2b;background:#fff;padding:10px 15px;border:1px solid #edd6df;border-radius:30px;font-size:.85rem;white-space:nowrap}
-.oficios-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px 24px 0}.oficios-filtro{display:flex;align-items:center;text-align:left;gap:14px;border:1px solid #e2e5ec;border-radius:12px;padding:16px;background:#fff;color:#596274;transition:background .15s}.oficios-filtro>i{font-size:1.5rem}.oficios-filtro span{font-size:.85rem}.oficios-filtro strong{display:block;font-size:1.9rem;color:#252c3e;line-height:1.2}.oficios-filtro.activo{border-color:#7b0f2b;background:#fff5f8;color:#7b0f2b}.oficios-filtro:focus-visible{outline:3px solid #bb8294;outline-offset:3px}
-.oficio-estado{font-size:.76rem;border-radius:8px;padding:6px 9px;display:inline-block;font-weight:600}.oficio-estado.pendiente{background:#fff0cd;color:#79520b}.oficio-estado.completo{background:#e7f3ed;color:#176744}#tablaOficiosAdmin th{font-size:.78rem;white-space:nowrap;color:#586174;background:#f7f8fb}#tablaOficiosAdmin td{font-size:.85rem;padding:14px 8px}#tablaOficiosAdmin .abrir-oficio{white-space:nowrap}
-.oficio-ficha{padding:16px;background:#f6f7fa;border-radius:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 20px}.oficio-ficha small{display:block;color:#677082}.oficio-ficha strong{font-size:.9rem;overflow-wrap:anywhere}.oficio-historial{max-height:230px;overflow:auto;font-size:.8rem;padding-left:20px}.oficio-historial li{margin-bottom:12px;white-space:pre-wrap}
-#firmaDibujo{width:100%;height:auto;background:#fff;border:1px dashed #8b94a4;border-radius:8px;touch-action:none;cursor:crosshair}.firma-papel-contenedor{padding:12px;background:#e9edf2;border-radius:10px;overflow:auto;max-height:660px}#firmaPapel{position:relative;line-height:0;margin:auto;background:white;box-shadow:0 2px 8px #0002;width:100%}#firmaPaginaCanvas{display:block;width:100%;height:auto}#firmaSello{position:absolute;cursor:move;touch-action:none;outline:1px dashed #7b0f2b;background:#ffffff14}#firmaSello[hidden]{display:none}#editorFirma .form-label{font-size:.86rem}#modalOficioAdmin .modal-header{background:#faf7f9}#modalOficioAdmin .modal-body{padding:24px}#oficioMensaje{white-space:pre-wrap}
-#modalOficioAdmin .modal-title{color:#252c3e}#modalOficioAdmin .modal-header .btn-close{filter:none}
-#tablaOficiosAdmin_wrapper .dataTables_length label{display:flex;align-items:center;justify-content:flex-start;gap:8px}#tablaOficiosAdmin_wrapper .dataTables_length select{min-width:70px;padding:5px 20px 5px 8px}#tablaOficiosAdmin_wrapper .dataTables_filter input{max-width:100%}
-@media(max-width:575px){#tablaOficiosAdmin,#tablaOficiosAdmin tbody{display:block;width:100%!important}#tablaOficiosAdmin thead{display:none}#tablaOficiosAdmin tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;border:1px solid #e2e5ec;border-radius:10px;margin-bottom:12px;padding:12px}#tablaOficiosAdmin td{display:block;border:0;padding:4px;overflow-wrap:anywhere;box-shadow:none;background:transparent}#tablaOficiosAdmin td::before{content:attr(data-label);display:block;font-size:.7rem;color:#677082;margin-bottom:4px}#tablaOficiosAdmin td:last-child,#tablaOficiosAdmin .dataTables_empty{grid-column:1/-1}#tablaOficiosAdmin td:last-child::before{display:none}#tablaOficiosAdmin .abrir-oficio{width:100%;padding:9px}#tablaOficiosAdmin .oficio-estado{white-space:normal}#tablaOficiosAdmin_wrapper .dataTables_filter label{display:block!important;text-align:left}#tablaOficiosAdmin_wrapper .dataTables_filter input{width:100%!important;margin:6px 0 0}}
-@media(max-width:767px){.oficios-cabecera{padding:20px}.oficios-sello{display:none}.oficios-cabecera h2{font-size:1.35rem}.oficios-resumen{padding:14px 12px 0;gap:7px}.oficios-filtro{padding:12px 8px;gap:5px;display:block}.oficios-filtro>i{display:none}.oficios-filtro span{font-size:.72rem}.oficios-filtro strong{font-size:1.6rem}.oficio-ficha{grid-template-columns:1fr}#modalOficioAdmin .modal-body{padding:15px}}
+.oficios-panel {
+	background: #fff;
+	border: 1px solid #e2e5ec;
+	border-radius: 18px;
+	overflow: hidden;
+	box-shadow: 0 8px 26px #25335009;
+	scroll-margin-top: 20px;
+}
+
+.oficios-cabecera {
+	padding: 28px 30px;
+	background: linear-gradient(120deg, #fff6f8, #f5f7fc);
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	align-items: center;
+}
+
+.oficios-eyebrow {
+	font-size: .7rem;
+	font-weight: 800;
+	letter-spacing: .14em;
+	color: #7b0f2b;
+}
+
+.oficios-cabecera h2 {
+	font-size: 1.65rem;
+	font-weight: 750;
+	color: #252c3e;
+	margin: 7px 0;
+}
+
+.oficios-cabecera p {
+	color: #586174;
+	margin: 0;
+	max-width: 620px;
+}
+
+.oficios-sello {
+	color: #7b0f2b;
+	background: #fff;
+	padding: 10px 15px;
+	border: 1px solid #edd6df;
+	border-radius: 30px;
+	font-size: .85rem;
+	white-space: nowrap;
+}
+
+.oficios-resumen {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+	padding: 20px 24px 0;
+}
+
+.oficios-filtro {
+	display: flex;
+	align-items: center;
+	text-align: left;
+	gap: 14px;
+	border: 1px solid #e2e5ec;
+	border-radius: 12px;
+	padding: 16px;
+	background: #fff;
+	color: #596274;
+	transition: background .15s;
+}
+
+.oficios-filtro > i {
+	font-size: 1.5rem;
+}
+
+.oficios-filtro span {
+	font-size: .85rem;
+}
+
+.oficios-filtro strong {
+	display: block;
+	font-size: 1.9rem;
+	color: #252c3e;
+	line-height: 1.2;
+}
+
+.oficios-filtro.activo {
+	border-color: #7b0f2b;
+	background: #fff5f8;
+	color: #7b0f2b;
+}
+
+.oficios-filtro:focus-visible {
+	outline: 3px solid #bb8294;
+	outline-offset: 3px;
+}
+
+.oficio-estado {
+	font-size: .76rem;
+	border-radius: 8px;
+	padding: 6px 9px;
+	display: inline-block;
+	font-weight: 600;
+}
+
+.oficio-estado.pendiente {
+	background: #fff0cd;
+	color: #79520b;
+}
+
+.oficio-estado.completo {
+	background: #e7f3ed;
+	color: #176744;
+}
+
+#tablaOficiosAdmin th {
+	font-size: .78rem;
+	white-space: nowrap;
+	color: #586174;
+	background: #f7f8fb;
+}
+
+#tablaOficiosAdmin td {
+	font-size: .85rem;
+	padding: 14px 8px;
+}
+
+#tablaOficiosAdmin .abrir-oficio {
+	white-space: nowrap;
+}
+
+.oficio-ficha {
+	padding: 16px;
+	background: #f6f7fa;
+	border-radius: 12px;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px 20px;
+}
+
+.oficio-ficha small {
+	display: block;
+	color: #677082;
+}
+
+.oficio-ficha strong {
+	font-size: .9rem;
+	overflow-wrap: anywhere;
+}
+
+.oficio-historial {
+	max-height: 230px;
+	overflow: auto;
+	font-size: .8rem;
+	padding-left: 20px;
+}
+
+.oficio-historial li {
+	margin-bottom: 12px;
+	white-space: pre-wrap;
+}
+
+#firmaDibujo {
+	width: 100%;
+	height: auto;
+	background: #fff;
+	border: 1px dashed #8b94a4;
+	border-radius: 8px;
+	touch-action: none;
+	cursor: crosshair;
+}
+
+.firma-papel-contenedor {
+	padding: 12px;
+	background: #e9edf2;
+	border-radius: 10px;
+	overflow: auto;
+	max-height: 660px;
+}
+
+#firmaPapel {
+	position: relative;
+	line-height: 0;
+	margin: auto;
+	background: white;
+	box-shadow: 0 2px 8px #0002;
+	width: 100%;
+}
+
+#firmaPaginaCanvas {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+#firmaSello {
+	position: absolute;
+	cursor: move;
+	touch-action: none;
+	outline: 1px dashed #7b0f2b;
+	background: #ffffff14;
+}
+
+#firmaSello[hidden] {
+	display: none;
+}
+
+#editorFirma .form-label {
+	font-size: .86rem;
+}
+
+#modalOficioAdmin .modal-header {
+	background: #faf7f9;
+}
+
+#modalOficioAdmin .modal-body {
+	padding: 24px;
+}
+
+#oficioMensaje {
+	white-space: pre-wrap;
+}
+
+#modalOficioAdmin .modal-title {
+	color: #252c3e;
+}
+
+#modalOficioAdmin .modal-header .btn-close {
+	filter: none;
+}
+
+#tablaOficiosAdmin_wrapper .dataTables_length label {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+}
+
+#tablaOficiosAdmin_wrapper .dataTables_length select {
+	min-width: 70px;
+	padding: 5px 20px 5px 8px;
+}
+
+#tablaOficiosAdmin_wrapper .dataTables_filter input {
+	max-width: 100%;
+}
+
+@media (max-width: 575px) {
+	#tablaOficiosAdmin,
+	#tablaOficiosAdmin tbody {
+		display: block;
+		width: 100% !important;
+	}
+
+	#tablaOficiosAdmin thead {
+		display: none;
+	}
+
+	#tablaOficiosAdmin tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 8px;
+		border: 1px solid #e2e5ec;
+		border-radius: 10px;
+		margin-bottom: 12px;
+		padding: 12px;
+	}
+
+	#tablaOficiosAdmin td {
+		display: block;
+		border: 0;
+		padding: 4px;
+		overflow-wrap: anywhere;
+		box-shadow: none;
+		background: transparent;
+	}
+
+	#tablaOficiosAdmin td::before {
+		content: attr(data-label);
+		display: block;
+		font-size: .7rem;
+		color: #677082;
+		margin-bottom: 4px;
+	}
+
+	#tablaOficiosAdmin td:last-child,
+	#tablaOficiosAdmin .dataTables_empty {
+		grid-column: 1 / -1;
+	}
+
+	#tablaOficiosAdmin td:last-child::before {
+		display: none;
+	}
+
+	#tablaOficiosAdmin .abrir-oficio {
+		width: 100%;
+		padding: 9px;
+	}
+
+	#tablaOficiosAdmin .oficio-estado {
+		white-space: normal;
+	}
+
+	#tablaOficiosAdmin_wrapper .dataTables_filter label {
+		display: block !important;
+		text-align: left;
+	}
+
+	#tablaOficiosAdmin_wrapper .dataTables_filter input {
+		width: 100% !important;
+		margin: 6px 0 0;
+	}
+}
+
+@media (max-width: 767px) {
+	.oficios-cabecera {
+		padding: 20px;
+	}
+
+	.oficios-sello {
+		display: none;
+	}
+
+	.oficios-cabecera h2 {
+		font-size: 1.35rem;
+	}
+
+	.oficios-resumen {
+		padding: 14px 12px 0;
+		gap: 7px;
+	}
+
+	.oficios-filtro {
+		padding: 12px 8px;
+		gap: 5px;
+		display: block;
+	}
+
+	.oficios-filtro > i {
+		display: none;
+	}
+
+	.oficios-filtro span {
+		font-size: .72rem;
+	}
+
+	.oficios-filtro strong {
+		font-size: 1.6rem;
+	}
+
+	.oficio-ficha {
+		grid-template-columns: 1fr;
+	}
+
+	#modalOficioAdmin .modal-body {
+		padding: 15px;
+	}
+}
