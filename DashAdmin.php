@@ -191,9 +191,6 @@ window.onpopstate = function () {
             <li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li>
             <li class="nav-item"><a class="nav-link" href="#oficios-digitales"><i class="bi bi-pen"></i> Firma y cierre de oficios</a></li>
             <li class="nav-item"><a class="nav-link" href="#estadisticas">Estadísticas</a></li>
-            <li class="nav-item"><a class="nav-link" href="#usuarios">Gestión de Usuarios</a></li>
-            <li class="nav-item"><a class="nav-link" href="#logs">Logs de Actividad</a></li>
-            <li class="nav-item"><a class="nav-link" href="#actualizar-shp">Actualizar SHP</a></li>
             <li class="nav-item">
                 <a class="nav-link" href="#solicitudes">
                     <i class="bi bi-person-check me-1"></i> Solicitudes
@@ -202,6 +199,9 @@ window.onpopstate = function () {
             </li>
             <li class="nav-item"><a class="nav-link" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a></li>
             <li class="nav-item"><a class="nav-link" href="#tramites-aprobados"><i class="bi bi-printer"></i> Constancias</a></li>
+            <li class="nav-item"><a class="nav-link" href="#actualizar-shp">Actualizar SHP</a></li>
+            <li class="nav-item"><a class="nav-link" href="#usuarios">Gestión de Usuarios</a></li>
+            <li class="nav-item"><a class="nav-link" href="#logs">Registro de Actividad</a></li>
             <li class="nav-item"><a class="nav-link" href="Dash.php">Ver Trámites</a></li>
             <li class="nav-item"><a class="nav-link text-danger" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>">Cerrar sesión</a></li>
         </ul>
@@ -212,11 +212,8 @@ window.onpopstate = function () {
 <div class="sidebar d-none d-lg-flex" aria-label="Menú de administración">
     <h5><i class="bi bi-shield-check me-2"></i>Administración</h5>
     <a href="#inicio"><i class="bi bi-house me-2"></i>Inicio</a>
-    <a class="nav-link text-white" href="#oficios-digitales"><i class="bi bi-pen me-1"></i> Firma y cierre</a>
+    <a class="nav-link text-white" href="#oficios-digitales"><i class="bi bi-pen me-1"></i> Firma y cierre de oficios</a>
     <a href="#estadisticas"><i class="bi bi-graph-up me-2"></i>Estadísticas</a>
-    <a href="#usuarios"><i class="bi bi-people me-2"></i>Usuarios</a>
-    <a href="#logs"><i class="bi bi-clock-history me-2"></i>Actividad</a>
-    <a class="nav-link text-white" href="#actualizar-shp"><i class="bi bi-map me-1"></i> Actualizar SHP</a>
     <a class="nav-link text-white" href="#solicitudes">
         <i class="bi bi-person-check me-1"></i> Solicitudes
         <?php if($total_pendientes > 0): ?>
@@ -225,6 +222,9 @@ window.onpopstate = function () {
     </a>
     <a class="nav-link text-white" href="#reporte"><i class="bi bi-bar-chart-line me-1"></i> Reporte</a>
     <a class="nav-link text-white" href="#tramites-aprobados"><i class="bi bi-printer"></i> Constancias</a>
+    <a class="nav-link text-white" href="#actualizar-shp"><i class="bi bi-map me-1"></i> Actualizar SHP</a>
+    <a href="#usuarios"><i class="bi bi-people me-2"></i>Gestión de Usuarios</a>
+    <a href="#logs"><i class="bi bi-clock-history me-2"></i>Registro de Actividad</a>
     <a href="Dash.php"><i class="bi bi-folder2-open me-2"></i>Ver trámites</a>
     <a class="text-danger mt-auto" href="logout.php?csrf_token=<?= urlencode($_SESSION['csrf_token']) ?>"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
 </div>

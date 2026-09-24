@@ -33,6 +33,7 @@
 
         html {
             scroll-behavior: smooth;
+            scroll-padding-top: 104px;
         }
 
         body {
@@ -68,6 +69,7 @@
             left: 0;
             width: 100%;
             color: var(--blanco);
+            background: rgba(75, 14, 34, .98);
             transition: background .35s ease, box-shadow .35s ease, padding .35s ease;
         }
 
@@ -92,11 +94,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 30px;
+            gap: 24px;
         }
 
         .marca {
             display: flex;
+            min-width: 0;
             align-items: center;
             gap: 13px;
             color: var(--blanco);
@@ -109,7 +112,10 @@
             flex: 0 0 auto;
             display: grid;
             place-items: center;
-            border: 1px dashed rgba(255, 255, 255, .55);
+            object-fit: contain;
+            background: var(--blanco);
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, .25);
             border-radius: 14px;
             font-size: 8px;
             font-weight: 700;
@@ -139,12 +145,16 @@
         .menu {
             display: flex;
             align-items: center;
-            gap: 28px;
+            gap: clamp(12px, 2vw, 28px);
             list-style: none;
         }
 
         .menu a {
             position: relative;
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
+            white-space: nowrap;
             color: var(--blanco);
             font-size: 14px;
             font-weight: 600;
@@ -187,6 +197,7 @@
 
         .menu-toggle {
             display: none;
+            flex: 0 0 46px;
             width: 46px;
             height: 46px;
             border: 1px solid rgba(255, 255, 255, .4);
@@ -203,6 +214,12 @@
             border-radius: 2px;
             background: var(--blanco);
             transition: transform .25s ease, opacity .25s ease;
+        }
+
+        .encabezado a:focus-visible,
+        .menu-toggle:focus-visible {
+            outline: 2px solid var(--blanco);
+            outline-offset: 4px;
         }
 
         /* Portada principal con llamada a la acción e imagen institucional. */
@@ -1064,6 +1081,17 @@
         .hero .marco-imagen { animation: entradaHero .9s .22s both; }
 
         @media (max-width: 980px) {
+            .navegacion {
+                gap: 12px;
+            }
+
+            .navegacion > nav {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+            }
+
             .menu-toggle {
                 display: block;
                 position: relative;
@@ -1083,13 +1111,18 @@
             }
 
             .menu {
-                position: fixed;
-                inset: 0;
+                position: relative;
                 z-index: 1001;
                 flex-direction: column;
-                justify-content: center;
-                gap: 30px;
+                align-items: stretch;
+                gap: 6px;
+                padding: 16px 20px 24px;
+                max-height: calc(100dvh - 88px);
+                overflow-y: auto;
+                border-top: 1px solid rgba(255, 255, 255, .18);
+                box-shadow: 0 16px 28px rgba(33, 8, 17, .2);
                 background: var(--vino-oscuro);
+                visibility: hidden;
                 opacity: 0;
                 pointer-events: none;
                 transform: translateY(-15px);
@@ -1097,13 +1130,32 @@
             }
 
             .menu.abierto {
+                visibility: visible;
                 opacity: 1;
                 pointer-events: auto;
                 transform: none;
             }
 
             .menu a {
-                font-size: 20px;
+                width: 100%;
+                padding: 10px 16px;
+                border-radius: 10px;
+                font-size: 16px;
+            }
+
+            .menu a:hover {
+                background: rgba(255, 255, 255, .12);
+            }
+
+            .menu a:not(.boton-nav)::after {
+                display: none;
+            }
+
+            .menu .boton-nav {
+                justify-content: center;
+                margin-top: 8px;
+                background: var(--blanco);
+                color: var(--vino-oscuro);
             }
 
             .hero-contenido,
@@ -1161,6 +1213,10 @@
 
             .navegacion {
                 min-height: 76px;
+            }
+
+            .menu {
+                max-height: calc(100dvh - 76px);
             }
 
             .marca-imagen {
@@ -1294,7 +1350,7 @@
     <header class="encabezado" id="encabezado">
         <div class="contenedor navegacion">
             <a class="marca" href="#inicio" aria-label="Ir al inicio">
-                <span class="marca-imagen" aria-hidden="true">Logo</span>
+                <img class="marca-imagen" src="logos/logo_presi.jpeg" alt="" width="54" height="54">
                 <span class="marca-texto">
                     <strong>Portal del Personal</strong>
                     <span>Mejora Regulatoria Municipal</span>
@@ -1533,6 +1589,21 @@
 
         menuPrincipal.querySelectorAll('a').forEach(enlace => {
             enlace.addEventListener('click', cerrarMenu);
+        });
+
+        document.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape' && menuPrincipal.classList.contains('abierto')) {
+                cerrarMenu();
+                menuToggle.focus();
+            }
+        });
+
+        document.addEventListener('click', evento => {
+            if (!encabezado.contains(evento.target)) cerrarMenu();
+        });
+
+        encabezado.addEventListener('focusout', evento => {
+            if (!encabezado.contains(evento.relatedTarget)) cerrarMenu();
         });
 
         volverArriba.addEventListener('click', () => {
